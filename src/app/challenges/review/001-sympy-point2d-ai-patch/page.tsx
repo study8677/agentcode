@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ReviewSubmissionForm } from "@/components/challenges/ReviewSubmissionForm";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
 
@@ -29,8 +30,9 @@ export default function FirstReviewChallengePage() {
             <a className="active" href="#review">
               第一题
             </a>
-            <a href="#diff">AI Diff</a>
-            <a href="#rubric">Rubric</a>
+            <a href="#diff">AI 补丁</a>
+            <a href="#submit">提交审核</a>
+            <a href="#rubric">评分</a>
           </nav>
           <div className="actions">
             <Link className="button button-outline" href="/">
@@ -53,6 +55,7 @@ export default function FirstReviewChallengePage() {
             <span className="id">001</span>
             <Badge tone="review">Review</Badge>
             <Badge tone="mid">Mid</Badge>
+            <span className="pill">Python / SymPy</span>
           </div>
           <h1>这个 AI 修复能合并吗？</h1>
           <p>
@@ -61,13 +64,10 @@ export default function FirstReviewChallengePage() {
           </p>
           <div className="source-grid">
             <a href="https://github.com/sympy/sympy/issues/22684" rel="noreferrer" target="_blank">
-              SymPy Issue
-            </a>
-            <a href="https://github.com/sympy/sympy/pull/22714" rel="noreferrer" target="_blank">
-              Correct PR
+              原始 Issue
             </a>
             <a href="https://arxiv.org/abs/2503.15223" rel="noreferrer" target="_blank">
-              PatchDiff Paper
+              论文来源
             </a>
           </div>
         </section>
@@ -80,45 +80,121 @@ export default function FirstReviewChallengePage() {
               </div>
               <div className="section-body">
                 <p>
-                  阅读下面的 AI PR diff，判断它是否可以 merge。如果不能，需要指出具体问题、影响和修复建议。
+                  阅读下面的 AI PR diff，判断它是否可以 merge。如果不能，需要指出具体问题、影响和修复建议。你不需要了解整个
+                  SymPy 项目，只需要围绕本页给出的行为规则和 diff 做判断。
                 </p>
                 <div className="review-template">
-                  <pre>{`Can merge? Yes / No
+                  <pre>{`是否可以合并：可以 / 不可以
 
-Finding 1:
-- Severity:
-- Problem:
-- Why it matters:
-- Suggested fix:
+问题 1：
+- 严重程度：
+- 问题描述：
+- 影响说明：
+- 修复建议：
 
-Finding 2:
+问题 2：
 ...`}</pre>
                 </div>
               </div>
             </section>
 
+            <section className="challenge-section card">
+              <div className="card-head">
+                <h2>题目上下文</h2>
+                <span className="mono">Python</span>
+              </div>
+              <div className="section-body">
+                <p>
+                  `Point` / `Point2D` 是 SymPy 里的几何点对象。坐标必须是合法的 SymPy 表达式，并且不能是明确的虚数坐标。
+                </p>
+                <p>
+                  `evaluate(False)` 表示临时关闭部分自动化简。真实 issue 的问题是：关闭自动化简后，普通坐标也可能被旧逻辑误判，
+                  从而抛出 `Imaginary coordinates are not permitted`。
+                </p>
+                <p>
+                  所以这道题的关键不是“只要不报错就行”，而是判断 AI 补丁有没有同时保住两个行为：普通坐标不要误杀，明确的虚数坐标仍然要拒绝。
+                </p>
+              </div>
+            </section>
+
+            <section className="challenge-section card">
+              <div className="card-head">
+                <h2>预期行为表</h2>
+                <span className="mono">review hints</span>
+              </div>
+              <div className="behavior-table-wrap">
+                <table className="behavior-table">
+                  <thead>
+                    <tr>
+                      <th>输入场景</th>
+                      <th>期望行为</th>
+                      <th>审核时要看什么</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <code>with evaluate(False): Point(1, 2)</code>
+                      </td>
+                      <td>应该允许创建点</td>
+                      <td>不能再误报 imaginary coordinates</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>with evaluate(False): Point(I, 2)</code>
+                      </td>
+                      <td>应该继续抛出错误</td>
+                      <td>检查这个约束在补丁后是否仍成立</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <code>Point(x, y)</code>
+                      </td>
+                      <td>符号输入不应被粗暴拒绝</td>
+                      <td>不确定是否为虚数时，不能当成明确非法</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
             <section className="challenge-section card" id="diff">
               <div className="card-head">
-                <h2>AI PR Diff</h2>
+                <h2>AI PR 变更</h2>
                 <span className="mono">ai-pr.diff</span>
               </div>
               <pre className="diff-block">{diff}</pre>
             </section>
+
+            <ReviewSubmissionForm />
           </article>
 
           <aside className="challenge-side">
             <section className="card">
               <div className="card-head">
-                <h2>背景</h2>
+                <h2>快速判断</h2>
               </div>
               <div className="section-body compact">
                 <p>
-                  SymPy `Point` / `Point2D` 不允许创建带有虚数坐标的点。真实 bug 是：
-                  在 `evaluate(False)` 下，即使输入没有虚数，也可能错误抛出异常。
+                  语言：Python。
                 </p>
                 <p>
-                  你要审核的是 AI 补丁，不是上游最终合并的正确修复。
+                  类型：Review Mode，不要求你改代码。
                 </p>
+                <p>
+                  目标：判断 AI PR 能否合并，并写出 review findings。
+                </p>
+              </div>
+            </section>
+
+            <section className="card">
+              <div className="card-head">
+                <h2>看 Diff 顺序</h2>
+              </div>
+              <div className="section-body compact">
+                <p>1. 先看 AI 改了哪一行判断条件。</p>
+                <p>2. 再看新增测试只覆盖了什么场景。</p>
+                <p>3. 最后用行为表检查是否有回归。</p>
               </div>
             </section>
 
@@ -128,7 +204,7 @@ Finding 2:
               </div>
               <div className="rubric-list">
                 <div className="rubric-item">
-                  <span>Merge 判断</span>
+                  <span>合并判断</span>
                   <strong>30%</strong>
                 </div>
                 <div className="rubric-item">

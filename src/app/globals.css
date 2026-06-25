@@ -45,6 +45,11 @@ input {
   font: inherit;
 }
 
+select,
+textarea {
+  font: inherit;
+}
+
 button {
   cursor: pointer;
 }
@@ -460,6 +465,18 @@ h1 {
   color: var(--text-soft);
 }
 
+.pill {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-soft);
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 8px;
+}
+
 .mono {
   color: var(--muted);
   font-family: var(--mono);
@@ -650,6 +667,40 @@ h1 {
   gap: 10px;
 }
 
+.behavior-table-wrap {
+  overflow-x: auto;
+}
+
+.behavior-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.behavior-table th,
+.behavior-table td {
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.behavior-table th {
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.behavior-table code {
+  background: var(--code);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
 .review-template,
 .diff-block {
   background: #24201b;
@@ -674,6 +725,162 @@ h1 {
   margin: 0;
   padding: 16px;
   white-space: pre;
+}
+
+.review-form {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.form-block {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 14px;
+}
+
+.form-block legend,
+.form-field span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.choice-row {
+  align-items: center;
+  color: var(--text-soft);
+  display: flex;
+  gap: 9px;
+  font-size: 14px;
+}
+
+.choice-row input {
+  accent-color: var(--blue);
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.form-field select,
+.form-field textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  outline: 0;
+  padding: 10px 11px;
+  width: 100%;
+}
+
+.form-field textarea {
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-soft);
+}
+
+.form-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.form-note {
+  color: var(--green);
+  font-size: 13px;
+}
+
+.feedback-panel {
+  background: var(--surface-soft);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.feedback-panel > div:first-child {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+}
+
+.feedback-panel strong {
+  font-size: 22px;
+}
+
+.feedback-panel p {
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.feedback-checks {
+  display: grid;
+  gap: 9px;
+}
+
+.feedback-check {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 46px 1fr;
+  padding: 10px;
+}
+
+.feedback-check > span {
+  background: var(--orange-soft);
+  border-radius: 999px;
+  color: var(--orange);
+  font-size: 12px;
+  font-weight: 700;
+  height: fit-content;
+  padding: 4px 7px;
+}
+
+.feedback-check.passed > span {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.feedback-check strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 3px;
+}
+
+.reference-links {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.reference-links a {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 10px;
+  text-decoration: none;
 }
 
 @media (max-width: 980px) {
