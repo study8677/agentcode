@@ -1,2 +1,22 @@
 agent.md
 
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# build output
+dist/
+coverage/
+*.tsbuildinfo
+
+# local env
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+pnpm-debug.log*
