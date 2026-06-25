@@ -39,49 +39,41 @@ The quality bar is more important than breadth. Each challenge should have a con
 
 Challenges should live in the repository as versioned content, not only in the database.
 
-Recommended structure:
+Current structure:
 
 ```text
-content/
-  challenges/
-    task/
-      fix-pagination-boundary/
-        challenge.yaml
-        prompt.md
-        repo/
-        tests/
-          public/
-          hidden/
-        solution.patch
-        explanation.md
-    review/
-      ai-pr-missing-permission-check/
-        challenge.yaml
-        prompt.md
-        base.diff
-        ai-pr.diff
-        rubric.yaml
-        explanation.md
+challenges/
+  README.md
+  review/
+    001-sympy-point2d-ai-patch/
+      metadata.json
+      README.zh.md
+      README.en.md
+      ai-pr.diff
+      expected-findings.json
+      rubric.md
 ```
 
-`challenge.yaml` defines metadata and execution settings:
+Task Mode challenges will later add `starter/`, `tests/visible/`, `tests/hidden/`, `validator.sh`, and `solution.patch`.
 
-```yaml
-id: fix-pagination-boundary
-mode: task
-title: Fix pagination boundary behavior
-difficulty: medium
-tags:
-  - backend
-  - testing
-  - edge-case
-runtime:
-  image: node:22
-  install: npm install
-  test: npm test
-limits:
-  timeoutSeconds: 120
+`metadata.json` defines metadata and source attribution:
+
+```json
+{
+  "id": "review-001-sympy-point2d-ai-patch",
+  "mode": "review",
+  "difficulty": "mid",
+  "source": {
+    "project": "SymPy",
+    "upstreamIssue": "https://github.com/sympy/sympy/issues/22684",
+    "upstreamOraclePullRequest": "https://github.com/sympy/sympy/pull/22714",
+    "analysisPaper": "https://arxiv.org/abs/2503.15223"
+  }
+}
 ```
 
 This makes exercises reviewable, portable, and reproducible.
 
+## Created Challenges
+
+- [Review 001: Can this AI fix be merged? Reviewing a SymPy Point2D regression](../../challenges/review/001-sympy-point2d-ai-patch/README.en.md)

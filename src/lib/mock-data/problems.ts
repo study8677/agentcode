@@ -12,18 +12,18 @@ export const challenges: Challenge[] = [
   {
     id: "001",
     title: {
-      zh: "修复分页边界问题",
-      en: "Fix pagination boundaries"
+      zh: "SymPy Point2D AI 补丁审查",
+      en: "Review a SymPy Point2D AI patch"
     },
     summary: {
-      zh: "修复 page=0、空结果和 cursor 边界，并补充测试。",
-      en: "Fix page=0, empty results, and cursor boundaries, then add tests."
+      zh: "真实 SWE-bench/SymPy 案例：判断一个看似修复 evaluate(False) 的 AI PR 是否引入回归。",
+      en: "A real SWE-bench/SymPy case: decide whether an AI PR that fixes evaluate(False) introduces a regression."
     },
-    mode: "task",
+    mode: "review",
     difficulty: "mid",
     status: "ready",
-    acceptanceRate: 41.2,
-    tags: ["backend", "tests", "edge-case"],
+    acceptanceRate: 31.4,
+    tags: ["sympy", "swe-bench", "regression"],
     runStatus: "idle"
   },
   {

@@ -35,6 +35,7 @@ That is what AgentCode is built for: a new practice ground for the skills that m
 - [Evaluation Design](./docs/en/evaluation.md)
 - [First Challenge Set](./docs/en/challenges.md)
 - [V0 Plan](./plan.md)
+- [First challenge: SymPy Point2D AI patch review](./challenges/review/001-sympy-point2d-ai-patch/README.en.md)
 - [中文](./README.md)
 
 ## Current Stage
@@ -49,5 +50,4 @@ It does not start with algorithm Hot100, complex community features, contests, l
 ## Brand
 
 - Repository: `agentcode`
-- Domain: `agentcoder.codes`
-
+- Domain: `agentcode.codes`

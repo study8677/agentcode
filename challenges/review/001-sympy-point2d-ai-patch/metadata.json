@@ -1,0 +1,34 @@
+{
+  "id": "review-001-sympy-point2d-ai-patch",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "这个 AI 修复能合并吗？SymPy Point2D 回归审查",
+    "en": "Can this AI fix be merged? Reviewing a SymPy Point2D regression"
+  },
+  "summary": {
+    "zh": "审查一个针对真实 SymPy 问题的 AI 补丁：它修好了 evaluate(False) 下的报错，但可能放过了非法的虚数坐标。",
+    "en": "Review an AI patch for a real SymPy issue: it fixes an evaluate(False) error, but may let invalid imaginary coordinates through."
+  },
+  "tags": [
+    "review",
+    "swe-bench",
+    "sympy",
+    "regression",
+    "edge-case",
+    "tests"
+  ],
+  "source": {
+    "project": "SymPy",
+    "upstreamIssue": "https://github.com/sympy/sympy/issues/22684",
+    "upstreamOraclePullRequest": "https://github.com/sympy/sympy/pull/22714",
+    "analysisPaper": "https://arxiv.org/abs/2503.15223",
+    "benchmarkInstance": "sympy-22714"
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is adapted from the CodeStory plausible-but-incorrect patch described in the PatchDiff paper. It is not the SymPy maintainer patch that was merged upstream."
+  }
+}
