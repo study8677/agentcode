@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { TopNav } from "@/components/layout/TopNav";
@@ -10,12 +11,12 @@ import { ProblemList } from "@/components/problems/ProblemList";
 import { ProblemStatsStrip } from "@/components/problems/ProblemStatsStrip";
 import { ProblemToolbar } from "@/components/problems/ProblemToolbar";
 import { TopicSidebar } from "@/components/problems/TopicSidebar";
-import { Button } from "@/components/ui/Button";
 import { challenges, practiceStats } from "@/lib/mock-data/problems";
 
 export function PracticeHome() {
   const [language, setLanguage] = useState<Language>("zh");
   const labels = copy[language];
+  const firstChallengeHref = challenges[0]?.href ?? "#";
 
   return (
     <>
@@ -35,10 +36,17 @@ export function PracticeHome() {
               <h1>{labels.headline}</h1>
               <p className="lede">{labels.lede}</p>
               <div className="hero-actions">
-                <Button type="button">{labels.startTask}</Button>
-                <Button type="button" variant="outline">
+                <Link className="button button-primary" href={firstChallengeHref}>
+                  {labels.startTask}
+                </Link>
+                <a
+                  className="button button-outline"
+                  href="https://github.com/study8677/agentcode/blob/main/plan.md"
+                  rel="noreferrer"
+                  target="_blank"
+                >
                   {labels.viewRoadmap}
-                </Button>
+                </a>
               </div>
             </div>
 

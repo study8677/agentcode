@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/Badge";
 import type { Language } from "@/components/problems/copy";
 import type { Challenge } from "@/lib/types/problem";
@@ -46,7 +48,13 @@ export function ProblemRow({ challenge, labels, language }: ProblemRowProps) {
       </td>
       <td className="title-cell">
         <span className="mobile-label">{labels.tableTitle}</span>
-        <strong>{challenge.title[language]}</strong>
+        {challenge.href ? (
+          <Link className="challenge-title-link" href={challenge.href}>
+            {challenge.title[language]}
+          </Link>
+        ) : (
+          <strong>{challenge.title[language]}</strong>
+        )}
         <span>{challenge.summary[language]}</span>
       </td>
       <td>

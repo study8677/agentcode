@@ -13,6 +13,7 @@ export type LocalizedText = {
 
 export type Challenge = {
   id: string;
+  href?: string;
   title: LocalizedText;
   summary: LocalizedText;
   mode: ChallengeMode;

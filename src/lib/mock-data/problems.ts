@@ -11,6 +11,7 @@ export const practiceStats: PracticeStats = {
 export const challenges: Challenge[] = [
   {
     id: "001",
+    href: "/challenges/review/001-sympy-point2d-ai-patch",
     title: {
       zh: "SymPy Point2D AI 补丁审查",
       en: "Review a SymPy Point2D AI patch"
