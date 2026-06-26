@@ -667,6 +667,79 @@ h1 {
   gap: 10px;
 }
 
+.term-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 16px;
+}
+
+.term-item {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.term-item strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.term-item p {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.review-flow {
+  counter-reset: review-step;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 16px;
+}
+
+.review-flow li {
+  align-items: start;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  counter-increment: review-step;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: 34px 1fr;
+  padding: 12px;
+}
+
+.review-flow li::before {
+  align-items: center;
+  background: var(--text);
+  border-radius: 7px;
+  color: #ffffff;
+  content: counter(review-step);
+  display: grid;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+  height: 26px;
+  justify-items: center;
+  width: 26px;
+}
+
+.review-flow strong {
+  font-size: 14px;
+}
+
+.review-flow span {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .behavior-table-wrap {
   overflow-x: auto;
 }
@@ -763,6 +836,10 @@ h1 {
 .form-field {
   display: grid;
   gap: 8px;
+}
+
+.compact-field {
+  max-width: 520px;
 }
 
 .form-field select,
@@ -872,6 +949,24 @@ h1 {
   gap: 10px;
 }
 
+.reference-disclosure {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.reference-disclosure summary {
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reference-disclosure[open] summary {
+  margin-bottom: 10px;
+}
+
 .reference-links a {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -918,6 +1013,14 @@ h1 {
   .notice {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .term-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-flow li {
+    grid-template-columns: 30px 1fr;
   }
 
   .problem-table thead {

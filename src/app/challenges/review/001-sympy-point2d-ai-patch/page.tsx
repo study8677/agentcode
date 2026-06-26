@@ -30,8 +30,9 @@ export default function FirstReviewChallengePage() {
             <a className="active" href="#review">
               第一题
             </a>
+            <a href="#review-flow">审核流程</a>
             <a href="#diff">AI 补丁</a>
-            <a href="#submit">提交审核</a>
+            <a href="#submit">提交 Review</a>
             <a href="#rubric">评分</a>
           </nav>
           <div className="actions">
@@ -84,7 +85,7 @@ export default function FirstReviewChallengePage() {
                   SymPy 项目，只需要围绕本页给出的行为规则和 diff 做判断。
                 </p>
                 <div className="review-template">
-                  <pre>{`是否可以合并：可以 / 不可以
+                  <pre>{`是否可以合并：可以 / 不可以 / 需要更多信息
 
 问题 1：
 - 严重程度：
@@ -112,46 +113,114 @@ export default function FirstReviewChallengePage() {
                   从而抛出 `Imaginary coordinates are not permitted`。
                 </p>
                 <p>
-                  所以这道题的关键不是“只要不报错就行”，而是判断 AI 补丁有没有同时保住两个行为：普通坐标不要误杀，明确的虚数坐标仍然要拒绝。
+                  这道题要练的是 code review 判断力：一个补丁修好 happy path 之后，是否仍然保留了原有输入约束和边界语义。
                 </p>
               </div>
             </section>
 
             <section className="challenge-section card">
               <div className="card-head">
-                <h2>预期行为表</h2>
-                <span className="mono">review hints</span>
+                <h2>术语速查</h2>
+                <span className="mono">不用先学完整 SymPy</span>
+              </div>
+              <div className="term-grid">
+                <div className="term-item">
+                  <strong>PR / diff</strong>
+                  <p>PR 是一次代码变更提议，diff 展示这次变更具体改了哪些行。</p>
+                </div>
+                <div className="term-item">
+                  <strong>merge / request changes</strong>
+                  <p>merge 表示接受变更；request changes 表示发现必须修复的问题，暂时不能进主分支。</p>
+                </div>
+                <div className="term-item">
+                  <strong>回归</strong>
+                  <p>修一个问题时，把原本正确的行为弄坏。Review Mode 很多题都在考这个。</p>
+                </div>
+                <div className="term-item">
+                  <strong>边界条件 / 负例测试</strong>
+                  <p>边界条件是容易暴露错误的输入；负例测试用来确认非法输入仍然会被拒绝。</p>
+                </div>
+                <div className="term-item">
+                  <strong>Point / Point2D</strong>
+                  <p>SymPy 里的几何点对象。这里你只需要知道：点坐标有一组原有合法性约束。</p>
+                </div>
+                <div className="term-item">
+                  <strong>evaluate(False)</strong>
+                  <p>临时关闭部分自动化简。它可能让表达式保持未化简状态，所以要留意分支判断是否被影响。</p>
+                </div>
+                <div className="term-item">
+                  <strong>im(a)</strong>
+                  <p>读取表达式 a 的虚部。你不需要掌握 SymPy 内部，只要知道它参与坐标合法性判断。</p>
+                </div>
+                <div className="term-item">
+                  <strong>a.is_number</strong>
+                  <p>判断 a 是否是具体数值。审核时要看它被放进条件判断后，是否改变了输入分类。</p>
+                </div>
+              </div>
+            </section>
+
+            <section className="challenge-section card" id="review-flow">
+              <div className="card-head">
+                <h2>推荐审核流程</h2>
+                <span className="mono">review path</span>
+              </div>
+              <ol className="review-flow">
+                <li>
+                  <strong>先看改动点</strong>
+                  <span>先确认 PR 声称修复什么用户问题，再看 diff 改了哪条校验逻辑。</span>
+                </li>
+                <li>
+                  <strong>再看新增测试</strong>
+                  <span>新增测试通常能证明一个正向场景，也要检查是否覆盖了反向场景和边界输入。</span>
+                </li>
+                <li>
+                  <strong>对照原有约束</strong>
+                  <span>判断补丁是精确修复，还是只让某个 case 通过并顺手放宽了旧规则。</span>
+                </li>
+                <li>
+                  <strong>主动找反例</strong>
+                  <span>想一类补丁作者没有写进测试、但原有约束必须继续成立的输入。</span>
+                </li>
+                <li>
+                  <strong>给出 merge 结论</strong>
+                  <span>如果有回归风险，就写出 blocking finding、影响和可执行修复方向。</span>
+                </li>
+              </ol>
+            </section>
+
+            <section className="challenge-section card">
+              <div className="card-head">
+                <h2>审查清单</h2>
+                <span className="mono">不要只看 happy path</span>
               </div>
               <div className="behavior-table-wrap">
                 <table className="behavior-table">
                   <thead>
                     <tr>
-                      <th>输入场景</th>
-                      <th>期望行为</th>
-                      <th>审核时要看什么</th>
+                      <th>输入类型</th>
+                      <th>原有约束</th>
+                      <th>你要验证的问题</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
                       <td>
-                        <code>with evaluate(False): Point(1, 2)</code>
+                        普通数值坐标
                       </td>
-                      <td>应该允许创建点</td>
-                      <td>不能再误报 imaginary coordinates</td>
+                      <td>不应因为关闭自动化简被误拒</td>
+                      <td>新增测试是否只证明了这个正向场景</td>
+                    </tr>
+                    <tr>
+                      <td>明显非法的坐标</td>
+                      <td>原有非法输入校验仍应清楚可解释</td>
+                      <td>PR 是否改变了合法 / 非法输入的分类边界</td>
                     </tr>
                     <tr>
                       <td>
-                        <code>with evaluate(False): Point(I, 2)</code>
+                        无法静态确定的符号坐标
                       </td>
-                      <td>应该继续抛出错误</td>
-                      <td>检查这个约束在补丁后是否仍成立</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <code>Point(x, y)</code>
-                      </td>
-                      <td>符号输入不应被粗暴拒绝</td>
-                      <td>不确定是否为虚数时，不能当成明确非法</td>
+                      <td>不应被粗暴当成非法输入</td>
+                      <td>条件判断是否把 unknown 和 invalid 混成一种</td>
                     </tr>
                   </tbody>
                 </table>
@@ -189,12 +258,13 @@ export default function FirstReviewChallengePage() {
 
             <section className="card">
               <div className="card-head">
-                <h2>看 Diff 顺序</h2>
+                <h2>审核顺序</h2>
               </div>
               <div className="section-body compact">
-                <p>1. 先看 AI 改了哪一行判断条件。</p>
-                <p>2. 再看新增测试只覆盖了什么场景。</p>
-                <p>3. 最后用行为表检查是否有回归。</p>
+                <p>1. 看 AI 改了哪一行条件。</p>
+                <p>2. 检查新增测试是否覆盖正例和反例。</p>
+                <p>3. 对照原有约束找回归风险。</p>
+                <p>4. 写出能阻止 merge 的 finding。</p>
               </div>
             </section>
 
