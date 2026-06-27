@@ -7,7 +7,7 @@
 <p align="center">
   <a href="./README_en.md">English</a>
   ·
-  <a href="./challenges/review/001-sympy-point2d-ai-patch/README.zh.md">试做第一题</a>
+  <a href="https://agentcode.codes/challenges/review/001-sympy-point2d-ai-patch">试做第一题</a>
   ·
   <a href="./docs/zh/product-direction.md">产品方向</a>
   ·
@@ -70,6 +70,7 @@ V0 正在构建中，目前仓库已经包含：
 
 第一题入口：
 
+- [在线体验：Review 001](https://agentcode.codes/challenges/review/001-sympy-point2d-ai-patch)
 - [Review 001：这个 AI 修复能合并吗？SymPy Point2D 回归审查](./challenges/review/001-sympy-point2d-ai-patch/README.zh.md)
 - [题目 metadata](./challenges/review/001-sympy-point2d-ai-patch/metadata.json)
 - [AI PR diff](./challenges/review/001-sympy-point2d-ai-patch/ai-pr.diff)
