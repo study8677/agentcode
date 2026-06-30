@@ -710,8 +710,9 @@ h1 {
   border-radius: 8px;
   counter-increment: review-step;
   display: grid;
-  gap: 4px;
-  grid-template-columns: 34px 1fr;
+  column-gap: 10px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  row-gap: 4px;
   padding: 12px;
 }
 
@@ -725,6 +726,7 @@ h1 {
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 800;
+  grid-row: 1 / span 2;
   height: 26px;
   justify-items: center;
   width: 26px;
@@ -732,12 +734,16 @@ h1 {
 
 .review-flow strong {
   font-size: 14px;
+  grid-column: 2;
+  line-height: 1.45;
 }
 
 .review-flow span {
   color: var(--text-soft);
   font-size: 13px;
+  grid-column: 2;
   line-height: 1.6;
+  min-width: 0;
 }
 
 .behavior-table-wrap {
