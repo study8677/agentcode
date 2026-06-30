@@ -667,85 +667,6 @@ h1 {
   gap: 10px;
 }
 
-.term-grid {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  padding: 16px;
-}
-
-.term-item {
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.term-item strong {
-  display: block;
-  font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.term-item p {
-  color: var(--text-soft);
-  font-size: 13px;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.review-flow {
-  counter-reset: review-step;
-  display: grid;
-  gap: 10px;
-  list-style: none;
-  margin: 0;
-  padding: 16px;
-}
-
-.review-flow li {
-  align-items: start;
-  background: var(--surface-soft);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  counter-increment: review-step;
-  display: grid;
-  column-gap: 10px;
-  grid-template-columns: 34px minmax(0, 1fr);
-  row-gap: 4px;
-  padding: 12px;
-}
-
-.review-flow li::before {
-  align-items: center;
-  background: var(--text);
-  border-radius: 7px;
-  color: #ffffff;
-  content: counter(review-step);
-  display: grid;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 800;
-  grid-row: 1 / span 2;
-  height: 26px;
-  justify-items: center;
-  width: 26px;
-}
-
-.review-flow strong {
-  font-size: 14px;
-  grid-column: 2;
-  line-height: 1.45;
-}
-
-.review-flow span {
-  color: var(--text-soft);
-  font-size: 13px;
-  grid-column: 2;
-  line-height: 1.6;
-  min-width: 0;
-}
-
 .behavior-table-wrap {
   overflow-x: auto;
 }
@@ -780,30 +701,145 @@ h1 {
   padding: 2px 4px;
 }
 
-.review-template,
-.diff-block {
+.file-browser-body {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  min-height: 560px;
+}
+
+.file-list {
+  background: var(--surface-soft);
+  border-right: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 10px;
+}
+
+.file-tab {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  display: grid;
+  gap: 4px;
+  min-height: 58px;
+  padding: 10px;
+  text-align: left;
+}
+
+.file-tab.active {
+  border-color: var(--blue);
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+.file-tab span {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.file-tab small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.file-viewer {
   background: #24201b;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.file-toolbar {
+  align-items: center;
+  background: #1d1915;
+  border-bottom: 1px solid rgba(255, 247, 232, 0.12);
+  color: #fff7e8;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
+.file-toolbar strong,
+.file-toolbar span {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.file-toolbar strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.file-toolbar span {
+  color: #cfc3b2;
+  white-space: nowrap;
+}
+
+.file-code {
   color: #fff7e8;
   font-family: var(--mono);
   font-size: 12px;
-  line-height: 1.7;
-  overflow-x: auto;
-}
-
-.review-template {
-  border-radius: 8px;
-  padding: 14px;
-}
-
-.review-template pre {
+  line-height: 1.65;
   margin: 0;
+  max-height: 720px;
+  overflow: auto;
+  padding: 0;
 }
 
-.diff-block {
-  border: 0;
-  margin: 0;
-  padding: 16px;
+.file-line {
+  display: grid;
+  grid-template-columns: 52px minmax(max-content, 1fr);
+  min-height: 21px;
+}
+
+.file-line:hover {
+  background: rgba(255, 247, 232, 0.06);
+}
+
+.file-line.addition {
+  background: rgba(47, 125, 80, 0.18);
+  color: #e3f8e8;
+}
+
+.file-line.deletion {
+  background: rgba(180, 35, 47, 0.18);
+  color: #ffe3df;
+}
+
+.file-line.hunk {
+  color: #9fc5ff;
+}
+
+.file-line.meta {
+  color: #d5c7b6;
+}
+
+.line-number {
+  border-right: 1px solid rgba(255, 247, 232, 0.12);
+  color: #958b7f;
+  padding: 0 10px;
+  text-align: right;
+  user-select: none;
+}
+
+.line-content {
+  padding: 0 14px;
   white-space: pre;
+}
+
+.file-note {
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 10px 16px;
 }
 
 .review-form {
@@ -1021,12 +1057,20 @@ h1 {
     flex-direction: column;
   }
 
-  .term-grid {
+  .file-browser-body {
     grid-template-columns: 1fr;
   }
 
-  .review-flow li {
-    grid-template-columns: 30px 1fr;
+  .file-list {
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(170px, 1fr);
+    overflow-x: auto;
+  }
+
+  .file-code {
+    max-height: 560px;
   }
 
   .problem-table thead {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ReviewFileBrowser } from "@/components/challenges/ReviewFileBrowser";
 import { ReviewSubmissionForm } from "@/components/challenges/ReviewSubmissionForm";
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
@@ -39,7 +40,7 @@ export default async function ReviewChallengePage({ params }: ReviewChallengePag
     notFound();
   }
 
-  const { metadata, diff } = challenge;
+  const { metadata, files } = challenge;
   const displayId = metadata.order.toString().padStart(3, "0");
 
   return (
@@ -55,8 +56,8 @@ export default async function ReviewChallengePage({ params }: ReviewChallengePag
             <a className="active" href="#review">
               Review {displayId}
             </a>
-            <a href="#review-flow">审核流程</a>
-            <a href="#diff">AI 补丁</a>
+            <a href="#files">题目文件</a>
+            <a href="#checks">审查清单</a>
             <a href="#submit">提交 Review</a>
             <a href="#rubric">评分</a>
           </nav>
@@ -102,25 +103,12 @@ export default async function ReviewChallengePage({ params }: ReviewChallengePag
               </div>
               <div className="section-body">
                 <p>
-                  阅读下面的 AI PR diff，判断它是否可以 merge。如果不能，需要指出具体问题、影响和修复建议。你不需要掌握完整项目，
-                  只需要围绕本页给出的行为规则、来源背景和 diff 做判断。
+                  打开题目文件，重点审查 AI PR diff 是否可以 merge。如果不能，需要指出具体问题、影响、反例测试和修复建议。
                 </p>
-                <div className="review-template">
-                  <pre>{`是否可以合并：可以 / 不可以 / 需要更多信息
-
-总体结论：
-
-Blocking finding：
-- 严重程度：
-- 问题描述：
-- 影响说明：
-- 修复建议：
-
-测试评价：
-- 应该补充的反例或边界测试：`}</pre>
-                </div>
               </div>
             </section>
+
+            <ReviewFileBrowser files={files} defaultFileName={metadata.reviewTarget.file} />
 
             <section className="challenge-section card">
               <div className="card-head">
@@ -134,37 +122,7 @@ Blocking finding：
               </div>
             </section>
 
-            <section className="challenge-section card">
-              <div className="card-head">
-                <h2>术语速查</h2>
-                <span className="mono">review vocabulary</span>
-              </div>
-              <div className="term-grid">
-                {metadata.terms.map((item) => (
-                  <div className="term-item" key={item.term}>
-                    <strong>{item.term}</strong>
-                    <p>{item.description}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="challenge-section card" id="review-flow">
-              <div className="card-head">
-                <h2>推荐审核流程</h2>
-                <span className="mono">review path</span>
-              </div>
-              <ol className="review-flow">
-                {metadata.reviewFocus.map((item) => (
-                  <li key={item}>
-                    <strong>{item}</strong>
-                    <span>把这个点和 diff、测试、原有约束对照起来，判断它是否足以阻塞合并。</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <section className="challenge-section card">
+            <section className="challenge-section card" id="checks">
               <div className="card-head">
                 <h2>审查清单</h2>
                 <span className="mono">不要只看 happy path</span>
@@ -191,14 +149,6 @@ Blocking finding：
               </div>
             </section>
 
-            <section className="challenge-section card" id="diff">
-              <div className="card-head">
-                <h2>AI PR 变更</h2>
-                <span className="mono">{metadata.reviewTarget.file}</span>
-              </div>
-              <pre className="diff-block">{diff}</pre>
-            </section>
-
             <ReviewSubmissionForm
               challengeId={metadata.id}
               referenceLinks={metadata.source.references}
@@ -215,18 +165,6 @@ Blocking finding：
                 <p>语言 / 领域：{metadata.language}。</p>
                 <p>类型：Review Mode，不要求你改代码。</p>
                 <p>目标：{metadata.learningGoal}</p>
-              </div>
-            </section>
-
-            <section className="card">
-              <div className="card-head">
-                <h2>审核顺序</h2>
-              </div>
-              <div className="section-body compact">
-                <p>1. 看 AI 改了哪一处判断或配置。</p>
-                <p>2. 检查新增测试是否只覆盖正向场景。</p>
-                <p>3. 对照原有安全、兼容性或数据语义约束。</p>
-                <p>4. 写出能阻止 merge 的 finding。</p>
               </div>
             </section>
 
