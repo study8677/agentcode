@@ -1,0 +1,130 @@
+{
+  "id": "review-005-path-to-regexp-redos",
+  "order": 5,
+  "slug": "005-path-to-regexp-redos",
+  "mode": "review",
+  "difficulty": "senior",
+  "status": "ready",
+  "title": {
+    "zh": "Express 路由模式 ReDoS 审查",
+    "en": "Express route pattern ReDoS review"
+  },
+  "summary": {
+    "zh": "审查一个局部修复 path-to-regexp 回溯的补丁，它可能只覆盖两段参数而漏掉更多重叠模式。",
+    "en": "Review a partial path-to-regexp ReDoS fix that misses broader overlapping route patterns."
+  },
+  "language": "JavaScript / Express Routing",
+  "tags": [
+    "express",
+    "redos",
+    "routing",
+    "performance-security",
+    "regex"
+  ],
+  "source": {
+    "project": "path-to-regexp / Express",
+    "securityAdvisory": "GHSA-9wv6-86v2-598j",
+    "references": [
+      {
+        "label": "Advisory 1",
+        "url": "https://github.com/pillarjs/path-to-regexp/security/advisories/GHSA-9wv6-86v2-598j"
+      },
+      {
+        "label": "Advisory 2",
+        "url": "https://github.com/pillarjs/path-to-regexp/security/advisories/GHSA-rhx6-c78j-4q9w"
+      },
+      {
+        "label": "OSV",
+        "url": "https://osv.dev/GHSA-9wv6-86v2-598j"
+      },
+      {
+        "label": "修复 commit",
+        "url": "https://github.com/pillarjs/path-to-regexp/commit/f01c26a013b1889f0c217c643964513acf17f6a4"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断性能安全修复是否覆盖同一类模式，而不是只修一个例子。",
+  "scenario": "AI PR 为 /:a-:b 生成了局部 lookahead，声称解决长路径导致的正则灾难回溯。",
+  "context": [
+    "Express 等框架会把路由模式编译成正则表达式。重叠 capture 可能在恶意长路径上触发灾难回溯。",
+    "Node 单线程事件循环被 ReDoS 输入阻塞，会影响整个服务的可用性。",
+    "只给一个具体模式打补丁，容易漏掉 /:a-:b-:c 或自定义 capture 等同类问题。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "ReDoS",
+      "description": "Regular Expression Denial of Service，构造输入让正则匹配耗时爆炸。"
+    },
+    {
+      "term": "catastrophic backtracking",
+      "description": "正则引擎反复尝试大量路径，导致 CPU 被占满。"
+    },
+    {
+      "term": "route pattern",
+      "description": "框架声明的路由模板，例如 /:a-:b。"
+    },
+    {
+      "term": "non-overlapping capture",
+      "description": "让相邻参数的匹配边界明确，避免互相吞字符。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "/:a-:b",
+      "expected": "不应在长字符串上指数级回溯。",
+      "reviewQuestion": "AI PR 是否只修这一种模式。"
+    },
+    {
+      "input": "/:a-:b-:c",
+      "expected": "同类重叠参数也应安全。",
+      "reviewQuestion": "多段参数是否仍生成危险正则。"
+    },
+    {
+      "input": "自定义 capture",
+      "expected": "用户定义模式也不能打破边界。",
+      "reviewQuestion": "修复是否有通用解析层约束。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "redos",
+      "regex",
+      "backtracking",
+      "event loop",
+      "回溯"
+    ],
+    "boundaryTerms": [
+      "overlap",
+      "capture",
+      "边界",
+      "route",
+      "param"
+    ],
+    "testTerms": [
+      ":a-:b-:c",
+      "long",
+      "custom",
+      "timeout",
+      "performance"
+    ],
+    "fixTerms": [
+      "non-overlap",
+      "safe version",
+      "upgrade",
+      "边界",
+      "限制"
+    ]
+  }
+}

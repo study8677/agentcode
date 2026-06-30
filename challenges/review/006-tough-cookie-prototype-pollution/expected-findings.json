@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "blacklist-does-not-fix-index-pollution",
+      "severity": "critical",
+      "summary": "The patch blocks only one dangerous domain string while keeping ordinary objects for untrusted indexes.",
+      "expectedReasoning": "Other magic keys or nested path/name keys can still interact with object prototypes, and future variants will bypass the blacklist.",
+      "acceptableFix": "Use Object.create(null) or Map for every index layer and validate the published PoC plus variant keys."
+    },
+    {
+      "id": "incomplete-poc-coverage",
+      "severity": "high",
+      "summary": "The test covers only __proto__ as domain.",
+      "expectedReasoning": "Prototype pollution defenses need variant and nested-key tests.",
+      "acceptableFix": "Add tests for constructor, prototype, path/name keys, and rejectPublicSuffixes:false scenarios."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

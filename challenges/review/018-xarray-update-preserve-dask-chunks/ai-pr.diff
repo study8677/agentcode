@@ -1,0 +1,12 @@
+diff --git a/xarray/core/variable.py b/xarray/core/variable.py
+@@
+     elif isinstance(obj, tuple):
++        if isinstance(obj[1], DataArray):
++            # Avoid ambiguous DataArray construction by materializing values.
++            obj = (obj[0], np.asarray(obj[1]), *obj[2:])
+         try:
+             obj = Variable(*obj)
+@@
++def test_update_dataarray_tuple_values_equal():
++    ds.update({'foo': (('x', 'y'), chunked_da)})
++    assert_array_equal(ds.foo.values, chunked_da.values)

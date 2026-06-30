@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import type { ReviewScoringHints, ReviewSourceLink } from "@/lib/challenges/review";
+
 type MergeDecision = "yes" | "no" | "unknown" | "";
 
 type ReviewDraft = {
@@ -23,8 +25,6 @@ type Feedback = {
     detail: string;
   }>;
 };
-
-const storageKey = "agentcode.review.001.draft";
 
 const initialDraft: ReviewDraft = {
   mergeDecision: "",
@@ -55,23 +55,22 @@ function includesAny(value: string, terms: string[]) {
   return terms.some((term) => value.includes(term));
 }
 
-function scoreDraft(draft: ReviewDraft): Feedback {
+function scoreDraft(draft: ReviewDraft, scoringHints: ReviewScoringHints): Feedback {
   const body = `${draft.conclusion}\n${draft.problem}\n${draft.impact}\n${draft.fix}\n${draft.tests}`.toLowerCase();
   const mergePassed = draft.mergeDecision === "no";
   const regressionPassed =
-    includesAny(body, ["evaluate(false)", "evaluate"]) &&
-    includesAny(body, ["虚数", "imaginary", "point(i", "i, 2"]) &&
-    includesAny(body, ["绕过", "跳过", "禁用", "放过", "允许", "bypass", "skip", "allow"]);
+    includesAny(body, scoringHints.coreRiskTerms.map((term) => term.toLowerCase())) &&
+    includesAny(body, ["回归", "风险", "破坏", "泄漏", "绕过", "跳过", "允许", "regression", "risk", "leak", "bypass"]);
   const semanticPassed =
-    includesAny(body, ["明确", "确定", "clearly", "definitely", "is_zero"]) &&
-    includesAny(body, ["虚数", "imaginary"]) &&
-    includesAny(body, ["不确定", "unknown", "符号", "symbol"]);
+    includesAny(body, scoringHints.boundaryTerms.map((term) => term.toLowerCase())) &&
+    includesAny(body, ["边界", "语义", "明确", "确定", "不确定", "unknown", "contract", "boundary", "semantics"]);
   const testPassed =
     includesAny(body, ["测试", "test"]) &&
-    includesAny(body, ["point(i", "i, 2", "虚数坐标", "imaginary coordinate", "negative"]);
+    includesAny(body, scoringHints.testTerms.map((term) => term.toLowerCase()));
   const fixPassed =
-    includesAny(body, ["is_zero", "im(a).is_zero", "不要用 evaluate", "不能用 evaluate", "keep the guard"]) ||
-    (includesAny(body, ["保留", "继续执行", "不能跳过"]) && includesAny(body, ["虚数", "imaginary"]));
+    includesAny(body, scoringHints.fixTerms.map((term) => term.toLowerCase())) ||
+    (includesAny(body, ["保留", "继续执行", "不能跳过", "不要", "不能"]) &&
+      includesAny(body, scoringHints.coreRiskTerms.map((term) => term.toLowerCase())));
 
   const checks = [
     {
@@ -80,18 +79,18 @@ function scoreDraft(draft: ReviewDraft): Feedback {
       detail: mergePassed ? "你给出了 request changes 结论。" : "需要把结论写清楚：是否存在阻塞合并的问题。"
     },
     {
-      label: "核心回归",
+      label: "核心风险",
       passed: regressionPassed,
       detail: regressionPassed
-        ? "你指出了修复 happy path 时可能破坏旧约束。"
-        : "待补：需要说明是否存在未覆盖的反例或原有约束回归。"
+        ? "你指出了 AI patch 可能破坏原有约束或安全边界。"
+        : "待补：需要说明是否存在未覆盖的反例、回归或安全风险。"
     },
     {
       label: "语义边界",
       passed: semanticPassed,
       detail: semanticPassed
-        ? "你区分了不确定输入和明确非法输入。"
-        : "待补：需要解释补丁是否改变了输入分类语义。"
+        ? "你说明了原有行为契约和补丁改变的边界。"
+        : "待补：需要解释补丁是否改变了输入、权限、状态或数据语义。"
     },
     {
       label: "测试覆盖",
@@ -104,7 +103,7 @@ function scoreDraft(draft: ReviewDraft): Feedback {
       label: "修复建议",
       passed: fixPassed,
       detail: fixPassed
-        ? "你的修复方向能同时考虑误拒和旧约束。"
+        ? "你的修复方向能落到具体代码、配置或测试边界。"
         : "待补：修复建议需要说明如何更精确地判断边界，而不是只放宽条件。"
     }
   ];
@@ -117,13 +116,20 @@ function scoreDraft(draft: ReviewDraft): Feedback {
   return { score, checks };
 }
 
-export function ReviewSubmissionForm() {
+type ReviewSubmissionFormProps = {
+  challengeId: string;
+  referenceLinks: ReviewSourceLink[];
+  scoringHints: ReviewScoringHints;
+};
+
+export function ReviewSubmissionForm({ challengeId, referenceLinks, scoringHints }: ReviewSubmissionFormProps) {
   const [draft, setDraft] = useState<ReviewDraft>(initialDraft);
   const [submitted, setSubmitted] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const feedback = useMemo(() => scoreDraft(draft), [draft]);
+  const storageKey = `agentcode.review.${challengeId}.draft`;
+  const feedback = useMemo(() => scoreDraft(draft, scoringHints), [draft, scoringHints]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -140,7 +146,7 @@ export function ReviewSubmissionForm() {
     }, 0);
 
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [storageKey]);
 
   function updateDraft(field: keyof ReviewDraft, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -338,12 +344,11 @@ export function ReviewSubmissionForm() {
             <summary>查看参考解析</summary>
             <div className="reference-links">
               <span className="mono">提交后参考</span>
-              <a href="https://github.com/sympy/sympy/pull/22714" rel="noreferrer" target="_blank">
-                上游正确 PR
-              </a>
-              <a href="https://arxiv.org/abs/2503.15223" rel="noreferrer" target="_blank">
-                PatchDiff 论文分析
-              </a>
+              {referenceLinks.map((reference) => (
+                <a href={reference.url} key={reference.url} rel="noreferrer" target="_blank">
+                  {reference.label}
+                </a>
+              ))}
             </div>
           </details>
         </div>

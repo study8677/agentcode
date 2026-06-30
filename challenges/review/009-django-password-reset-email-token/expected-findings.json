@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "email-not-bound-to-reset-token",
+      "severity": "critical",
+      "summary": "The patch never includes the email value in the token hash.",
+      "expectedReasoning": "Changing a user email after issuing a reset token will not invalidate the old token, so the security bug remains.",
+      "acceptableFix": "Include the current email field value in _make_hash_value while preserving compatibility for users without email."
+    },
+    {
+      "id": "missing-email-change-test",
+      "severity": "high",
+      "summary": "The test only checks empty email does not crash.",
+      "expectedReasoning": "It does not reproduce the attack sequence: issue token, change email, then reject old token.",
+      "acceptableFix": "Add a test that changes email after token creation and expects check_token to return False."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

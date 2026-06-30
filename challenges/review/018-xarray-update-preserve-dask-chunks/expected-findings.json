@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "dask-data-eagerly-materialized",
+      "severity": "high",
+      "summary": "The patch calls np.asarray() on a DataArray, forcing dask-backed data to compute eagerly.",
+      "expectedReasoning": "Dataset.update should preserve chunking and lazy evaluation; materializing can be slow, memory-heavy, and semantically wrong.",
+      "acceptableFix": "Use DataArray.data when constructing the Variable, or warn/error without computing values."
+    },
+    {
+      "id": "test-forces-values-and-misses-chunks",
+      "severity": "medium",
+      "summary": "The test compares .values, which itself computes dask arrays.",
+      "expectedReasoning": "It cannot catch the chunk-preservation regression.",
+      "acceptableFix": "Assert the updated variable still has chunks and retains a dask-backed array."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "algorithm-and-key-downgrade",
+      "severity": "critical",
+      "summary": "The patch removes algorithm pinning and lets an undefined secret reach jwt.verify.",
+      "expectedReasoning": "Authentication must fail closed; depending on library version and token algorithm, this can enable alg:none or algorithm confusion paths.",
+      "acceptableFix": "Validate required keys at startup, keep algorithms pinned, and upgrade to a safe jsonwebtoken version."
+    },
+    {
+      "id": "missing-negative-auth-tests",
+      "severity": "high",
+      "summary": "The tests add a dev happy path but not malicious tokens.",
+      "expectedReasoning": "Auth changes need tests for alg:none, wrong algorithm, missing key, wrong issuer and wrong audience.",
+      "acceptableFix": "Add negative token tests and a startup configuration test."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

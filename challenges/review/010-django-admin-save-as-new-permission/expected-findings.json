@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "save-as-new-requires-add-permission",
+      "severity": "critical",
+      "summary": "The patch allows users with only change permission to access Save as new.",
+      "expectedReasoning": "Save as new creates a new object, so it must require add permission; otherwise admin users can exceed their authorization.",
+      "acceptableFix": "Require both add and change permission for this control and ensure the POST path enforces the same rule."
+    },
+    {
+      "id": "test-asserts-insecure-behavior",
+      "severity": "high",
+      "summary": "The added test expects the unsafe button to be visible.",
+      "expectedReasoning": "The correct regression test should assert users without add permission cannot see or perform Save as new.",
+      "acceptableFix": "Add UI and POST tests for change-only users and users with both permissions."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

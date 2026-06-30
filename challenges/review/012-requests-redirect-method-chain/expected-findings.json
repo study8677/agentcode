@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "redirect-chain-uses-original-method",
+      "severity": "high",
+      "summary": "The patch keeps using the original request as the base for every redirect hop.",
+      "expectedReasoning": "After a 303 changes POST to GET, a later 307 should preserve GET, not revive the original POST.",
+      "acceptableFix": "Update the current request after each hop and use that as the base for the next redirect."
+    },
+    {
+      "id": "missing-mixed-status-chain-test",
+      "severity": "medium",
+      "summary": "The test does not model POST -> 303 -> GET -> 307.",
+      "expectedReasoning": "Single-hop behavior can pass while the multi-hop chain remains wrong.",
+      "acceptableFix": "Add a redirect-chain test with 303 followed by 307 and assert the final method is GET."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

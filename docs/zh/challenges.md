@@ -1,49 +1,17 @@
-# 首批题库规划
+# 首批题库
 
 [返回首页](../../README.md)
 
-V0 先做 20 道高质量题：
+当前 V0 已落地 **20 道 Review Mode 题**。这些题都按第一题的质量标准组织：真实来源、可追溯链接、改编 AI diff、expected findings 和结构化 rubric。
 
-- 10 道 Task Mode。
-- 10 道 Review Mode。
-
-题目质量比数量更重要。每道题都应该有明确工程教训、真实失败模式、确定性资产和清晰讲解。
-
-## Task Mode 方向
-
-- 修复一个真实 bug。
-- 实现一个小 feature。
-- 优化慢查询。
-- 修复缓存不一致。
-- 补充缺失测试。
-- 重构一段复杂代码。
-- 修复异步任务重复执行。
-- 实现 rate limit。
-- 增加参数校验。
-- 修复分页边界问题。
-
-## Review Mode 方向
-
-- AI PR 看似修复了 bug，但漏掉边界条件。
-- AI PR 通过了现有测试，但破坏了兼容性。
-- AI PR 增加了功能，但缺少权限校验。
-- AI PR 测试很多，但没有测到核心风险。
-- AI PR 修复性能问题，但引入数据不一致。
-- AI PR 改动过大，风险不可控。
-- AI PR 逻辑重复、不可维护。
-- AI PR 修复了前端展示，但后端数据仍然错误。
-- AI PR 引入并发问题。
-- AI PR 是一个合格改动，用户需要判断可以合并。
+Task Mode 仍是下一阶段，需要 runner、starter repo、公开测试和隐藏测试接入后再上线；当前网站先把 AI PR 审核训练闭环做完整。
 
 ## 题库资产结构
 
-题目应该作为版本化内容放在仓库里，而不是只存在数据库中。
-
-当前结构：
+题目作为版本化内容放在仓库里，而不是只存在数据库中。
 
 ```text
 challenges/
-  README.md
   review/
     001-sympy-point2d-ai-patch/
       metadata.json
@@ -54,26 +22,44 @@ challenges/
       rubric.md
 ```
 
-Task Mode 后续会增加 `starter/`、`tests/visible/`、`tests/hidden/`、`validator.sh` 和 `solution.patch`。
+每道题必须能回答：
 
-`metadata.json` 定义题目元信息和来源：
+- 来源是否真实、可追溯。
+- AI 补丁或任务资产是否可复现。
+- 标准 finding 和评分规则是否可审查。
+- 用户到底在练安全判断、边界条件、测试质量、数据语义，还是兼容性判断。
 
-```json
-{
-  "id": "review-001-sympy-point2d-ai-patch",
-  "mode": "review",
-  "difficulty": "mid",
-  "source": {
-    "project": "SymPy",
-    "upstreamIssue": "https://github.com/sympy/sympy/issues/22684",
-    "upstreamOraclePullRequest": "https://github.com/sympy/sympy/pull/22714",
-    "analysisPaper": "https://arxiv.org/abs/2503.15223"
-  }
-}
-```
+## 当前 20 题
 
-这种结构让题目可 review、可迁移、可复现。
+- [001 这个 AI 修复能合并吗？SymPy Point2D 回归审查](../../challenges/review/001-sympy-point2d-ai-patch/README.zh.md)
+- [002 别信任内部请求头：Next.js Middleware 绕过审查](../../challenges/review/002-next-middleware-header-bypass/README.zh.md)
+- [003 Server Actions 相对重定向 SSRF 审查](../../challenges/review/003-next-server-actions-ssrf/README.zh.md)
+- [004 Axios baseURL 被绝对 URL 绕过审查](../../challenges/review/004-axios-baseurl-absolute-url/README.zh.md)
+- [005 Express 路由模式 ReDoS 审查](../../challenges/review/005-path-to-regexp-redos/README.zh.md)
+- [006 CookieJar 原型污染黑名单修复审查](../../challenges/review/006-tough-cookie-prototype-pollution/README.zh.md)
+- [007 JWT verify 未固定算法审查](../../challenges/review/007-jsonwebtoken-algorithm-pinning/README.zh.md)
+- [008 Django 用户名换行锚点审查](../../challenges/review/008-django-username-newline-anchor/README.zh.md)
+- [009 Django 密码重置 token 未绑定邮箱审查](../../challenges/review/009-django-password-reset-email-token/README.zh.md)
+- [010 Django Admin save_as_new 权限审查](../../challenges/review/010-django-admin-save-as-new-permission/README.zh.md)
+- [011 Django readonly JSONField 展示格式审查](../../challenges/review/011-django-jsonfield-readonly-display/README.zh.md)
+- [012 Requests 多跳重定向方法保持审查](../../challenges/review/012-requests-redirect-method-chain/README.zh.md)
+- [013 Requests urllib3 异常边界审查](../../challenges/review/013-requests-urllib3-exception-boundary/README.zh.md)
+- [014 pytest skipif 字符串条件缓存审查](../../challenges/review/014-pytest-skipif-cache-globals/README.zh.md)
+- [015 Sphinx autodoc 空 __all__ 审查](../../challenges/review/015-sphinx-empty-all/README.zh.md)
+- [016 Astropy 嵌套 CompoundModel separability 审查](../../challenges/review/016-astropy-separability-nested-model/README.zh.md)
+- [017 Astropy NDData mask 传播 None 分支审查](../../challenges/review/017-astropy-nddata-mask-propagation/README.zh.md)
+- [018 xarray update 保留 dask chunk 审查](../../challenges/review/018-xarray-update-preserve-dask-chunks/README.zh.md)
+- [019 scikit-learn SVM 空 support_vectors_ 审查](../../challenges/review/019-sklearn-svm-empty-support-vectors/README.zh.md)
+- [020 SymPy partitions 复用字典审查](../../challenges/review/020-sympy-partitions-dict-reuse/README.zh.md)
 
-## 已创建题目
+## 后续 Task Mode
 
-- [Review 001：这个 AI 修复能合并吗？SymPy Point2D 回归审查](../../challenges/review/001-sympy-point2d-ai-patch/README.zh.md)
+Task Mode 后续会增加：
+
+- `starter/`
+- `tests/visible/`
+- `tests/hidden/`
+- `validator.sh`
+- `solution.patch`
+
+在 runner 没接入前，不把 Task 题伪装成可练习题。当前网站和 GitHub 以 20 道 Review Mode 题作为可用题库。

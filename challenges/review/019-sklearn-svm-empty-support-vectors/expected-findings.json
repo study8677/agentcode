@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "empty-matrix-has-wrong-shape",
+      "severity": "high",
+      "summary": "The patch creates sp.csr_matrix([]), which does not preserve the expected (n_class, n_SV) shape.",
+      "expectedReasoning": "Avoiding ZeroDivisionError is not enough; downstream code expects dual_coef_ to have estimator-compatible dimensions.",
+      "acceptableFix": "Construct an empty sparse matrix with explicit shape (n_class, 0) and keep type/shape invariants intact."
+    },
+    {
+      "id": "test-checks-size-not-shape",
+      "severity": "medium",
+      "summary": "The test asserts only size == 0.",
+      "expectedReasoning": "Wrong-shaped empty matrices can still have size 0.",
+      "acceptableFix": "Assert dual_coef_.shape, support_vectors_.shape, and a post-fit prediction/attribute path."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

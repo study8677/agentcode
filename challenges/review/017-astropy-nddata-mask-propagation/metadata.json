@@ -1,0 +1,119 @@
+{
+  "id": "review-017-astropy-nddata-mask-propagation",
+  "order": 17,
+  "slug": "017-astropy-nddata-mask-propagation",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "Astropy NDData mask 传播 None 分支审查",
+    "en": "Astropy NDData mask propagation None-branch review"
+  },
+  "summary": {
+    "zh": "审查一个把 operand is None 改成 operand.mask is None 的补丁，它可能在 operand 本身为 None 时崩溃。",
+    "en": "Review an NDData mask patch that dereferences operand.mask before handling operand being None."
+  },
+  "language": "Python / Astropy",
+  "tags": [
+    "astropy",
+    "mask",
+    "none-handling",
+    "data-semantics",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "Astropy",
+    "benchmarkInstance": "astropy__astropy-14995",
+    "upstreamPullRequest": "https://github.com/astropy/astropy/pull/14995",
+    "references": [
+      {
+        "label": "Astropy Issue/PR",
+        "url": "https://github.com/astropy/astropy/pull/14995"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断 None 语义和属性访问顺序是否覆盖所有调用路径。",
+  "scenario": "AI PR 为了处理一个 operand 没有 mask 的情况，直接把分支条件改成 operand.mask is None。",
+  "context": [
+    "NDDataRef arithmetic 需要在一个或两个 operand 有 mask 时传播 mask。",
+    "operand 本身可能是 None，也可能存在但 operand.mask 是 None。",
+    "修复一个 None 相关 bug 时，分支顺序和属性访问安全非常重要。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "mask propagation",
+      "description": "运算后把输入数据的 mask 合并到结果。"
+    },
+    {
+      "term": "operand is None",
+      "description": "表示没有第二个 NDData operand 的调用路径。"
+    },
+    {
+      "term": "operand.mask is None",
+      "description": "表示第二个 operand 存在但没有 mask。"
+    },
+    {
+      "term": "deepcopy",
+      "description": "返回 mask 副本，避免结果引用输入对象状态。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "self 有 mask，operand 是 None",
+      "expected": "应复制 self.mask。",
+      "reviewQuestion": "PR 是否先访问 operand.mask 导致崩溃。"
+    },
+    {
+      "input": "self 无 mask，operand 有 mask",
+      "expected": "应复制 operand.mask。",
+      "reviewQuestion": "已有路径是否保留。"
+    },
+    {
+      "input": "两边都有 mask",
+      "expected": "应调用 handle_mask 合并。",
+      "reviewQuestion": "修复是否只影响 None 分支。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "operand",
+      "mask",
+      "None",
+      "AttributeError",
+      "崩溃"
+    ],
+    "boundaryTerms": [
+      "operand is None",
+      "operand.mask",
+      "branch",
+      "分支"
+    ],
+    "testTerms": [
+      "operand is None",
+      "mask None",
+      "AttributeError",
+      "copy"
+    ],
+    "fixTerms": [
+      "operand is None first",
+      "separate branch",
+      "deepcopy"
+    ]
+  }
+}

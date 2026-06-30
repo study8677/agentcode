@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "host-header-ssrf",
+      "severity": "critical",
+      "summary": "The patch checks the path but trusts the Host header when building the server-side fetch URL.",
+      "expectedReasoning": "An attacker can forge Host or forwarded host so the server fetches an internal or attacker-controlled origin.",
+      "acceptableFix": "Build the URL from a trusted canonical origin and enforce a host allowlist before any server-side fetch."
+    },
+    {
+      "id": "missing-forged-host-test",
+      "severity": "high",
+      "summary": "The tests do not cover attacker-controlled Host or X-Forwarded-Host.",
+      "expectedReasoning": "The absolute URL rejection test passes while the SSRF path remains exploitable.",
+      "acceptableFix": "Add tests for forged Host, forwarded host, scheme changes, and private IP origins."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

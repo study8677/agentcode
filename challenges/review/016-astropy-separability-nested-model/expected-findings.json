@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "nested-separability-structure-lost",
+      "severity": "high",
+      "summary": "The patch replaces the nested right-side separability matrix with all ones.",
+      "expectedReasoning": "It preserves shape but loses independence information, so nested models report false dependencies.",
+      "acceptableFix": "Copy the existing right matrix into the right block instead of filling it with 1."
+    },
+    {
+      "id": "shape-only-test-misses-semantics",
+      "severity": "medium",
+      "summary": "The test checks only matrix shape.",
+      "expectedReasoning": "A wrong all-ones block has the same shape as the correct matrix.",
+      "acceptableFix": "Assert exact boolean matrix values for nested left and right CompoundModels."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

@@ -1,0 +1,25 @@
+diff --git a/app/actions/redirect.ts b/app/actions/redirect.ts
+index 0b7f1a1..bad0003 100644
+--- a/app/actions/redirect.ts
++++ b/app/actions/redirect.ts
+@@ -1,11 +1,18 @@
+ import { headers } from 'next/headers'
+ 
+ export async function followActionRedirect(redirectUrl: string) {
++  if (!redirectUrl.startsWith('/')) {
++    throw new Error('Only relative redirects are allowed')
++  }
++
+   const h = headers()
+-  const target = new URL(redirectUrl, process.env.APP_ORIGIN)
++  const proto = h.get('x-forwarded-proto') ?? 'https'
++  const host = h.get('host')
++  const target = new URL(proto + '://' + host + redirectUrl)
+ 
+   const response = await fetch(target, { headers: { 'rsc-action': '1' } })
+   return response.text()
+ }
+@@ -12,3 +19,7 @@ test('rejects absolute redirect urls', async () => {
++test('allows relative redirect urls', async () => {
++  await expect(followActionRedirect('/dashboard')).resolves.toContain('ok')
++})

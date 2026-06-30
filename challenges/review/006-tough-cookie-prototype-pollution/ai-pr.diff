@@ -1,0 +1,22 @@
+diff --git a/lib/memstore.js b/lib/memstore.js
+index 793efb4..bad0006 100644
+--- a/lib/memstore.js
++++ b/lib/memstore.js
+@@ -12,7 +12,7 @@ function MemoryCookieStore() {
+   Store.call(this)
+   this.synchronous = true
+   this.idx = {}
+ }
+ 
+ MemoryCookieStore.prototype.putCookie = function putCookie(cookie, cb) {
++  if (cookie.domain === '__proto__') return cb(null)
+   if (!this.idx[cookie.domain]) this.idx[cookie.domain] = {}
+   if (!this.idx[cookie.domain][cookie.path]) this.idx[cookie.domain][cookie.path] = {}
+   this.idx[cookie.domain][cookie.path][cookie.key] = cookie
+@@ -1,3 +1,9 @@
++it('ignores __proto__ cookie domains', function(done) {
++  jar.setCookie('a=b; Domain=__proto__; Path=/', 'https://__proto__/', function() {
++    assert.equal({}.a, undefined)
++    done()
++  })
++})

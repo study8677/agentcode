@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "cache-key-misses-globals",
+      "severity": "high",
+      "summary": "The cache key is only the expression string and ignores the globals used to evaluate it.",
+      "expectedReasoning": "Two modules can both use skipif(\"skip\") with different skip variables, causing pytest to skip or run the wrong test.",
+      "acceptableFix": "Do not cache evaluated boolean results globally; cache compiled expressions only or include the evaluation context safely."
+    },
+    {
+      "id": "missing-two-module-test",
+      "severity": "medium",
+      "summary": "The test covers only one module and one value.",
+      "expectedReasoning": "It cannot catch cross-module cache pollution.",
+      "acceptableFix": "Add two modules with the same expression string but opposite global values."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

@@ -1,0 +1,124 @@
+{
+  "id": "review-013-requests-urllib3-exception-boundary",
+  "order": 13,
+  "slug": "013-requests-urllib3-exception-boundary",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "Requests urllib3 异常边界审查",
+    "en": "Requests urllib3 exception boundary review"
+  },
+  "summary": {
+    "zh": "审查一个只包装 ClosedPoolError 的补丁，它没有处理 urllib3 DecodeError 和 TimeoutError 穿透 Requests API。",
+    "en": "Review a patch that wraps only ClosedPoolError while leaving other urllib3 exceptions leaking through."
+  },
+  "language": "Python / Requests",
+  "tags": [
+    "requests",
+    "urllib3",
+    "exceptions",
+    "api-boundary",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "Requests",
+    "benchmarkInstance": "psf__requests-2674",
+    "upstreamPullRequest": "https://github.com/psf/requests/pull/2674",
+    "references": [
+      {
+        "label": "Requests Issue",
+        "url": "https://github.com/psf/requests/issues/2674"
+      },
+      {
+        "label": "上游 PR",
+        "url": "https://github.com/psf/requests/pull/2674"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断库边界是否完整包装下层依赖异常。",
+  "scenario": "AI PR 看到一次 ClosedPoolError 泄漏，于是只捕获这个异常并映射为 ConnectionError。",
+  "context": [
+    "Requests 对外承诺的是 requests.exceptions 体系。",
+    "真实问题包括 DecodeError、TimeoutError 等下层异常穿透。",
+    "只捕获一个具体异常会让 API 边界仍不稳定。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "API boundary",
+      "description": "库对外暴露的稳定错误类型和行为边界。"
+    },
+    {
+      "term": "exception wrapping",
+      "description": "把下层依赖异常转换成当前库自己的异常类型。"
+    },
+    {
+      "term": "DecodeError",
+      "description": "响应解码阶段可能来自 urllib3 的异常。"
+    },
+    {
+      "term": "TimeoutError",
+      "description": "连接池或代理超时可能来自 urllib3 的异常。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "ClosedPoolError",
+      "expected": "应转换成 Requests ConnectionError。",
+      "reviewQuestion": "PR 覆盖了一个具体异常。"
+    },
+    {
+      "input": "DecodeError",
+      "expected": "也不应穿透 urllib3 类型。",
+      "reviewQuestion": "是否仍泄漏下层异常。"
+    },
+    {
+      "input": "TimeoutError",
+      "expected": "应映射到 Requests timeout/connection 异常。",
+      "reviewQuestion": "异常映射是否一致。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "urllib3",
+      "exception",
+      "DecodeError",
+      "TimeoutError",
+      "ClosedPoolError"
+    ],
+    "boundaryTerms": [
+      "API boundary",
+      "wrap",
+      "requests.exceptions",
+      "下层"
+    ],
+    "testTerms": [
+      "DecodeError",
+      "TimeoutError",
+      "ProxyError",
+      "ConnectionError"
+    ],
+    "fixTerms": [
+      "wrap",
+      "map",
+      "Requests exception",
+      "异常映射"
+    ]
+  }
+}

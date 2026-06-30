@@ -1,0 +1,16 @@
+diff --git a/django/contrib/auth/validators.py b/django/contrib/auth/validators.py
+@@
+ class ASCIIUsernameValidator(validators.RegexValidator):
+     regex = r'^[\w.@+-]+$'
++
++    def __call__(self, value):
++        return super().__call__(value.strip())
+@@
+ class UnicodeUsernameValidator(validators.RegexValidator):
+     regex = r'^[\w.@+-]+$'
++
++    def __call__(self, value):
++        return super().__call__(value.strip())
+@@
++def test_trailing_newline(self):
++    self.assertIsNone(ASCIIUsernameValidator()('joe\n'))

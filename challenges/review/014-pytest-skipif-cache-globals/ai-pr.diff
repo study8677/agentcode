@@ -1,0 +1,17 @@
+diff --git a/src/_pytest/mark/evaluate.py b/src/_pytest/mark/evaluate.py
+@@
++evalcache = {}
++
++def cached_eval(expr: str, d: Dict[str, object]) -> Any:
++    if expr in evalcache:
++        return evalcache[expr]
++    exprcode = _pytest._code.compile(expr, mode='eval')
++    evalcache[expr] = eval(exprcode, d)
++    return evalcache[expr]
+@@
+-                        result = eval(expr, d)
++                        result = cached_eval(expr, d)
+@@
++def test_skipif_condition_is_cached(pytester):
++    pytester.makepyfile('import pytest\nskip=True\n@pytest.mark.skipif("skip")\ndef test_a(): pass')
++    pytester.runpytest().assert_outcomes(skipped=1)

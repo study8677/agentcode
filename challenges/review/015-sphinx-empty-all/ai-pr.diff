@@ -1,0 +1,10 @@
+diff --git a/sphinx/ext/autodoc/__init__.py b/sphinx/ext/autodoc/__init__.py
+@@
+-            if self.__all__ is None:
++            # Empty __all__ should behave like no __all__ so users still see docs.
++            if not self.__all__:
+                 return True, list(members.values())
+@@
++def test_empty_all_lists_members(app):
++    actual = do_autodoc(app, 'module', 'target.empty_all')
++    assert 'foo' in actual

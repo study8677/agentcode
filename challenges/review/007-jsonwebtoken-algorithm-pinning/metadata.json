@@ -1,0 +1,130 @@
+{
+  "id": "review-007-jsonwebtoken-algorithm-pinning",
+  "order": 7,
+  "slug": "007-jsonwebtoken-algorithm-pinning",
+  "mode": "review",
+  "difficulty": "senior",
+  "status": "ready",
+  "title": {
+    "zh": "JWT verify 未固定算法审查",
+    "en": "JWT verification without algorithm pinning review"
+  },
+  "summary": {
+    "zh": "审查一个让测试通过的认证补丁，它把 key 变成可空配置并移除了 algorithms 白名单。",
+    "en": "Review an auth patch that makes the key optional and removes algorithm pinning."
+  },
+  "language": "JavaScript / Auth Security",
+  "tags": [
+    "jwt",
+    "auth",
+    "security",
+    "algorithm-confusion",
+    "configuration"
+  ],
+  "source": {
+    "project": "node-jsonwebtoken",
+    "securityAdvisory": "GHSA-qwph-4952-7xr6",
+    "references": [
+      {
+        "label": "jsonwebtoken Advisory",
+        "url": "https://github.com/auth0/node-jsonwebtoken/security/advisories/GHSA-qwph-4952-7xr6"
+      },
+      {
+        "label": "CVE-2022-23540",
+        "url": "https://nvd.nist.gov/vuln/detail/cve-2022-23540"
+      },
+      {
+        "label": "Auth0 Bulletin",
+        "url": "https://auth0.com/docs/secure/security-guidance/security-bulletins/2022-12-21-jsonwebtoken"
+      },
+      {
+        "label": "修复 commit",
+        "url": "https://github.com/auth0/node-jsonwebtoken/commit/e1fa9dcc12054a8681db4e6373da1b30cf7016e3"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "识别认证代码里“配置缺失也继续运行”和“算法不固定”的组合风险。",
+  "scenario": "AI PR 为了同时支持本地开发和生产，把 jwt.verify 的 key 改成 process.env.JWT_SECRET || undefined，并删除 algorithms 限制。",
+  "context": [
+    "JWT verify 必须明确预期算法和密钥类型，否则不同库版本或配置下可能出现 alg:none、HS/RS 混淆等风险。",
+    "认证配置缺失时应该启动失败，而不是在请求路径里降级为 undefined。",
+    "安全库升级和调用侧 defense in depth 都重要。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "algorithm pinning",
+      "description": "显式限定允许的 JWT 签名算法，例如 RS256。"
+    },
+    {
+      "term": "alg:none",
+      "description": "无签名算法，在历史漏洞和误配置中可能导致认证绕过。"
+    },
+    {
+      "term": "fail closed",
+      "description": "配置缺失或不确定时拒绝服务，而不是放行。"
+    },
+    {
+      "term": "key confusion",
+      "description": "把非预期类型的 key 用在错误算法上。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "生产 RS256 token",
+      "expected": "必须只接受指定 issuer/audience/algorithm。",
+      "reviewQuestion": "PR 是否保留 algorithms 白名单。"
+    },
+    {
+      "input": "JWT_SECRET 缺失",
+      "expected": "应用应启动失败或拒绝请求。",
+      "reviewQuestion": "undefined key 是否进入 verify。"
+    },
+    {
+      "input": "alg:none 或 HS/RS 混淆 token",
+      "expected": "必须拒绝。",
+      "reviewQuestion": "测试是否覆盖负向 token。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "jwt",
+      "algorithm",
+      "alg:none",
+      "secret",
+      "auth"
+    ],
+    "boundaryTerms": [
+      "fail closed",
+      "algorithms",
+      "rs256",
+      "undefined",
+      "配置"
+    ],
+    "testTerms": [
+      "alg:none",
+      "wrong algorithm",
+      "missing key",
+      "issuer",
+      "audience"
+    ],
+    "fixTerms": [
+      "algorithms",
+      "pin",
+      "startup",
+      "upgrade",
+      "RS256"
+    ]
+  }
+}

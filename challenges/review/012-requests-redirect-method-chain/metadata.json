@@ -1,0 +1,125 @@
+{
+  "id": "review-012-requests-redirect-method-chain",
+  "order": 12,
+  "slug": "012-requests-redirect-method-chain",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "Requests 多跳重定向方法保持审查",
+    "en": "Requests redirect method chain review"
+  },
+  "summary": {
+    "zh": "审查一个每轮都复制原始请求的补丁，它会在 303 后遇到 307 时错误恢复 POST。",
+    "en": "Review a redirect patch that keeps copying the original request and restores POST after a 303 then 307 chain."
+  },
+  "language": "Python / Requests",
+  "tags": [
+    "requests",
+    "http",
+    "redirect",
+    "method",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "Requests",
+    "benchmarkInstance": "psf__requests-1963",
+    "upstreamPullRequest": "https://github.com/psf/requests/pull/1963",
+    "references": [
+      {
+        "label": "Requests Issue",
+        "url": "https://github.com/psf/requests/issues/1963"
+      },
+      {
+        "label": "上游 PR",
+        "url": "https://github.com/psf/requests/pull/1963"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断 HTTP redirect 状态码和请求状态转移是否逐跳保持。",
+  "scenario": "AI PR 为了避免 mutation，把每个 redirect hop 都从原始 request copy，却没有更新当前 hop 的 method。",
+  "context": [
+    "303 See Other 会把 POST 转成 GET。",
+    "307/308 应保持当前请求方法。",
+    "多跳重定向中，下一跳的当前方法可能已经不是最初方法。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "303",
+      "description": "把后续请求改成 GET。"
+    },
+    {
+      "term": "307",
+      "description": "保持当前请求方法。"
+    },
+    {
+      "term": "PreparedRequest",
+      "description": "Requests 中准备好发送的请求对象。"
+    },
+    {
+      "term": "redirect chain",
+      "description": "多跳跳转流程。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "POST -> 303 -> GET",
+      "expected": "第二跳应变成 GET。",
+      "reviewQuestion": "PR 是否正确更新当前 request。"
+    },
+    {
+      "input": "GET -> 307",
+      "expected": "应继续保持 GET。",
+      "reviewQuestion": "是否错误恢复原始 POST。"
+    },
+    {
+      "input": "单跳 redirect",
+      "expected": "普通场景不应回归。",
+      "reviewQuestion": "测试是否覆盖多跳。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "redirect",
+      "303",
+      "307",
+      "method",
+      "POST"
+    ],
+    "boundaryTerms": [
+      "current request",
+      "original",
+      "hop",
+      "链路"
+    ],
+    "testTerms": [
+      "303",
+      "307",
+      "GET",
+      "POST",
+      "chain"
+    ],
+    "fixTerms": [
+      "req = prepared_request",
+      "current",
+      "next hop",
+      "更新"
+    ]
+  }
+}

@@ -9,8 +9,8 @@ type DailyChallengeCardProps = {
 };
 
 export function DailyChallengeCard({ stats, labels }: DailyChallengeCardProps) {
-  const taskPercent = (stats.taskProgress / stats.taskMode) * 100;
-  const reviewPercent = (stats.reviewProgress / stats.reviewMode) * 100;
+  const taskPercent = stats.taskMode === 0 ? 0 : (stats.taskProgress / stats.taskMode) * 100;
+  const reviewPercent = stats.reviewMode === 0 ? 0 : (stats.reviewProgress / stats.reviewMode) * 100;
 
   return (
     <section className="card plan-card">
@@ -21,7 +21,7 @@ export function DailyChallengeCard({ stats, labels }: DailyChallengeCardProps) {
           <header>
             <span>Task Mode</span>
             <strong>
-              {stats.taskProgress} / {stats.taskMode}
+              {stats.taskMode === 0 ? "planned" : `${stats.taskProgress} / ${stats.taskMode}`}
             </strong>
           </header>
           <div className="bar">

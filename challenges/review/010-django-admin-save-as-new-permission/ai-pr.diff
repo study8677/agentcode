@@ -1,0 +1,12 @@
+diff --git a/django/contrib/admin/templatetags/admin_modify.py b/django/contrib/admin/templatetags/admin_modify.py
+@@
+             "show_save_as_new": not is_popup
+-            and has_add_permission
+             and has_change_permission
+             and change
+             and save_as,
+@@
++def test_save_as_new_with_change_permission(self):
++    context = self.make_context(has_change_permission=True, has_add_permission=False)
++    row = submit_row(context)
++    self.assertIs(row['show_save_as_new'], True)

@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "size-true-still-reuses-dicts",
+      "severity": "high",
+      "summary": "The patch copies dictionaries only for size=False yields.",
+      "expectedReasoning": "Users of size=True still receive tuples containing the same mutable dictionary object, so saved results are corrupted by later iterations.",
+      "acceptableFix": "Return ms.copy() in every yield branch that exposes the partition dictionary, including size=True."
+    },
+    {
+      "id": "test-misses-object-independence-for-size-mode",
+      "severity": "medium",
+      "summary": "The added test checks only sizes, not dictionary object identity or contents over time.",
+      "expectedReasoning": "The regression can survive while sizes remain correct.",
+      "acceptableFix": "Assert unique dict ids and stable copied dict contents for both size modes."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

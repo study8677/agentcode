@@ -1,0 +1,13 @@
+diff --git a/requests/adapters.py b/requests/adapters.py
+@@
++from .packages.urllib3.exceptions import ClosedPoolError
+@@
++        except ClosedPoolError as e:
++            raise ConnectionError(e, request=request)
++
+         except _ProxyError as e:
+             raise ProxyError(e)
+@@
++def test_closed_pool_error_is_wrapped():
++    with pytest.raises(ConnectionError):
++        raise_wrapped_closed_pool_error()

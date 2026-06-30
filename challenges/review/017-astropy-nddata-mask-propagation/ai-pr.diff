@@ -1,0 +1,9 @@
+diff --git a/astropy/nddata/mixins/ndarithmetic.py b/astropy/nddata/mixins/ndarithmetic.py
+@@
+-        elif operand is None:
++        elif operand.mask is None:
+             return deepcopy(self.mask)
+@@
++def test_operand_mask_none():
++    result = data_with_mask.add(data_without_mask, handle_mask=np.bitwise_or)
++    assert result.mask is not data_with_mask.mask

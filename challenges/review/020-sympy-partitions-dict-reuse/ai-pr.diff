@@ -1,0 +1,17 @@
+diff --git a/sympy/utilities/iterables.py b/sympy/utilities/iterables.py
+@@
+     if size:
+         yield sum(ms.values()), ms
+     else:
+-        yield ms
++        yield ms.copy()
+@@
+         if size:
+             yield sum(ms.values()), ms
+         else:
+-            yield ms
++            yield ms.copy()
+@@
++def test_partitions_size_values():
++    result = list(partitions(6, k=2, size=True))
++    assert [size for size, _ in result] == [3, 4, 5, 6]

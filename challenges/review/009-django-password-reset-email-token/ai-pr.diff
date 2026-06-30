@@ -1,0 +1,11 @@
+diff --git a/django/contrib/auth/tokens.py b/django/contrib/auth/tokens.py
+@@
+         login_timestamp = '' if user.last_login is None else user.last_login.replace(microsecond=0, tzinfo=None)
++        if not getattr(user, user.get_email_field_name(), ''):
++            return str(user.pk) + user.password + str(login_timestamp) + str(timestamp)
+         return str(user.pk) + user.password + str(login_timestamp) + str(timestamp)
+@@
++def test_empty_email_does_not_crash(self):
++    user = User.objects.create_user('joe', email='')
++    token = default_token_generator.make_token(user)
++    self.assertIs(default_token_generator.check_token(user, token), True)

@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "empty-all-is-explicit-empty-export",
+      "severity": "medium",
+      "summary": "The patch treats __all__ = [] as if __all__ were absent.",
+      "expectedReasoning": "Users who explicitly publish an empty API still get internal members documented, contradicting Python export semantics.",
+      "acceptableFix": "Check self.__all__ is None for the implicit path; treat an empty list as an explicit list with no members."
+    },
+    {
+      "id": "test-locks-in-wrong-contract",
+      "severity": "medium",
+      "summary": "The added test expects members to appear for an empty __all__.",
+      "expectedReasoning": "It should assert that no members are documented.",
+      "acceptableFix": "Add separate tests for absent __all__, empty __all__, and a populated __all__."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

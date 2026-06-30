@@ -1,0 +1,124 @@
+{
+  "id": "review-009-django-password-reset-email-token",
+  "order": 9,
+  "slug": "009-django-password-reset-email-token",
+  "mode": "review",
+  "difficulty": "senior",
+  "status": "ready",
+  "title": {
+    "zh": "Django 密码重置 token 未绑定邮箱审查",
+    "en": "Django password reset token email binding review"
+  },
+  "summary": {
+    "zh": "审查一个只检查当前邮箱非空的补丁，它没有让旧密码重置 token 在邮箱变更后失效。",
+    "en": "Review a password reset patch that checks email presence but does not bind tokens to email changes."
+  },
+  "language": "Python / Django Security",
+  "tags": [
+    "django",
+    "auth",
+    "password-reset",
+    "security",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "Django",
+    "benchmarkInstance": "django__django-13551",
+    "upstreamPullRequest": "https://github.com/django/django/pull/13551",
+    "references": [
+      {
+        "label": "Django Ticket",
+        "url": "https://code.djangoproject.com/ticket/32130"
+      },
+      {
+        "label": "上游 PR",
+        "url": "https://github.com/django/django/pull/13551"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断 token 哈希材料是否覆盖应使 token 失效的用户状态。",
+  "scenario": "AI PR 试图修复邮箱变更后旧 password reset token 仍有效的问题，但只在生成 token 时要求 user.email 非空。",
+  "context": [
+    "密码重置 token 应在用户密码、last_login、时间戳等关键状态变化后失效。",
+    "真实问题是用户申请重置后更改邮箱，旧邮件里的 token 仍可使用。",
+    "只检查邮箱是否存在，并不会让邮箱值参与 token 哈希。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "PasswordResetTokenGenerator",
+      "description": "Django 用来生成和校验密码重置 token 的组件。"
+    },
+    {
+      "term": "hash material",
+      "description": "参与 token 签名或哈希的用户状态。"
+    },
+    {
+      "term": "token invalidation",
+      "description": "相关状态变化后，旧 token 必须不再通过校验。"
+    },
+    {
+      "term": "fail closed",
+      "description": "状态不符合安全预期时拒绝。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "申请 reset 后更改邮箱",
+      "expected": "旧邮箱里的 token 应失效。",
+      "reviewQuestion": "PR 是否让 email 值进入 token hash。"
+    },
+    {
+      "input": "用户没有邮箱字段",
+      "expected": "仍应兼容自定义 user model。",
+      "reviewQuestion": "修复是否安全处理 get_email_field_name。"
+    },
+    {
+      "input": "正常 reset 流程",
+      "expected": "合法 token 仍可在状态未变时使用。",
+      "reviewQuestion": "修复是否破坏正常路径。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "email",
+      "password reset",
+      "token",
+      "失效",
+      "hash"
+    ],
+    "boundaryTerms": [
+      "hash material",
+      "state",
+      "绑定",
+      "用户状态"
+    ],
+    "testTerms": [
+      "change email",
+      "old token",
+      "check_token",
+      "False"
+    ],
+    "fixTerms": [
+      "include email",
+      "get_email_field_name",
+      "hash value",
+      "绑定"
+    ]
+  }
+}

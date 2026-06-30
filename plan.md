@@ -6,10 +6,10 @@
 
 ## V0 目标
 
-先做出一个可以证明方向的最小版本：
+先做出一个可以证明方向的最小版本。当前 V0 先把 Review Mode 做成可用闭环：
 
-- 10 道 Task Mode 题。
-- 10 道 Review Mode 题。
+- 20 道 Review Mode 题。
+- Task Mode 在 runner 和测试体系接入后上线。
 - 用户可以查看题目、提交结果、获得可信评估。
 - 平台能证明：AI 时代的工程训练不应该只靠传统算法刷题。
 
@@ -24,21 +24,21 @@
 
 ## 阶段 1：产品原型
 
-- [ ] 题目列表页。
+- [x] 题目列表页。
 - [ ] Task Mode 题目详情页。
-- [ ] Review Mode 题目详情页。
-- [ ] diff 阅读界面。
+- [x] Review Mode 题目详情页。
+- [x] diff 阅读界面。
 - [ ] patch / PR URL 提交入口。
 - [ ] 结果页：展示得分、日志、失败原因和建议。
 
 ## 阶段 2：题库资产格式
 
-- [ ] 定义 `content/challenges/` 目录规范。
-- [ ] 定义 `challenge.yaml` schema。
+- [x] 定义 `challenges/review/` 目录规范。
+- [x] 定义 `metadata.json` / `expected-findings.json` / `rubric.md` 资产格式。
 - [ ] 定义 Task Mode 题目模板。
-- [ ] 定义 Review Mode 题目模板。
+- [x] 定义 Review Mode 题目模板。
 - [ ] 准备 1 道 Task Mode 样题。
-- [ ] 准备 1 道 Review Mode 样题。
+- [x] 准备 20 道 Review Mode 题。
 
 ## 阶段 3：Task Mode 评估 runner
 
@@ -61,10 +61,10 @@
 
 ## 阶段 5：首批 20 题
 
-- [ ] 10 道 Task Mode。
-- [ ] 10 道 Review Mode。
-- [ ] 每道题都有题面、资产、评估方式、参考答案和讲解。
-- [ ] 每道题都要体现一个真实工程判断点。
+- [ ] Task Mode 首批题（runner 接入后再定正式数量）。
+- [x] 20 道 Review Mode。
+- [x] Review Mode 每道题都有题面、资产、评估方式、参考答案和讲解。
+- [x] Review Mode 每道题都体现一个真实工程判断点。
 
 ## V0 不做
 
@@ -81,7 +81,6 @@
 
 1. 固定文档结构和产品叙事。
 2. 定义题库资产格式。
-3. 做出第一道 Task Mode 样题。
-4. 做出第一道 Review Mode 样题。
-5. 再开始搭建产品页面和 runner。
-
+3. 接入 Review Mode 提交记录和更完整的评分结果。
+4. 做出第一道 Task Mode 样题。
+5. 再开始搭建 runner。

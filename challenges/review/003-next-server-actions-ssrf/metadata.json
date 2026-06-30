@@ -1,0 +1,129 @@
+{
+  "id": "review-003-next-server-actions-ssrf",
+  "order": 3,
+  "slug": "003-next-server-actions-ssrf",
+  "mode": "review",
+  "difficulty": "senior",
+  "status": "ready",
+  "title": {
+    "zh": "Server Actions 相对重定向 SSRF 审查",
+    "en": "Server Actions relative redirect SSRF review"
+  },
+  "summary": {
+    "zh": "审查一个只检查 redirectUrl 以 / 开头的补丁，它仍然可能信任攻击者控制的 Host 触发 SSRF。",
+    "en": "Review a patch that checks only relative redirect paths while still trusting attacker-controlled Host headers."
+  },
+  "language": "TypeScript / Next.js Security",
+  "tags": [
+    "nextjs",
+    "security",
+    "ssrf",
+    "server-actions",
+    "host-header"
+  ],
+  "source": {
+    "project": "Next.js",
+    "securityAdvisory": "GHSA-fr5h-rqp8-mj6g",
+    "references": [
+      {
+        "label": "Next.js Advisory",
+        "url": "https://github.com/vercel/next.js/security/advisories/GHSA-fr5h-rqp8-mj6g"
+      },
+      {
+        "label": "修复 PR",
+        "url": "https://github.com/vercel/next.js/pull/62561"
+      },
+      {
+        "label": "修复 commit",
+        "url": "https://github.com/vercel/next.js/commit/8f7a6ca7d21a97bc9f7a1bbe10427b5ad74b9085"
+      },
+      {
+        "label": "Assetnote Analysis",
+        "url": "https://www.assetnote.io/resources/research/digging-for-ssrf-in-nextjs-apps/"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "识别相对 URL 检查和 Host header 信任是两个不同问题。",
+  "scenario": "AI PR 认为 redirectUrl 只要 startsWith(\"/\") 就是安全相对路径，然后用请求 Host 拼接出服务端 fetch URL。",
+  "context": [
+    "Server Actions 在服务端执行，某些重定向和转发逻辑会触发服务器主动请求目标 URL。",
+    "redirectUrl 是相对路径并不代表最终 origin 可信，因为 req.headers.host 可能来自客户端或反向代理传递。",
+    "SSRF 风险通常出现在“路径看起来安全，但 host/origin 由攻击者控制”的组合里。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "SSRF",
+      "description": "Server-Side Request Forgery，攻击者诱导服务器请求内网或非预期地址。"
+    },
+    {
+      "term": "Host header",
+      "description": "HTTP 请求头中的主机名，在很多部署里可被客户端影响。"
+    },
+    {
+      "term": "canonical host",
+      "description": "服务端配置的可信公开域名，而不是从请求里直接读取的 host。"
+    },
+    {
+      "term": "relative redirect",
+      "description": "只描述路径的跳转目标，仍需绑定可信 origin。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "Host: 127.0.0.1:8080 + redirectUrl=/admin",
+      "expected": "服务端不能请求攻击者指定 host。",
+      "reviewQuestion": "PR 是否把 host header 当作可信 origin。"
+    },
+    {
+      "input": "正常站内 redirect",
+      "expected": "应使用配置中的 canonical host。",
+      "reviewQuestion": "修复是否仍支持合法相对路径。"
+    },
+    {
+      "input": "反代部署",
+      "expected": "只能信任显式 allowlist 的 forwarded host。",
+      "reviewQuestion": "PR 是否区分部署层可信头。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "host",
+      "ssrf",
+      "server action",
+      "fetch",
+      "内网"
+    ],
+    "boundaryTerms": [
+      "canonical",
+      "origin",
+      "host header",
+      "可信",
+      "allowlist"
+    ],
+    "testTerms": [
+      "host",
+      "x-forwarded-host",
+      "127.0.0.1",
+      "private ip"
+    ],
+    "fixTerms": [
+      "canonical",
+      "allowlist",
+      "trusted origin",
+      "配置",
+      "白名单"
+    ]
+  }
+}

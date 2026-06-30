@@ -1,0 +1,124 @@
+{
+  "id": "review-015-sphinx-empty-all",
+  "order": 15,
+  "slug": "015-sphinx-empty-all",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "Sphinx autodoc 空 __all__ 审查",
+    "en": "Sphinx autodoc empty __all__ review"
+  },
+  "summary": {
+    "zh": "审查一个把空 __all__ 当成未设置的补丁，它会继续把本应隐藏的模块成员全部文档化。",
+    "en": "Review an autodoc patch that treats an empty __all__ like no __all__ and documents members that should be hidden."
+  },
+  "language": "Python / Sphinx",
+  "tags": [
+    "sphinx",
+    "autodoc",
+    "api-docs",
+    "__all__",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "Sphinx",
+    "benchmarkInstance": "sphinx-doc__sphinx-8595",
+    "upstreamPullRequest": "https://github.com/sphinx-doc/sphinx/pull/8595",
+    "references": [
+      {
+        "label": "Sphinx Issue",
+        "url": "https://github.com/sphinx-doc/sphinx/issues/8595"
+      },
+      {
+        "label": "上游 PR",
+        "url": "https://github.com/sphinx-doc/sphinx/pull/8595"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "区分 None 和空集合在 API 契约里的不同含义。",
+  "scenario": "AI PR 认为 not self.__all__ 时都应该走隐式成员发现，导致 __all__ = [] 被当成没有声明。",
+  "context": [
+    "在 Python 模块中，__all__ 明确声明了对外导出的成员。",
+    "__all__ = [] 的含义是没有公开成员，不等同于没有定义 __all__。",
+    "Sphinx autodoc 需要尊重用户显式声明，即使声明为空。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "__all__",
+      "description": "Python 模块显式导出列表。"
+    },
+    {
+      "term": "None vs []",
+      "description": "None 表示未设置，空列表表示已设置但为空。"
+    },
+    {
+      "term": "autodoc",
+      "description": "Sphinx 根据 Python 对象生成文档的扩展。"
+    },
+    {
+      "term": "implicit members",
+      "description": "没有 __all__ 时根据模块成员自动推断。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "__all__ 未定义",
+      "expected": "可以按隐式成员规则生成文档。",
+      "reviewQuestion": "默认路径是否保留。"
+    },
+    {
+      "input": "__all__ = []",
+      "expected": "不应展示 foo/bar/baz。",
+      "reviewQuestion": "PR 是否把空列表当成未定义。"
+    },
+    {
+      "input": "__all__ = [\"foo\"]",
+      "expected": "只展示 foo。",
+      "reviewQuestion": "显式导出列表是否仍被尊重。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "__all__",
+      "empty",
+      "members",
+      "autodoc",
+      "空"
+    ],
+    "boundaryTerms": [
+      "None",
+      "[]",
+      "explicit",
+      "implicit",
+      "导出"
+    ],
+    "testTerms": [
+      "empty __all__",
+      "absent",
+      "foo",
+      "no members"
+    ],
+    "fixTerms": [
+      "is None",
+      "explicit empty",
+      "respect __all__"
+    ]
+  }
+}

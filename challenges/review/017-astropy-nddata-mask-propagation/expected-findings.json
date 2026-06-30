@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "operand-none-path-crashes",
+      "severity": "high",
+      "summary": "The patch reads operand.mask before proving operand is not None.",
+      "expectedReasoning": "Any call path where operand itself is None will raise AttributeError instead of copying self.mask.",
+      "acceptableFix": "Handle operand is None before checking operand.mask, and keep separate branches for missing operand vs operand with no mask."
+    },
+    {
+      "id": "missing-operand-none-test",
+      "severity": "medium",
+      "summary": "The test covers an operand with mask None but not operand being None.",
+      "expectedReasoning": "It misses the path broken by the condition rewrite.",
+      "acceptableFix": "Add tests for operand is None, self.mask is None, operand.mask is None, and both masks present."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

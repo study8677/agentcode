@@ -1,0 +1,21 @@
+diff --git a/middleware.ts b/middleware.ts
+index 8a31fe1..bad0002 100644
+--- a/middleware.ts
++++ b/middleware.ts
+@@ -7,6 +7,12 @@ const protectedRoutes = ['/admin', '/billing', '/settings']
+ 
+ export function middleware(req: NextRequest) {
++  // Avoid running auth middleware for framework subrequests.
++  if (req.headers.get('x-middleware-subrequest')) {
++    return NextResponse.next()
++  }
++
+   const pathname = req.nextUrl.pathname
+   const requiresAuth = protectedRoutes.some((route) => pathname.startsWith(route))
+@@ -31,3 +37,10 @@ test('redirects anonymous users away from admin pages', async () => {
++test('does not recurse on middleware subrequests', async () => {
++  const req = makeRequest('/admin')
++  req.headers.set('x-middleware-subrequest', 'middleware')
++  const res = middleware(req)
++  expect(res.status).toBe(200)
++})

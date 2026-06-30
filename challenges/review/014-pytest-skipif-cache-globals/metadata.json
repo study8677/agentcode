@@ -1,0 +1,125 @@
+{
+  "id": "review-014-pytest-skipif-cache-globals",
+  "order": 14,
+  "slug": "014-pytest-skipif-cache-globals",
+  "mode": "review",
+  "difficulty": "senior",
+  "status": "ready",
+  "title": {
+    "zh": "pytest skipif 字符串条件缓存审查",
+    "en": "pytest skipif string-condition cache review"
+  },
+  "summary": {
+    "zh": "审查一个按表达式字符串缓存 skipif/xfail 的补丁，它忽略了不同模块 globals 会改变求值结果。",
+    "en": "Review a skipif cache patch that keys only by expression string and ignores per-module globals."
+  },
+  "language": "Python / pytest",
+  "tags": [
+    "pytest",
+    "cache",
+    "globals",
+    "skipif",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "pytest",
+    "benchmarkInstance": "pytest-dev__pytest-7373",
+    "upstreamPullRequest": "https://github.com/pytest-dev/pytest/pull/7373",
+    "references": [
+      {
+        "label": "pytest Issue",
+        "url": "https://github.com/pytest-dev/pytest/issues/7373"
+      },
+      {
+        "label": "上游 PR",
+        "url": "https://github.com/pytest-dev/pytest/pull/7373"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断缓存 key 是否包含所有影响结果的上下文。",
+  "scenario": "AI PR 为了提升 skipif(\"condition\") 性能，把表达式字符串的求值结果缓存到全局 config。",
+  "context": [
+    "pytest 支持 skipif/xfail 使用字符串条件，条件在测试模块 globals 中求值。",
+    "相同字符串在不同模块中可能引用不同变量。",
+    "缓存只按字符串命中，会把第一个模块的结果错误复用到第二个模块。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "skipif",
+      "description": "pytest 标记，条件为真时跳过测试。"
+    },
+    {
+      "term": "xfail",
+      "description": "预期失败标记。"
+    },
+    {
+      "term": "globals",
+      "description": "表达式求值所用的模块全局变量字典。"
+    },
+    {
+      "term": "cache key",
+      "description": "缓存必须包含所有影响结果的输入。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "module_a: skip=True",
+      "expected": "skipif(\"skip\") 应跳过。",
+      "reviewQuestion": "缓存是否记录了模块上下文。"
+    },
+    {
+      "input": "module_b: skip=False",
+      "expected": "同样表达式应不跳过。",
+      "reviewQuestion": "是否错误复用 module_a 结果。"
+    },
+    {
+      "input": "同模块重复求值",
+      "expected": "可以安全复用。",
+      "reviewQuestion": "优化是否只在安全范围内生效。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "skipif",
+      "cache",
+      "globals",
+      "xfail",
+      "condition"
+    ],
+    "boundaryTerms": [
+      "context",
+      "module",
+      "cache key",
+      "globals",
+      "上下文"
+    ],
+    "testTerms": [
+      "two modules",
+      "skip=True",
+      "skip=False",
+      "same expression"
+    ],
+    "fixTerms": [
+      "compiled",
+      "context",
+      "no global result cache",
+      "cache key"
+    ]
+  }
+}

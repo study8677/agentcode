@@ -1,0 +1,121 @@
+{
+  "id": "review-020-sympy-partitions-dict-reuse",
+  "order": 20,
+  "slug": "020-sympy-partitions-dict-reuse",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "SymPy partitions 复用字典审查",
+    "en": "SymPy partitions dictionary reuse review"
+  },
+  "summary": {
+    "zh": "审查一个只在 size=False 时 copy 的补丁，它仍让 size=True 返回的分区字典被后续迭代篡改。",
+    "en": "Review a partitions patch that copies only one yield mode while leaving size=True dictionaries reused."
+  },
+  "language": "Python / SymPy",
+  "tags": [
+    "sympy",
+    "iterator",
+    "mutation",
+    "api-contract",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "SymPy",
+    "benchmarkInstance": "sympy__sympy-20154",
+    "upstreamPullRequest": "https://github.com/sympy/sympy/pull/20154",
+    "references": [
+      {
+        "label": "SymPy Issue/PR",
+        "url": "https://github.com/sympy/sympy/pull/20154"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "识别迭代器可变对象复用在不同输出模式下的 API 回归。",
+  "scenario": "AI PR 修复 list(partitions()) 结果重复的问题，但只在普通 yield 路径返回 ms.copy()。",
+  "context": [
+    "partitions() 生成整数分区，旧实现复用同一个字典对象，导致用户收集列表时看到所有元素变成最终状态。",
+    "函数有 size=False 和 size=True 两种返回模式；size=True 返回 (size, dict)。",
+    "只修一个 yield 分支会让另一种模式继续暴露同一个可变 dict。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "mutable reuse",
+      "description": "多次 yield 同一个可变对象，后续修改会影响之前结果。"
+    },
+    {
+      "term": "iterator contract",
+      "description": "生成器返回值应能被用户安全保存和比较。"
+    },
+    {
+      "term": "size=True",
+      "description": "partitions() 返回 (分区大小, 分区字典) 的模式。"
+    },
+    {
+      "term": "shallow copy",
+      "description": "复制字典本身，避免共享同一个可变对象。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "list(partitions(6))",
+      "expected": "列表中每个 dict 应独立。",
+      "reviewQuestion": "PR 是否修复普通模式。"
+    },
+    {
+      "input": "list(partitions(6, size=True))",
+      "expected": "tuple 里的 dict 也应独立。",
+      "reviewQuestion": "size=True 分支是否仍复用。"
+    },
+    {
+      "input": "性能和文档",
+      "expected": "行为改变应体现在 docstring。",
+      "reviewQuestion": "PR 是否同步说明新契约。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "partitions",
+      "copy",
+      "size=True",
+      "mutable",
+      "dict"
+    ],
+    "boundaryTerms": [
+      "iterator",
+      "yield",
+      "same object",
+      "可变",
+      "模式"
+    ],
+    "testTerms": [
+      "size=True",
+      "id",
+      "copy",
+      "list(partitions"
+    ],
+    "fixTerms": [
+      "ms.copy()",
+      "both branches",
+      "all yields",
+      "size=True"
+    ]
+  }
+}

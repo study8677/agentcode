@@ -1,0 +1,120 @@
+{
+  "id": "review-019-sklearn-svm-empty-support-vectors",
+  "order": 19,
+  "slug": "019-sklearn-svm-empty-support-vectors",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "scikit-learn SVM 空 support_vectors_ 审查",
+    "en": "scikit-learn SVM empty support vectors review"
+  },
+  "summary": {
+    "zh": "审查一个为空 support_vectors_ 返回空 csr_matrix 的补丁，它可能生成错误形状的 dual_coef_。",
+    "en": "Review an SVM sparse-fit patch that avoids division by zero but creates dual_coef_ with the wrong shape."
+  },
+  "language": "Python / scikit-learn",
+  "tags": [
+    "scikit-learn",
+    "svm",
+    "sparse",
+    "shape-invariant",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "scikit-learn",
+    "benchmarkInstance": "scikit-learn__scikit-learn-14894",
+    "upstreamPullRequest": "https://github.com/scikit-learn/scikit-learn/pull/14894",
+    "references": [
+      {
+        "label": "scikit-learn Issue/PR",
+        "url": "https://github.com/scikit-learn/scikit-learn/pull/14894"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断异常规避是否保持 estimator 属性形状不变量。",
+  "scenario": "AI PR 遇到 n_SV == 0 时直接设置 self.dual_coef_ = sp.csr_matrix([])。",
+  "context": [
+    "SVM sparse fit 在没有 support vectors 的边界情况下曾出现 ZeroDivisionError。",
+    "修复不能只避免除零，还必须让 dual_coef_ 的形状符合后续 predict/属性访问预期。",
+    "scikit-learn estimator 的公开属性形状是 API 合约的一部分。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "support_vectors_",
+      "description": "SVM 训练后保留的支持向量数组。"
+    },
+    {
+      "term": "dual_coef_",
+      "description": "SVM dual coefficients，形状需要和类别数、支持向量数一致。"
+    },
+    {
+      "term": "csr_matrix",
+      "description": "SciPy 稀疏矩阵格式。"
+    },
+    {
+      "term": "shape invariant",
+      "description": "对象属性在边界情况下也必须保持的形状约束。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "n_SV == 0",
+      "expected": "不能除零。",
+      "reviewQuestion": "PR 是否避免了异常。"
+    },
+    {
+      "input": "n_class > 1 且 n_SV == 0",
+      "expected": "dual_coef_ 应是 (n_class, 0) 形状。",
+      "reviewQuestion": "空矩阵是否形状错误。"
+    },
+    {
+      "input": "predict 后续路径",
+      "expected": "不应因为属性形状错误崩溃。",
+      "reviewQuestion": "测试是否覆盖训练后的属性和预测。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "dual_coef_",
+      "shape",
+      "support_vectors",
+      "csr_matrix",
+      "empty"
+    ],
+    "boundaryTerms": [
+      "n_class",
+      "n_SV",
+      "invariant",
+      "形状"
+    ],
+    "testTerms": [
+      "shape",
+      "(n_class, 0)",
+      "predict",
+      "size"
+    ],
+    "fixTerms": [
+      "explicit shape",
+      "(n_class, n_SV)",
+      "csr_matrix",
+      "shape"
+    ]
+  }
+}

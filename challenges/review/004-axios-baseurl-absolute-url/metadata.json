@@ -1,0 +1,129 @@
+{
+  "id": "review-004-axios-baseurl-absolute-url",
+  "order": 4,
+  "slug": "004-axios-baseurl-absolute-url",
+  "mode": "review",
+  "difficulty": "senior",
+  "status": "ready",
+  "title": {
+    "zh": "Axios baseURL 被绝对 URL 绕过审查",
+    "en": "Axios baseURL absolute URL bypass review"
+  },
+  "summary": {
+    "zh": "审查一个只拒绝 protocol-relative URL 的补丁，它仍然允许绝对 URL 覆盖 baseURL 并带走敏感 headers。",
+    "en": "Review a patch that rejects protocol-relative URLs but still allows absolute URLs to override baseURL."
+  },
+  "language": "JavaScript / Axios Security",
+  "tags": [
+    "axios",
+    "security",
+    "ssrf",
+    "credential-leak",
+    "url-parsing"
+  ],
+  "source": {
+    "project": "Axios",
+    "securityAdvisory": "GHSA-jr5f-v2jv-69x6",
+    "references": [
+      {
+        "label": "GitHub Advisory",
+        "url": "https://github.com/advisories/GHSA-jr5f-v2jv-69x6"
+      },
+      {
+        "label": "Axios Issue",
+        "url": "https://github.com/axios/axios/issues/6463"
+      },
+      {
+        "label": "修复 PR",
+        "url": "https://github.com/axios/axios/pull/6829"
+      },
+      {
+        "label": "修复 commit",
+        "url": "https://github.com/axios/axios/commit/fb8eec214ce7744b5ca787f2c3b8339b2f54b00f"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断 URL 解析语义是否真正绑定了预期 origin。",
+  "scenario": "团队封装了带 Authorization 的 internalApi client。AI PR 为防 SSRF 只拒绝 //evil.test，却仍允许 https://evil.test 覆盖 baseURL。",
+  "context": [
+    "很多服务把 baseURL 配成内部 API，再把认证 header 放在 Axios 实例默认配置里。",
+    "Axios 支持传入绝对 URL；如果调用方参数可控，绝对 URL 可能绕过 baseURL。",
+    "只处理 //host 这种 protocol-relative URL，不能覆盖 http:// 和 https:// 绝对 URL。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "baseURL",
+      "description": "Axios 实例默认请求前缀，但绝对 URL 可能覆盖它。"
+    },
+    {
+      "term": "absolute URL",
+      "description": "包含 scheme 和 host 的完整 URL，例如 https://evil.test/a。"
+    },
+    {
+      "term": "credential leakage",
+      "description": "默认 Authorization、Cookie 或 API key 被发送到非预期域名。"
+    },
+    {
+      "term": "origin check",
+      "description": "解析最终 URL 后比较协议、主机和端口。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "client.get(\"/users\")",
+      "expected": "应请求配置的 internal API。",
+      "reviewQuestion": "正常相对路径是否继续工作。"
+    },
+    {
+      "input": "client.get(\"//evil.test\")",
+      "expected": "应被拒绝。",
+      "reviewQuestion": "AI PR 是否只覆盖这一种绕过。"
+    },
+    {
+      "input": "client.get(\"https://evil.test\")",
+      "expected": "也必须被拒绝或不携带敏感 header。",
+      "reviewQuestion": "绝对 URL 是否仍能覆盖 baseURL。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "baseurl",
+      "absolute url",
+      "authorization",
+      "凭证",
+      "ssrf"
+    ],
+    "boundaryTerms": [
+      "origin",
+      "host",
+      "scheme",
+      "解析",
+      "url"
+    ],
+    "testTerms": [
+      "https://evil",
+      "http://evil",
+      "absolute",
+      "authorization"
+    ],
+    "fixTerms": [
+      "origin",
+      "allowlist",
+      "disable absolute",
+      "parse",
+      "白名单"
+    ]
+  }
+}

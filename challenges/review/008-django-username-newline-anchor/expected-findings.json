@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "validator-silently-normalizes-invalid-usernames",
+      "severity": "high",
+      "summary": "The patch strips user input instead of rejecting usernames with forbidden characters.",
+      "expectedReasoning": "A username containing newline or spaces is no longer validated as submitted; it is silently changed into another username.",
+      "acceptableFix": "Use a strict end-of-string anchor such as \\Z and keep validators as validators, not mutators."
+    },
+    {
+      "id": "wrong-test-expectation",
+      "severity": "medium",
+      "summary": "The test expects a trailing-newline username to pass.",
+      "expectedReasoning": "The original bug is that it passed accidentally; the regression test should assert ValidationError.",
+      "acceptableFix": "Add negative tests for trailing newline, leading newline/space, and valid usernames."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

@@ -1,0 +1,130 @@
+{
+  "id": "review-008-django-username-newline-anchor",
+  "order": 8,
+  "slug": "008-django-username-newline-anchor",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "Django 用户名换行锚点审查",
+    "en": "Django username newline anchor review"
+  },
+  "summary": {
+    "zh": "审查一个用 strip() 处理用户名换行的补丁，它可能静默改写用户输入而不是拒绝非法用户名。",
+    "en": "Review a username validator patch that strips input instead of rejecting trailing newlines."
+  },
+  "language": "Python / Django",
+  "tags": [
+    "django",
+    "validation",
+    "regex",
+    "security",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "Django",
+    "benchmarkInstance": "django__django-11099",
+    "upstreamIssue": "https://code.djangoproject.com/ticket/30257",
+    "upstreamPullRequest": "https://github.com/django/django/pull/11099",
+    "references": [
+      {
+        "label": "Django Ticket",
+        "url": "https://code.djangoproject.com/ticket/30257"
+      },
+      {
+        "label": "上游 PR",
+        "url": "https://github.com/django/django/pull/11099"
+      },
+      {
+        "label": "修复 commit",
+        "url": "https://github.com/django/django/commit/9b52ab541e48c32c02587b23cceb035e9a135b89"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "区分验证输入和规范化输入，识别 regex 锚点语义。",
+  "scenario": "AI PR 发现 UsernameValidator 允许 trailing newline，于是在校验前对用户名执行 strip()。",
+  "context": [
+    "Django UsernameValidator 的意图是只允许指定字符集合。Python regex 的 $ 可以匹配末尾换行。",
+    "正确方向是调整锚点语义，让非法输入失败，而不是改变用户提交的值。",
+    "静默 strip 可能造成唯一性、审计日志和用户可见值之间的语义混淆。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "$",
+      "description": "Python 正则中的行尾锚点，可在末尾换行前匹配。"
+    },
+    {
+      "term": "\\Z",
+      "description": "字符串真实结尾锚点，更适合完整字段校验。"
+    },
+    {
+      "term": "normalization",
+      "description": "把输入改写成标准形式；不应替代安全验证。"
+    },
+    {
+      "term": "validator",
+      "description": "应判断输入是否符合规则，而不是偷偷改变用户意图。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "\"alice\\n\"",
+      "expected": "应被拒绝。",
+      "reviewQuestion": "PR 是拒绝非法输入，还是 strip 后接受。"
+    },
+    {
+      "input": "\" alice\"",
+      "expected": "前导空格也不在允许字符集内。",
+      "reviewQuestion": "strip 是否扩大了可接受输入集合。"
+    },
+    {
+      "input": "正常用户名",
+      "expected": "应继续通过。",
+      "reviewQuestion": "修复是否只影响边界非法输入。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "strip",
+      "newline",
+      "username",
+      "validator",
+      "换行"
+    ],
+    "boundaryTerms": [
+      "\\Z",
+      "$",
+      "anchor",
+      "规范化",
+      "校验"
+    ],
+    "testTerms": [
+      "newline",
+      "ValidationError",
+      "leading",
+      "trailing"
+    ],
+    "fixTerms": [
+      "\\Z",
+      "strict anchor",
+      "reject",
+      "ValidationError"
+    ]
+  }
+}

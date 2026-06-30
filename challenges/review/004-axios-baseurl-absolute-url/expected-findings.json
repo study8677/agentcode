@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "absolute-url-still-bypasses-baseurl",
+      "severity": "critical",
+      "summary": "The patch blocks only protocol-relative URLs and still permits http:// or https:// absolute URLs.",
+      "expectedReasoning": "A caller-controlled absolute URL can send the internal Authorization header to an attacker or cause SSRF.",
+      "acceptableFix": "Parse the final URL and reject any origin outside the configured baseURL, or disable absolute URLs for this client."
+    },
+    {
+      "id": "missing-absolute-url-tests",
+      "severity": "high",
+      "summary": "Tests cover //evil.test but not https://evil.test or http://evil.test.",
+      "expectedReasoning": "The vulnerable path is still untested.",
+      "acceptableFix": "Add tests for absolute scheme URLs, mixed-case schemes, encoded values, and header leakage."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

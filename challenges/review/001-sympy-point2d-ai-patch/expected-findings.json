@@ -5,23 +5,22 @@
       "id": "imaginary-coordinate-regression",
       "severity": "high",
       "summary": "The patch disables the imaginary-coordinate safety check whenever evaluate is false.",
-      "expectedReasoning": "The original bug is that non-imaginary coordinates can be misclassified under evaluate(False). The fix should not allow clearly imaginary coordinates. With this patch, an input such as Point(I, 2) inside evaluate(False) can bypass the ValueError.",
-      "acceptableFix": "Do not gate the whole check on evaluate. Keep the safety check active and reject only coordinates whose imaginary part is definitely non-zero, for example by using im(a).is_zero is False."
+      "expectedReasoning": "Point(I, 2) inside evaluate(False) can bypass the ValueError, so the original coordinate contract is weakened.",
+      "acceptableFix": "Keep the guard active and reject only coordinates whose imaginary part is definitely non-zero, e.g. im(a).is_zero is False."
     },
     {
       "id": "missing-negative-test",
       "severity": "medium",
-      "summary": "The new test covers only the happy path and does not prove that invalid imaginary coordinates are still rejected.",
-      "expectedReasoning": "A regression test for the original issue is necessary but insufficient. The PR also needs a negative test under evaluate(False), such as asserting that Point(I, 2) still raises ValueError.",
-      "acceptableFix": "Add tests for both non-imaginary coordinates under evaluate(False) and explicitly imaginary coordinates under evaluate(False)."
+      "summary": "The new test covers only the happy path.",
+      "expectedReasoning": "It proves Point(1, 2) under evaluate(False), but not that invalid imaginary coordinates are still rejected.",
+      "acceptableFix": "Add a negative test asserting Point(I, 2) still raises under evaluate(False)."
     }
   ],
   "optionalFindings": [
     {
-      "id": "narrower-oracle-like-predicate",
+      "id": "narrower-predicate",
       "severity": "medium",
-      "summary": "The predicate should encode certainty about the imaginary part, not the global evaluation mode.",
-      "expectedReasoning": "The correctness boundary is about whether a coordinate is definitely imaginary. The global evaluate flag is the wrong abstraction for that decision."
+      "summary": "The predicate should encode certainty about the imaginary part, not the global evaluation mode."
     }
   ],
   "disallowedConclusions": [

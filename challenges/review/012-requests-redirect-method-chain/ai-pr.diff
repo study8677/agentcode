@@ -1,0 +1,13 @@
+diff --git a/requests/sessions.py b/requests/sessions.py
+@@
+-            prepared_request = req.copy()
++            # Keep redirect handling side-effect free by always copying original request.
++            prepared_request = req.copy()
+@@
+             resp = self.send(prepared_request, stream=stream, timeout=timeout, verify=verify, cert=cert, proxies=proxies)
++            req = req
+             url = self.get_redirect_target(resp)
+@@
++def test_original_request_is_not_mutated():
++    req = requests.Request('POST', httpbin('redirect/2')).prepare()
++    assert req.method == 'POST'

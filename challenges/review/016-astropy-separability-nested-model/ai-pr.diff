@@ -1,0 +1,10 @@
+diff --git a/astropy/modeling/separable.py b/astropy/modeling/separable.py
+@@
+-        cright[-right.shape[0]:, -right.shape[1]:] = right
++        # Mark every output of the nested right model as depending on its inputs.
++        cright[-right.shape[0]:, -right.shape[1]:] = 1
+@@
++def test_nested_model_shape():
++    cm = m.Pix2Sky_TAN() & (m.Linear1D(10) & m.Linear1D(5))
++    matrix = separability_matrix(cm)
++    assert matrix.shape == (4, 4)

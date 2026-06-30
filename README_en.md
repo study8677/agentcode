@@ -27,6 +27,8 @@ That is what AgentCode is built for: a new practice ground for the skills that m
 - **Task Mode**: complete realistic engineering tasks with AI assistance.
 - **Review Mode**: review AI / Agent generated PRs and decide whether they can be merged.
 
+The live V0 set currently focuses on Review Mode: 20 traceable AI PR review challenges are available now. Task Mode will become live after the runner, starter repositories, visible tests, and hidden checks are ready.
+
 ## Docs
 
 - [Vision](./docs/en/vision.md)
@@ -36,14 +38,15 @@ That is what AgentCode is built for: a new practice ground for the skills that m
 - [First Challenge Set](./docs/en/challenges.md)
 - [V0 Plan](./plan.md)
 - [First challenge: SymPy Point2D AI patch review](./challenges/review/001-sympy-point2d-ai-patch/README.en.md)
+- [Live challenge list](https://agentcode.codes)
 - [中文](./README.md)
 
 ## Current Stage
 
-V0 focuses on 20 high-quality challenges:
+V0 focuses on 20 high-quality challenges. The current live set is:
 
-- 10 Task Mode challenges.
-- 10 Review Mode challenges.
+- 20 Review Mode challenges.
+- Task Mode is planned after the runner and test harness are ready.
 
 It does not start with algorithm Hot100, complex community features, contests, leaderboards, or a complete online IDE. The first stage is about challenge quality, evaluation credibility, and a real training loop for AI-era engineering skills.
 

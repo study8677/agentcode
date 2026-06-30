@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "python-repr-is-not-json",
+      "severity": "high",
+      "summary": "The patch renders JSONField values with Python str/repr instead of JSON preparation.",
+      "expectedReasoning": "Readonly admin will still display invalid JSON such as single-quoted dicts, so the user-facing bug remains.",
+      "acceptableFix": "Use the JSONField preparation/display path so output is valid JSON while preserving InvalidJSONInput behavior."
+    },
+    {
+      "id": "test-locks-in-wrong-format",
+      "severity": "medium",
+      "summary": "The test asserts Python dict repr instead of valid JSON.",
+      "expectedReasoning": "It would prevent the correct fix from landing.",
+      "acceptableFix": "Assert output like {\"foo\": \"bar\"} and add InvalidJSONInput coverage."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

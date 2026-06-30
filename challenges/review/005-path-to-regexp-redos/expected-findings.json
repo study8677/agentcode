@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "partial-redos-fix",
+      "severity": "critical",
+      "summary": "The patch special-cases one adjacent-parameter pattern but does not remove the broader overlapping-capture risk.",
+      "expectedReasoning": "Routes such as /:a-:b-:c or custom captures can still generate regexes that block the Node event loop on long inputs.",
+      "acceptableFix": "Fix the compiler so generated captures have unambiguous boundaries for all adjacent parameters, or upgrade to a safe version."
+    },
+    {
+      "id": "missing-family-performance-tests",
+      "severity": "high",
+      "summary": "The test covers only one two-parameter route.",
+      "expectedReasoning": "The same ReDoS class can survive in three-segment and custom-capture routes.",
+      "acceptableFix": "Add timed regression tests for multiple adjacent params, custom patterns, and long non-matching inputs."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}

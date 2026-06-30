@@ -7,7 +7,7 @@
 <p align="center">
   <a href="./README_en.md">English</a>
   ·
-  <a href="https://agentcode.codes/challenges/review/001-sympy-point2d-ai-patch">试做第一题</a>
+  <a href="https://agentcode.codes">试做 20 道 Review 题</a>
   ·
   <a href="./docs/zh/product-direction.md">产品方向</a>
   ·
@@ -64,17 +64,15 @@ V0 正在构建中，目前仓库已经包含：
 
 - 一个 Next.js + TypeScript 产品原型。
 - Review Mode 首页、题目详情页和结构化 review 提交表单。
-- 首道真实来源改编题：SymPy `Point2D` AI 补丁审查。
+- 20 道真实来源改编的 Review Mode 题，覆盖安全、框架、HTTP、数据语义和测试质量。
 - 可版本化的题库资产结构：题面、metadata、AI diff、expected findings、rubric。
 - 评估设计、V0 架构、产品方向和首批题库规划文档。
 
-第一题入口：
+题库入口：
 
-- [在线体验：Review 001](https://agentcode.codes/challenges/review/001-sympy-point2d-ai-patch)
+- [在线体验：AgentCode 题库](https://agentcode.codes)
 - [Review 001：这个 AI 修复能合并吗？SymPy Point2D 回归审查](./challenges/review/001-sympy-point2d-ai-patch/README.zh.md)
-- [题目 metadata](./challenges/review/001-sympy-point2d-ai-patch/metadata.json)
-- [AI PR diff](./challenges/review/001-sympy-point2d-ai-patch/ai-pr.diff)
-- [评分 rubric](./challenges/review/001-sympy-point2d-ai-patch/rubric.md)
+- [首批 20 题清单](./docs/zh/challenges.md)
 
 ## 快速开始
 
@@ -117,6 +115,9 @@ challenges/
       ai-pr.diff
       expected-findings.json
       rubric.md
+    002-next-middleware-header-bypass/
+    ...
+    020-sympy-partitions-dict-reuse/
 ```
 
 这种结构让每道题都能明确回答几个问题：
@@ -128,10 +129,10 @@ challenges/
 
 ## V0 路线
 
-AgentCode V0 先聚焦 20 道高质量题，而不是堆功能数量。
+AgentCode V0 先聚焦 20 道高质量题，而不是堆功能数量。当前已上线的是 20 道 Review Mode 题；Task Mode 在 runner 接入后再作为可练习题上线。
 
-- 10 道 Task Mode：修 bug、做小 feature、补测试、修并发、修缓存、做兼容性改动。
-- 10 道 Review Mode：审核 AI PR 是否漏掉权限、边界条件、兼容性、测试质量、性能或可维护性风险。
+- 20 道 Review Mode：审核 AI PR 是否漏掉权限、边界条件、兼容性、测试质量、性能或可维护性风险。
+- Task Mode 下一阶段：修 bug、做小 feature、补测试、修并发、修缓存、做兼容性改动。
 - 评估优先使用确定性检查和结构化 rubric，LLM 只作为辅助反馈层。
 - 平台边界保持克制：先做好题目质量、评估可信度和训练闭环。
 

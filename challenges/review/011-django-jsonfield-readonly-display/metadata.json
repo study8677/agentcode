@@ -1,0 +1,124 @@
+{
+  "id": "review-011-django-jsonfield-readonly-display",
+  "order": 11,
+  "slug": "011-django-jsonfield-readonly-display",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "Django readonly JSONField 展示格式审查",
+    "en": "Django readonly JSONField display review"
+  },
+  "summary": {
+    "zh": "审查一个用 str(value) 展示 readonly JSONField 的补丁，它可能继续输出非 JSON 文本并破坏无效输入处理。",
+    "en": "Review a readonly JSONField display patch that keeps using Python string formatting instead of field preparation."
+  },
+  "language": "Python / Django Admin",
+  "tags": [
+    "django",
+    "jsonfield",
+    "admin",
+    "formatting",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "Django",
+    "benchmarkInstance": "django__django-12308",
+    "upstreamPullRequest": "https://github.com/django/django/pull/12308",
+    "references": [
+      {
+        "label": "Django Ticket",
+        "url": "https://code.djangoproject.com/ticket/31052"
+      },
+      {
+        "label": "上游 PR",
+        "url": "https://github.com/django/django/pull/12308"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断展示层修复是否保留数据格式契约和异常边界。",
+  "scenario": "AI PR 为了让 readonly JSONField 不报错，把字典值直接 str(value) 后展示。",
+  "context": [
+    "readonly admin 字段应该展示合法 JSON，而不是 Python dict 的 repr。",
+    "JSONField 自身有 prepare/get_prep_value 语义，能处理编码和特殊输入。",
+    "直接 str(dict) 得到的是单引号形式，不是 JSON。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "JSONField",
+      "description": "Django 用于存储 JSON 结构的字段。"
+    },
+    {
+      "term": "readonly admin",
+      "description": "后台详情页只读展示字段的路径。"
+    },
+    {
+      "term": "repr vs JSON",
+      "description": "Python repr 使用单引号等格式，不等于 JSON 文本。"
+    },
+    {
+      "term": "InvalidJSONInput",
+      "description": "Django JSONField 需要保留的异常/特殊输入边界。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "{\"foo\": \"bar\"}",
+      "expected": "应展示为合法 JSON 文本。",
+      "reviewQuestion": "PR 是否仍输出 Python repr。"
+    },
+    {
+      "input": "InvalidJSONInput",
+      "expected": "应保留原有处理逻辑。",
+      "reviewQuestion": "粗暴 str() 是否吞掉特殊情况。"
+    },
+    {
+      "input": "普通字段",
+      "expected": "展示逻辑不应被 JSONField 特例影响。",
+      "reviewQuestion": "修复是否局部且类型准确。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "jsonfield",
+      "str",
+      "repr",
+      "json",
+      "readonly"
+    ],
+    "boundaryTerms": [
+      "valid json",
+      "InvalidJSONInput",
+      "prepare",
+      "格式"
+    ],
+    "testTerms": [
+      "{\"foo\"",
+      "InvalidJSONInput",
+      "empty",
+      "dict"
+    ],
+    "fixTerms": [
+      "get_prep_value",
+      "prepare_value",
+      "valid JSON",
+      "json.dumps"
+    ]
+  }
+}

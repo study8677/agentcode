@@ -1,0 +1,120 @@
+{
+  "id": "review-018-xarray-update-preserve-dask-chunks",
+  "order": 18,
+  "slug": "018-xarray-update-preserve-dask-chunks",
+  "mode": "review",
+  "difficulty": "senior",
+  "status": "ready",
+  "title": {
+    "zh": "xarray update 保留 dask chunk 审查",
+    "en": "xarray update preserves dask chunks review"
+  },
+  "summary": {
+    "zh": "审查一个用 np.asarray() 消除歧义的补丁，它会急切计算 dask DataArray 并丢失 chunk。",
+    "en": "Review an xarray update patch that resolves ambiguity by eagerly converting dask-backed data to NumPy."
+  },
+  "language": "Python / xarray + dask",
+  "tags": [
+    "xarray",
+    "dask",
+    "lazy-evaluation",
+    "performance",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "xarray",
+    "benchmarkInstance": "pydata__xarray-4493",
+    "upstreamPullRequest": "https://github.com/pydata/xarray/pull/4493",
+    "references": [
+      {
+        "label": "xarray Issue/PR",
+        "url": "https://github.com/pydata/xarray/pull/4493"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断修复是否保留 lazy data 和 chunk 语义。",
+  "scenario": "AI PR 为了避免 DataArray 构造 Variable 的歧义，在 tuple 输入里对 DataArray 执行 np.asarray(obj[1])。",
+  "context": [
+    "xarray 经常包装 dask 数组以实现惰性计算和分块处理。",
+    "Dataset.update 不应让 chunked DataArray 被急切求值成 NumPy 数组。",
+    "DataArray 构造 Variable 的歧义应通过 .data 或明确错误处理解决，而不是强制计算 values。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "dask chunk",
+      "description": "惰性数组的分块信息，用于延迟计算和并行处理。"
+    },
+    {
+      "term": "eager evaluation",
+      "description": "立即把惰性数据计算成内存数组。"
+    },
+    {
+      "term": "DataArray.data",
+      "description": "保留底层数组对象，可能是 dask array。"
+    },
+    {
+      "term": "Dataset.update",
+      "description": "用新变量更新数据集，应该保留变量语义。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "chunked DataArray update",
+      "expected": "更新后仍应 chunked。",
+      "reviewQuestion": "PR 是否调用 np.asarray 触发计算。"
+    },
+    {
+      "input": "普通 NumPy DataArray",
+      "expected": "应继续正常更新。",
+      "reviewQuestion": "修复是否兼容非 dask 数据。"
+    },
+    {
+      "input": "歧义 tuple 输入",
+      "expected": "应警告或要求显式 .data。",
+      "reviewQuestion": "修复是否清晰表达 API 迁移。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "dask",
+      "chunk",
+      "np.asarray",
+      "eager",
+      "lazy"
+    ],
+    "boundaryTerms": [
+      "DataArray.data",
+      "values",
+      "惰性",
+      "chunked"
+    ],
+    "testTerms": [
+      "chunks",
+      "dask",
+      "not computed",
+      "lazy"
+    ],
+    "fixTerms": [
+      ".data",
+      "preserve chunks",
+      "warning",
+      "no np.asarray"
+    ]
+  }
+}

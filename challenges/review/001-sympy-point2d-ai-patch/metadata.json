@@ -1,5 +1,7 @@
 {
   "id": "review-001-sympy-point2d-ai-patch",
+  "order": 1,
+  "slug": "001-sympy-point2d-ai-patch",
   "mode": "review",
   "difficulty": "mid",
   "status": "ready",
@@ -8,27 +10,117 @@
     "en": "Can this AI fix be merged? Reviewing a SymPy Point2D regression"
   },
   "summary": {
-    "zh": "审查一个针对真实 SymPy 问题的 AI 补丁：它修好了 evaluate(False) 下的报错，但可能放过了非法的虚数坐标。",
-    "en": "Review an AI patch for a real SymPy issue: it fixes an evaluate(False) error, but may let invalid imaginary coordinates through."
+    "zh": "审查一个针对真实 SymPy 问题的 AI 补丁：它修好了 evaluate(False) 下的报错，但可能放过非法虚数坐标。",
+    "en": "Review an AI patch for a real SymPy issue: it fixes an evaluate(False) error but may let invalid imaginary coordinates through."
   },
+  "language": "Python / SymPy",
   "tags": [
-    "review",
-    "swe-bench",
     "sympy",
+    "swe-bench",
     "regression",
     "edge-case",
     "tests"
   ],
   "source": {
     "project": "SymPy",
+    "benchmarkInstance": "sympy-22714",
     "upstreamIssue": "https://github.com/sympy/sympy/issues/22684",
-    "upstreamOraclePullRequest": "https://github.com/sympy/sympy/pull/22714",
-    "analysisPaper": "https://arxiv.org/abs/2503.15223",
-    "benchmarkInstance": "sympy-22714"
+    "upstreamPullRequest": "https://github.com/sympy/sympy/pull/22714",
+    "references": [
+      {
+        "label": "原始 Issue",
+        "url": "https://github.com/sympy/sympy/issues/22684"
+      },
+      {
+        "label": "上游正确 PR",
+        "url": "https://github.com/sympy/sympy/pull/22714"
+      },
+      {
+        "label": "PatchDiff 论文",
+        "url": "https://arxiv.org/abs/2503.15223"
+      }
+    ]
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is adapted from the CodeStory plausible-but-incorrect patch described in the PatchDiff paper. It is not the SymPy maintainer patch that was merged upstream."
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断一个修好正向 case 的补丁是否破坏原有输入约束。",
+  "scenario": "你正在审核一个 AI agent 生成的补丁。补丁声称修复 SymPy 中 Point2D 在 evaluate(False) 下误报 Imaginary coordinates are not permitted 的问题。",
+  "context": [
+    "Point / Point2D 是 SymPy 的几何点对象，坐标必须是合法 SymPy 表达式，并且不能是明确的虚数坐标。",
+    "真实 bug 是 evaluate(False) 环境下普通坐标也可能被旧逻辑误判，从而抛出 Imaginary coordinates are not permitted。",
+    "AI 补丁把整个虚数坐标检查挂到 evaluate 条件后面，容易把“误拒普通坐标”和“拒绝明确虚数坐标”混为一谈。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "evaluate(False)",
+      "description": "临时关闭部分自动化简，可能让表达式保持未化简状态。"
+    },
+    {
+      "term": "im(a)",
+      "description": "读取表达式的虚部，参与坐标合法性判断。"
+    },
+    {
+      "term": "明确非法输入",
+      "description": "例如 Point(I, 2)，原有语义必须继续拒绝。"
+    },
+    {
+      "term": "回归",
+      "description": "修一个问题时破坏原本正确的行为。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "普通实数坐标",
+      "expected": "不应因为关闭自动化简被误拒。",
+      "reviewQuestion": "新增测试是否只证明了这个正向场景。"
+    },
+    {
+      "input": "明确虚数坐标",
+      "expected": "即使 evaluate(False)，也必须继续拒绝。",
+      "reviewQuestion": "AI PR 是否让 Point(I, 2) 绕过 ValueError。"
+    },
+    {
+      "input": "无法静态确定的符号坐标",
+      "expected": "不能被粗暴当成非法输入。",
+      "reviewQuestion": "条件判断是否区分 unknown 和 definitely invalid。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "evaluate(false)",
+      "虚数",
+      "imaginary",
+      "point(i",
+      "i, 2"
+    ],
+    "boundaryTerms": [
+      "is_zero",
+      "明确",
+      "definitely",
+      "unknown",
+      "符号"
+    ],
+    "testTerms": [
+      "point(i",
+      "i, 2",
+      "虚数坐标",
+      "negative"
+    ],
+    "fixTerms": [
+      "is_zero",
+      "im(a).is_zero",
+      "不要用 evaluate",
+      "keep the guard"
+    ]
   }
 }

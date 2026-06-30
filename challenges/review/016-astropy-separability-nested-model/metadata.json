@@ -1,0 +1,121 @@
+{
+  "id": "review-016-astropy-separability-nested-model",
+  "order": 16,
+  "slug": "016-astropy-separability-nested-model",
+  "mode": "review",
+  "difficulty": "mid",
+  "status": "ready",
+  "title": {
+    "zh": "Astropy 嵌套 CompoundModel separability 审查",
+    "en": "Astropy nested CompoundModel separability review"
+  },
+  "summary": {
+    "zh": "审查一个把右侧坐标矩阵填成 1 的补丁，它对嵌套模型会丢失已有 separability 结构。",
+    "en": "Review a separability patch that fills nested right-side matrices with ones and loses the existing structure."
+  },
+  "language": "Python / Astropy",
+  "tags": [
+    "astropy",
+    "matrix",
+    "modeling",
+    "nested-model",
+    "swe-bench"
+  ],
+  "source": {
+    "project": "Astropy",
+    "benchmarkInstance": "astropy__astropy-12907",
+    "upstreamPullRequest": "https://github.com/astropy/astropy/pull/12907",
+    "references": [
+      {
+        "label": "Astropy Issue/PR",
+        "url": "https://github.com/astropy/astropy/pull/12907"
+      },
+      {
+        "label": "SWE-bench Lite",
+        "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite"
+      }
+    ]
+  },
+  "reviewTarget": {
+    "file": "ai-pr.diff",
+    "kind": "adapted-ai-plausible-patch",
+    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "learningGoal": "判断矩阵拼接修复是否保留嵌套模型的已有结构。",
+  "scenario": "AI PR 为了修复简单组合模型的 separability matrix，把右侧 block 统一填 1。",
+  "context": [
+    "separability_matrix 用布尔矩阵表示模型输出依赖哪些输入。",
+    "简单模型右侧 block 可以由坐标矩阵生成，但嵌套 CompoundModel 已经有一块完整矩阵。",
+    "把嵌套矩阵替换成 1 会把独立关系误报为互相依赖。"
+  ],
+  "reviewFocus": [
+    "先确认 PR 声称修复什么用户问题",
+    "定位 diff 中改变原有约束的条件或配置",
+    "检查新增测试是否只证明 happy path",
+    "构造原有约束仍应成立的反例",
+    "给出 merge 结论、影响范围和修复方向"
+  ],
+  "terms": [
+    {
+      "term": "CompoundModel",
+      "description": "Astropy 中由多个模型组合而成的模型。"
+    },
+    {
+      "term": "separability matrix",
+      "description": "输出和输入依赖关系的布尔矩阵。"
+    },
+    {
+      "term": "block matrix",
+      "description": "组合模型时拼接左、右子矩阵。"
+    },
+    {
+      "term": "nested model",
+      "description": "子模型本身也是组合模型，已有内部结构。"
+    }
+  ],
+  "behaviorChecks": [
+    {
+      "input": "两个 Linear1D 并联",
+      "expected": "应得到对角矩阵。",
+      "reviewQuestion": "简单正例是否通过。"
+    },
+    {
+      "input": "Pix2Sky_TAN & (Linear1D & Linear1D)",
+      "expected": "右侧嵌套 block 应保持对角结构。",
+      "reviewQuestion": "PR 是否把嵌套 block 全填 1。"
+    },
+    {
+      "input": "左嵌套和右嵌套",
+      "expected": "两个方向都应正确拼接。",
+      "reviewQuestion": "测试是否覆盖组合顺序。"
+    }
+  ],
+  "scoringHints": {
+    "coreRiskTerms": [
+      "separability",
+      "matrix",
+      "nested",
+      "all ones",
+      "依赖"
+    ],
+    "boundaryTerms": [
+      "block",
+      "right",
+      "structure",
+      "对角",
+      "nested"
+    ],
+    "testTerms": [
+      "exact matrix",
+      "np.eye",
+      "nested",
+      "values"
+    ],
+    "fixTerms": [
+      "copy right",
+      "preserve matrix",
+      "right block",
+      "结构"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "canMerge": false,
+  "requiredFindings": [
+    {
+      "id": "single-exception-wrapper-incomplete",
+      "severity": "medium",
+      "summary": "The patch wraps only ClosedPoolError and leaves other urllib3 exceptions outside the Requests API boundary.",
+      "expectedReasoning": "Callers can still see urllib3 DecodeError or TimeoutError even though they expect requests.exceptions types.",
+      "acceptableFix": "Map the relevant urllib3 exceptions consistently to Requests exceptions, not just the one observed in a narrow test."
+    },
+    {
+      "id": "missing-decode-timeout-tests",
+      "severity": "medium",
+      "summary": "The test only covers ClosedPoolError.",
+      "expectedReasoning": "It does not protect the reported class of urllib3 exceptions passing through the public API.",
+      "acceptableFix": "Add tests for DecodeError, TimeoutError, and proxy timeout paths."
+    }
+  ],
+  "optionalFindings": [],
+  "disallowedConclusions": []
+}
