@@ -6,19 +6,19 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "pytest skipif 字符串条件缓存审查",
-    "en": "pytest skipif string-condition cache review"
+    "zh": "pytest：缓存 skipif/xfail 字符串条件的求值",
+    "en": "pytest: cache skipif/xfail string-condition evaluation"
   },
   "summary": {
-    "zh": "审查一个按表达式字符串缓存 skipif/xfail 的补丁，它忽略了不同模块 globals 会改变求值结果。",
-    "en": "Review a skipif cache patch that keys only by expression string and ignores per-module globals."
+    "zh": "审查一个 pytest 收集性能优化 PR：作者为 skipif/xfail 的字符串条件引入求值缓存，避免同一条件被反复编译和求值。",
+    "en": "Review a pytest collection-performance PR that caches the evaluation of skipif/xfail string conditions so each condition string is compiled and evaluated only once."
   },
   "language": "Python / pytest",
   "tags": [
     "pytest",
-    "cache",
-    "globals",
     "skipif",
+    "marks",
+    "collection",
     "swe-bench"
   ],
   "source": {
@@ -43,83 +43,97 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "pr": {
+    "title": "Cache evaluation of skipif/xfail string conditions to speed up collection",
+    "author": "codegen-agent",
+    "body": [
+      "大型测试套件里，同一个 skipif/xfail 字符串条件往往标注在成百上千个测试上，收集阶段会对同一个字符串反复 compile + eval，profiling 显示这是收集耗时的可观来源。",
+      "这个 PR 引入 cached_eval：求值结果按表达式字符串存放在 session 级的 config store 里，同一条件第二次出现时直接命中缓存，不再重新编译和求值；MarkEvaluator._istrue 统一改走 cached_eval。",
+      "新增测试验证同一条件字符串标注的多个测试在启用缓存后仍然全部正确跳过。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "pytest 的 skipif/xfail 标记接受字符串形式的条件（如 @pytest.mark.skipif(\"sys.platform == 'win32'\")），收集/执行阶段对每个测试项求值该条件来决定是否跳过。",
+    "字符串条件的求值命名空间由 MarkEvaluator._getglobals 构造：包含 os、sys、platform、config 几个便捷入口，并合并该测试函数所在模块的全局变量。",
+    "题目文件提供了补丁前 evaluate.py 的相关节选（src-evaluate.py），建议先读懂求值流程再看 diff。"
+  ],
+  "analysis": {
+    "dimension": "hidden-regression",
+    "notes": [
+      "求值命名空间不只有 os/sys/platform：_getglobals 会合并测试模块自身的 globals，同一个表达式字符串（例如 \"skip\"）在不同模块里可以引用不同的变量、得到不同的结果。而 cached_eval 的缓存 key 只有表达式字符串，缓存又挂在 session 级的 config 上——第一个被收集的模块会替所有模块决定这个字符串的结果。",
+      "反例：module_a 里 skip = True、module_b 里 skip = False，两个模块都用 @pytest.mark.skipif(\"skip\")。收集顺序靠前的模块把结果写入缓存后，另一个模块的测试会被错误地跳过或错误地执行，而且结论随收集顺序漂移。上游 issue 报告的正是这个行为，最终修复方向是移除这种跨模块共享的结果缓存。",
+      "新增测试只有一个模块、一个取值：第二次求值即使命中缓存，结果也恰好与重新求值一致，所以它证明不了缓存的正确性。要暴露问题至少需要两个模块、同一条件字符串、相反的全局变量取值。"
+    ]
   },
   "learningGoal": "判断缓存 key 是否包含所有影响结果的上下文。",
-  "scenario": "AI PR 为了提升 skipif(\"condition\") 性能，把表达式字符串的求值结果缓存到全局 config。",
-  "context": [
-    "pytest 支持 skipif/xfail 使用字符串条件，条件在测试模块 globals 中求值。",
-    "相同字符串在不同模块中可能引用不同变量。",
-    "缓存只按字符串命中，会把第一个模块的结果错误复用到第二个模块。"
-  ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
   "terms": [
     {
-      "term": "skipif",
-      "description": "pytest 标记，条件为真时跳过测试。"
+      "term": "skipif / xfail",
+      "description": "pytest 标记：条件为真时跳过测试 / 预期失败。"
     },
     {
-      "term": "xfail",
-      "description": "预期失败标记。"
+      "term": "string condition",
+      "description": "以字符串给出的标记条件，运行时通过 eval 求值。"
     },
     {
-      "term": "globals",
-      "description": "表达式求值所用的模块全局变量字典。"
+      "term": "MarkEvaluator._getglobals",
+      "description": "构造字符串条件求值所用命名空间的方法。"
     },
     {
-      "term": "cache key",
-      "description": "缓存必须包含所有影响结果的输入。"
+      "term": "config._store",
+      "description": "挂在 session 级 Config 对象上的键值存储。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "module_a: skip=True",
-      "expected": "skipif(\"skip\") 应跳过。",
-      "reviewQuestion": "缓存是否记录了模块上下文。"
+      "input": "同一模块内两个测试共用 skipif(\"skip_all\")",
+      "expected": "两个测试的跳过结果一致。",
+      "reviewQuestion": "第二次求值命中缓存时，影响结果的输入有哪些被真正记录在缓存 key 里？"
     },
     {
-      "input": "module_b: skip=False",
-      "expected": "同样表达式应不跳过。",
-      "reviewQuestion": "是否错误复用 module_a 结果。"
+      "input": "module_a: skip = True；module_b: skip = False，同用 skipif(\"skip\")",
+      "expected": "module_a 的测试跳过，module_b 的测试执行。",
+      "reviewQuestion": "两个模块共享 session 级缓存时会发生什么？收集顺序会影响结果吗？"
     },
     {
-      "input": "同模块重复求值",
-      "expected": "可以安全复用。",
-      "reviewQuestion": "优化是否只在安全范围内生效。"
+      "input": "条件只引用 sys.platform 等 session 内稳定的值",
+      "expected": "复用求值结果是安全的。",
+      "reviewQuestion": "这个优化安全生效的前提是什么？补丁有没有把这个前提显式化或校验？"
     }
   ],
   "scoringHints": {
     "coreRiskTerms": [
-      "skipif",
       "cache",
+      "缓存",
       "globals",
-      "xfail",
-      "condition"
+      "module",
+      "模块",
+      "key"
     ],
     "boundaryTerms": [
+      "namespace",
+      "命名空间",
+      "上下文",
       "context",
-      "module",
-      "cache key",
-      "globals",
-      "上下文"
+      "_getglobals",
+      "全局变量"
     ],
     "testTerms": [
       "two modules",
-      "skip=True",
-      "skip=False",
-      "same expression"
+      "两个模块",
+      "不同",
+      "cross",
+      "顺序"
     ],
     "fixTerms": [
-      "compiled",
-      "context",
-      "no global result cache",
-      "cache key"
+      "compile",
+      "编译",
+      "移除",
+      "remove",
+      "cache key",
+      "item"
     ]
   }
 }

@@ -6,12 +6,12 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "Astropy 嵌套 CompoundModel separability 审查",
-    "en": "Astropy nested CompoundModel separability review"
+    "zh": "Astropy：修复嵌套 CompoundModel 的 separability 矩阵",
+    "en": "Astropy: fix separability matrices for nested CompoundModels"
   },
   "summary": {
-    "zh": "审查一个把右侧坐标矩阵填成 1 的补丁，它对嵌套模型会丢失已有 separability 结构。",
-    "en": "Review a separability patch that fills nested right-side matrices with ones and loses the existing structure."
+    "zh": "审查一个 Astropy modeling PR：作者调整了组合模型右侧 block 的填充方式，并补了一个嵌套模型测试。",
+    "en": "Review an Astropy modeling PR: the author changes how the right-side block is filled for compound models and adds a nested-model test."
   },
   "language": "Python / Astropy",
   "tags": [
@@ -39,22 +39,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "判断矩阵拼接修复是否保留嵌套模型的已有结构。",
-  "scenario": "AI PR 为了修复简单组合模型的 separability matrix，把右侧 block 统一填 1。",
-  "context": [
-    "separability_matrix 用布尔矩阵表示模型输出依赖哪些输入。",
-    "简单模型右侧 block 可以由坐标矩阵生成，但嵌套 CompoundModel 已经有一块完整矩阵。",
-    "把嵌套矩阵替换成 1 会把独立关系误报为互相依赖。"
+  "pr": {
+    "title": "Handle nested right-hand models when building separability matrices",
+    "author": "codegen-agent",
+    "body": [
+      "separability_matrix can produce confusing results when a compound model contains another compound model on the right-hand side. The current block assembly assumes the right operand can always be copied directly, but nested models need every output row to be connected to their inputs in the combined coordinate matrix.",
+      "This PR marks the nested right-hand block as dependent on its input columns by filling the target block with 1s. This keeps the combined matrix shape correct and avoids losing the nested model in the parent composition.",
+      "Added a nested model regression test using Pix2Sky_TAN with two Linear1D components to verify the combined separability matrix has the expected dimensions. Existing modeling tests pass."
+    ]
+  },
+  "background": [
+    "Astropy separability_matrix returns a boolean matrix describing which model outputs depend on which inputs.",
+    "CompoundModel assembly builds a block matrix from left and right operand matrices. A nested operand may already have meaningful internal separability structure.",
+    "The review context includes the pre-patch block assembly excerpt in src-separable.py."
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "hidden-regression",
+    "notes": [
+      "The patch preserves matrix shape but destroys semantics: a nested right-hand CompoundModel already has a separability matrix, and replacing that block with all 1s turns independent outputs into false dependencies.",
+      "The proposed test checks only shape. An all-ones block and the correct nested block have the same dimensions, so the test cannot catch the regression.",
+      "The right fix must copy the existing nested right matrix into the block and assert exact boolean values for nested-left and nested-right compositions."
+    ]
+  },
+  "learningGoal": "判断矩阵拼接修复是否保留嵌套模型已有结构，而不是只保持 shape。",
   "terms": [
     {
       "term": "CompoundModel",
@@ -77,17 +86,17 @@
     {
       "input": "两个 Linear1D 并联",
       "expected": "应得到对角矩阵。",
-      "reviewQuestion": "简单正例是否通过。"
+      "reviewQuestion": "简单正例是否通过？"
     },
     {
       "input": "Pix2Sky_TAN & (Linear1D & Linear1D)",
       "expected": "右侧嵌套 block 应保持对角结构。",
-      "reviewQuestion": "PR 是否把嵌套 block 全填 1。"
+      "reviewQuestion": "补丁是否保留右侧已有矩阵值？"
     },
     {
       "input": "左嵌套和右嵌套",
       "expected": "两个方向都应正确拼接。",
-      "reviewQuestion": "测试是否覆盖组合顺序。"
+      "reviewQuestion": "测试是否覆盖组合顺序和精确矩阵值？"
     }
   ],
   "scoringHints": {
@@ -109,7 +118,8 @@
       "exact matrix",
       "np.eye",
       "nested",
-      "values"
+      "values",
+      "shape"
     ],
     "fixTerms": [
       "copy right",

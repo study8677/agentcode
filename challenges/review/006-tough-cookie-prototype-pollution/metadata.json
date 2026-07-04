@@ -6,20 +6,20 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "CookieJar 原型污染黑名单修复审查",
-    "en": "CookieJar prototype pollution blacklist review"
+    "zh": "tough-cookie：修复 cookie domain 的原型污染",
+    "en": "tough-cookie: fix prototype pollution via cookie domain"
   },
   "summary": {
-    "zh": "审查一个只拦截 __proto__ domain 的补丁，它没有修复 CookieJar 内部索引使用普通对象的问题。",
-    "en": "Review a blacklist patch that blocks only __proto__ while leaving ordinary-object indexes vulnerable."
+    "zh": "审查一个声称修复 tough-cookie CookieJar 原型污染 PoC（Domain=__proto__）的补丁：它在写入 cookie 前拦截 __proto__ 这个 domain。",
+    "en": "Review a patch that claims to fix the tough-cookie CookieJar prototype pollution PoC (Domain=__proto__) by rejecting the __proto__ domain before it is stored."
   },
   "language": "JavaScript / Node Security",
   "tags": [
+    "tough-cookie",
     "nodejs",
-    "prototype-pollution",
     "cookies",
-    "security",
-    "blacklist"
+    "prototype-pollution",
+    "security"
   ],
   "source": {
     "project": "tough-cookie",
@@ -46,22 +46,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "识别黑名单修复和数据结构修复的差异。",
-  "scenario": "AI PR 看到 PoC 里的 Domain=__proto__，于是加了一个字符串黑名单并认为污染问题已解决。",
-  "context": [
-    "CookieJar 会按 domain、path、key 建立多层索引，旧实现如果使用普通对象就可能碰到原型链属性。",
-    "Prototype pollution 的修复重点通常是让字典没有原型，或者使用 Map，而不是只屏蔽一个字符串。",
-    "黑名单容易漏掉 constructor、prototype 或嵌套层级里的危险 key。"
+  "pr": {
+    "title": "Reject __proto__ cookie domain to fix prototype pollution (GHSA-72xf-g2v4-qvf3)",
+    "author": "codegen-agent",
+    "body": [
+      "GHSA-72xf-g2v4-qvf3 报告：往 CookieJar 里存一个 Domain=__proto__ 的 cookie，会通过 MemoryCookieStore 的多层索引赋值污染 Object.prototype。",
+      "这个 PR 在 putCookie 入口做拦截：当 cookie.domain 等于 __proto__ 时直接忽略该 cookie、不写入索引，PoC 就无法再污染全局原型。",
+      "新增了一个回归测试，重放公告里的 PoC（Domain=__proto__），断言普通对象上 {}.a 仍为 undefined。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "MemoryCookieStore 用一个普通对象 this.idx 建立 domain -> path -> key 三层索引，putCookie 按 cookie 的这三个字段逐层执行 this.idx[domain][path][key] = cookie。",
+    "findCookie / findCookies 用同样的字段从这些普通对象里读回 cookie。",
+    "题目文件提供了补丁前 memstore 的节选（src-memstore.js）；建议先读懂它再看 diff。"
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "surface-fix",
+    "notes": [
+      "补丁是一条字符串黑名单：只有当 domain 恰好等于 __proto__ 时才丢弃 cookie。底层三层索引仍然是普通对象，写入和读取路径都没变，真正被污染的数据结构没动。",
+      "黑名单漏掉一整类等价危险 key：__proto__ 出现在 path 或 key 层（this.idx[domain]['__proto__']、this.idx[domain][path]['__proto__']）同样能碰到原型链；constructor、prototype 等 key 也没拦；而且只要变体（大小写、编码）在别处解析回 __proto__ 就绕过了这条精确字符串比较。",
+      "新增测试只重放了 domain 层的 __proto__ 这一个 PoC，对 path/key 层、constructor/prototype、各种变体一律没覆盖。绿灯只证明这一个字符串被挡住了，证明不了这类污染已经根除。"
+    ]
+  },
+  "learningGoal": "识别黑名单修复和数据结构修复的差异：挡住一个已知坏值，还是让不可信 key 从根本上无法碰原型链。",
   "terms": [
     {
       "term": "prototype pollution",
@@ -77,24 +86,24 @@
     },
     {
       "term": "blacklist",
-      "description": "只拒绝已知坏值，通常不适合覆盖完整安全边界。"
+      "description": "只拒绝已知坏值，通常不足以覆盖完整安全边界。"
     }
   ],
   "behaviorChecks": [
     {
       "input": "Domain=__proto__",
       "expected": "不应污染全局对象原型。",
-      "reviewQuestion": "AI PR 是否只覆盖公开 PoC。"
+      "reviewQuestion": "补丁拦住的是这一个字符串，还是这一类 key？"
     },
     {
-      "input": "constructor/prototype 等 key",
-      "expected": "同样不能触发原型链访问。",
-      "reviewQuestion": "黑名单是否漏掉等价危险属性。"
+      "input": "path 或 key 等于 __proto__",
+      "expected": "嵌套层级里的 __proto__ 同样不能碰原型链。",
+      "reviewQuestion": "拦截只发生在 domain 层，那 path/key 层呢？"
     },
     {
-      "input": "path/name 嵌套索引",
-      "expected": "每一层都应安全存储不可信 key。",
-      "reviewQuestion": "底层数据结构是否仍是普通对象。"
+      "input": "constructor / prototype 等 key",
+      "expected": "其他魔术属性也不能触发原型链访问。",
+      "reviewQuestion": "精确字符串黑名单覆盖得到这些等价 key 吗？"
     }
   ],
   "scoringHints": {
@@ -107,23 +116,23 @@
     ],
     "boundaryTerms": [
       "blacklist",
+      "黑名单",
       "map",
       "object.create(null)",
-      "普通对象",
-      "untrusted key"
+      "普通对象"
     ],
     "testTerms": [
       "constructor",
       "prototype",
       "path",
       "key",
-      "rejectPublicSuffixes"
+      "嵌套"
     ],
     "fixTerms": [
       "Object.create(null)",
       "Map",
       "null prototype",
-      "字典",
+      "数据结构",
       "索引"
     ]
   }

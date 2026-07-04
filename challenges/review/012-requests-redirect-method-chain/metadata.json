@@ -6,19 +6,19 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "Requests 多跳重定向方法保持审查",
-    "en": "Requests redirect method chain review"
+    "zh": "Requests：让 redirect 处理无副作用的重构",
+    "en": "Requests: make redirect resolution side-effect free"
   },
   "summary": {
-    "zh": "审查一个每轮都复制原始请求的补丁，它会在 303 后遇到 307 时错误恢复 POST。",
-    "en": "Review a redirect patch that keeps copying the original request and restores POST after a 303 then 307 chain."
+    "zh": "审查 Requests 会话层的一个小重构 PR：作者认为 redirect 循环里复用请求对象有副作用，改为每一跳都从原始请求复制。",
+    "en": "Review a small Requests refactor: the author derives every redirect hop from the caller's original request to keep redirect handling side-effect free."
   },
   "language": "Python / Requests",
   "tags": [
     "requests",
     "http",
-    "redirect",
-    "method",
+    "session",
+    "refactor",
     "swe-bench"
   ],
   "source": {
@@ -43,55 +43,64 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "判断 HTTP redirect 状态码和请求状态转移是否逐跳保持。",
-  "scenario": "AI PR 为了避免 mutation，把每个 redirect hop 都从原始 request copy，却没有更新当前 hop 的 method。",
-  "context": [
-    "303 See Other 会把 POST 转成 GET。",
-    "307/308 应保持当前请求方法。",
-    "多跳重定向中，下一跳的当前方法可能已经不是最初方法。"
+  "pr": {
+    "title": "Make resolve_redirects side-effect free by always copying the original request",
+    "author": "codegen-agent",
+    "body": [
+      "resolve_redirects 目前在循环末尾把 req 重新绑定到当前 hop 的请求上，后续 hop 因此依赖前一跳留下的可变状态，调试时很难看出每一跳到底基于什么构造。",
+      "这个 PR 让每个 redirect hop 都直接从调用方传入的原始请求 copy，redirect 处理因此保持无副作用、每一跳都可独立重放。",
+      "新增了回归测试，验证经过 redirect 链之后调用方的原始请求对象没有被改动。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "resolve_redirects 是 Requests 会话层处理 HTTP 重定向的核心循环：收到 3xx 响应后构造下一跳请求并发送，直到不再重定向。",
+    "HTTP 规范对不同状态码有不同要求：303 See Other 要求后续请求改用 GET；307/308 要求保持当前请求的方法和 body。",
+    "题目文件里提供了补丁前 sessions.py 的相关节选（src-sessions.py），建议先读懂原有循环再看 diff。"
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "hidden-regression",
+    "notes": [
+      "循环末尾的 req = prepared_request 只是重新绑定局部变量，本来就不会改动调用方传入的对象——PR 声称要消除的副作用并不存在，而这一行恰恰承担着把 method/body 逐跳传递下去的职责。",
+      "删掉它之后，每一跳都从原始请求 copy：POST 先被 303 转成 GET，链路里再遇到 307 时会错误地复活原始 POST（连同 body）。对非幂等请求这是真实的线上风险。",
+      "新增测试断言的是原始请求对象没有被改动——这个断言在旧代码下同样成立，它证明不了任何新行为，属于典型的看起来相关但没有覆盖风险的测试。"
+    ]
+  },
+  "learningGoal": "判断 HTTP redirect 状态码和请求状态转移是否逐跳保持，以及一个重构声称的收益是否真的存在。",
   "terms": [
     {
-      "term": "303",
-      "description": "把后续请求改成 GET。"
+      "term": "303 See Other",
+      "description": "要求客户端对 Location 发起 GET 请求。"
     },
     {
-      "term": "307",
-      "description": "保持当前请求方法。"
+      "term": "307 Temporary Redirect",
+      "description": "要求客户端保持当前请求的方法和 body。"
     },
     {
       "term": "PreparedRequest",
-      "description": "Requests 中准备好发送的请求对象。"
+      "description": "Requests 中准备好发送的请求对象，req.copy() 返回它的副本。"
     },
     {
       "term": "redirect chain",
-      "description": "多跳跳转流程。"
+      "description": "一次请求触发的多跳重定向流程。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "POST -> 303 -> GET",
-      "expected": "第二跳应变成 GET。",
-      "reviewQuestion": "PR 是否正确更新当前 request。"
+      "input": "POST -> 303 -> 307",
+      "expected": "303 之后方法变为 GET，307 应保持 GET。",
+      "reviewQuestion": "每一跳的基准请求是上一跳，还是原始请求？"
     },
     {
-      "input": "GET -> 307",
-      "expected": "应继续保持 GET。",
-      "reviewQuestion": "是否错误恢复原始 POST。"
+      "input": "POST 带 body -> 303 -> 307",
+      "expected": "303 之后 body 被丢弃，307 不应复活原始 body。",
+      "reviewQuestion": "从原始请求 copy 时，body 和 Content-Length 会发生什么？"
     },
     {
       "input": "单跳 redirect",
-      "expected": "普通场景不应回归。",
-      "reviewQuestion": "测试是否覆盖多跳。"
+      "expected": "普通场景行为不变。",
+      "reviewQuestion": "新增测试是否只覆盖了这种链路上看不出差别的场景？"
     }
   ],
   "scoringHints": {
@@ -100,26 +109,31 @@
       "303",
       "307",
       "method",
-      "POST"
+      "post",
+      "方法"
     ],
     "boundaryTerms": [
-      "current request",
+      "原始",
       "original",
       "hop",
-      "链路"
+      "上一跳",
+      "每一跳",
+      "链"
     ],
     "testTerms": [
       "303",
       "307",
-      "GET",
-      "POST",
-      "chain"
+      "chain",
+      "多跳",
+      "链"
     ],
     "fixTerms": [
       "req = prepared_request",
-      "current",
-      "next hop",
-      "更新"
+      "上一跳",
+      "当前请求",
+      "保留",
+      "restore",
+      "revert"
     ]
   }
 }

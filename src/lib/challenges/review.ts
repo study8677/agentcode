@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import type { ChallengeDifficulty, ChallengeStatus, LocalizedText } from "@/lib/types/problem";
+import type { Challenge, ChallengeDifficulty, ChallengeStatus, LocalizedText } from "@/lib/types/problem";
 
 export type ReviewSourceLink = {
   label: string;
@@ -24,6 +24,17 @@ export type ReviewScoringHints = {
   boundaryTerms: string[];
   testTerms: string[];
   fixTerms: string[];
+};
+
+export type ReviewPrBrief = {
+  title: string;
+  author: string;
+  body: string[];
+};
+
+export type ReviewAnalysis = {
+  dimension?: string;
+  notes: string[];
 };
 
 export type ReviewChallengeMetadata = {
@@ -50,10 +61,21 @@ export type ReviewChallengeMetadata = {
     kind: string;
     note: string;
   };
+  /**
+   * Pre-submit content. `pr` is written in the AI author's voice: it may claim
+   * only what a confident PR author would claim, never hint at the hidden flaw.
+   * `background` is neutral domain context needed to read the diff.
+   */
+  pr?: ReviewPrBrief;
+  background?: string[];
+  /** Post-submit content. Never rendered before the user submits a review. */
+  analysis?: ReviewAnalysis;
   learningGoal: string;
-  scenario: string;
-  context: string[];
-  reviewFocus: string[];
+  /** @deprecated legacy pre-rewrite fields, kept for migration fallback */
+  scenario?: string;
+  /** @deprecated legacy pre-rewrite fields, kept for migration fallback */
+  context?: string[];
+  reviewFocus?: string[];
   terms: ReviewTerm[];
   behaviorChecks: ReviewBehaviorCheck[];
   scoringHints: ReviewScoringHints;
@@ -66,9 +88,39 @@ export type ReviewChallengeFile = {
   content: string;
 };
 
+export type ReviewExpectedFinding = {
+  id: string;
+  severity: string;
+  summary: string;
+  expectedReasoning?: string;
+  acceptableFix?: string;
+  matchTerms?: string[][];
+};
+
+export type ReviewExpectedFindings = {
+  canMerge: boolean;
+  mergeRationale?: string;
+  requiredFindings: ReviewExpectedFinding[];
+  optionalFindings?: ReviewExpectedFinding[];
+  disallowedConclusions?: string[];
+};
+
+/** Everything shown only after the user submits a review. */
+export type ReviewReveal = {
+  canMerge: boolean;
+  mergeRationale?: string;
+  requiredFindings: ReviewExpectedFinding[];
+  optionalFindings: ReviewExpectedFinding[];
+  analysisNotes: string[];
+  behaviorChecks: ReviewBehaviorCheck[];
+  learningGoal: string;
+  references: ReviewSourceLink[];
+};
+
 export type ReviewChallenge = {
   metadata: ReviewChallengeMetadata;
   files: ReviewChallengeFile[];
+  reveal: ReviewReveal;
 };
 
 const reviewRoot = join(process.cwd(), "challenges", "review");
@@ -93,54 +145,65 @@ function getFileLanguage(fileName: string): ReviewChallengeFile["language"] {
   return "text";
 }
 
+export function getReviewPrBrief(metadata: ReviewChallengeMetadata): ReviewPrBrief {
+  if (metadata.pr) {
+    return metadata.pr;
+  }
+
+  return {
+    title: metadata.title.zh,
+    author: "ai-agent",
+    body: metadata.scenario ? [metadata.scenario] : []
+  };
+}
+
+export function getReviewBackground(metadata: ReviewChallengeMetadata): string[] {
+  return metadata.background ?? metadata.context ?? [];
+}
+
 function getVirtualFiles(metadata: ReviewChallengeMetadata): ReviewChallengeFile[] {
-  const task = [
-    `# ${metadata.title.zh}`,
+  const pr = getReviewPrBrief(metadata);
+  const background = getReviewBackground(metadata);
+
+  const prDescription = [
+    `# ${pr.title}`,
     "",
-    metadata.scenario,
+    `> 作者：${pr.author} · 状态：CI passed · 请求 review`,
+    "",
+    ...pr.body,
+    ""
+  ].join("\n");
+
+  const task = [
+    "# 你的任务",
+    "",
+    "你是这个仓库的 reviewer。阅读 PR 描述和 diff，判断这个 PR 能不能合并。",
     "",
     `项目：${metadata.source.project}`,
     `语言 / 领域：${metadata.language}`,
-    `学习目标：${metadata.learningGoal}`,
     "",
     "## 你需要提交",
     "",
     "- 是否可以合并：可以 / 不可以 / 需要更多信息",
-    "- Blocking finding：具体问题、影响和修复建议",
-    "- Testing：至少一个能暴露风险的反例或边界测试"
+    "- Finding：具体问题、影响和修复建议（如果你认为可以合并，说明你确认过哪些风险点）",
+    "- Testing：评价现有测试，如有必要给出能暴露风险的反例或边界测试",
+    "",
+    "提交后可以查看参考解析和上游来源。"
   ].join("\n");
 
-  const context = [
-    "# 题目上下文",
+  const contextDoc = [
+    "# 背景",
     "",
-    "## 背景",
-    "",
-    ...metadata.context.map((item) => `- ${item}`)
-  ].join("\n");
-
-  const checks = [
-    "# 审查清单",
-    "",
-    "把这些场景和 AI PR diff 对照起来，判断补丁是否破坏原有约束。",
-    "",
-    ...metadata.behaviorChecks.flatMap((item, index) => [
-      `## ${index + 1}. ${item.input}`,
-      "",
-      `- 原有约束：${item.expected}`,
-      `- 需要验证：${item.reviewQuestion}`,
-      ""
-    ])
-  ].join("\n");
-
-  const sources = [
-    "# 来源链接",
-    "",
-    "题目来自真实工程问题，但当前页面里的 AI PR diff 是 AgentCode 改编的审核训练补丁。",
-    "",
-    ...metadata.source.references.map((reference) => `- [${reference.label}](${reference.url})`)
+    ...background.map((item) => `- ${item}`)
   ].join("\n");
 
   return [
+    {
+      name: "PR-description.md",
+      label: "PR-description.md",
+      language: "markdown",
+      content: prDescription
+    },
     {
       name: "task.md",
       label: "task.md",
@@ -148,22 +211,10 @@ function getVirtualFiles(metadata: ReviewChallengeMetadata): ReviewChallengeFile
       content: task
     },
     {
-      name: "context.md",
-      label: "context.md",
+      name: "background.md",
+      label: "background.md",
       language: "markdown",
-      content: context
-    },
-    {
-      name: "checks.md",
-      label: "checks.md",
-      language: "markdown",
-      content: checks
-    },
-    {
-      name: "sources.md",
-      label: "sources.md",
-      language: "markdown",
-      content: sources
+      content: contextDoc
     }
   ];
 }
@@ -195,6 +246,24 @@ function getReviewFiles(dir: string, metadata: ReviewChallengeMetadata): ReviewC
   return [...physicalFiles, ...getVirtualFiles(metadata)];
 }
 
+function getReviewReveal(dir: string, metadata: ReviewChallengeMetadata): ReviewReveal {
+  const expectedPath = join(dir, "expected-findings.json");
+  const expected = existsSync(expectedPath)
+    ? (JSON.parse(readFileSync(expectedPath, "utf8")) as ReviewExpectedFindings)
+    : null;
+
+  return {
+    canMerge: expected?.canMerge ?? false,
+    mergeRationale: expected?.mergeRationale,
+    requiredFindings: expected?.requiredFindings ?? [],
+    optionalFindings: expected?.optionalFindings ?? [],
+    analysisNotes: metadata.analysis?.notes ?? metadata.context ?? [],
+    behaviorChecks: metadata.behaviorChecks,
+    learningGoal: metadata.learningGoal,
+    references: metadata.source.references
+  };
+}
+
 export function getReviewChallengeSlugs() {
   return readdirSync(reviewRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -213,6 +282,48 @@ export function getReviewChallenge(slug: string): ReviewChallenge | null {
 
   const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as ReviewChallengeMetadata;
   const files = getReviewFiles(dir, metadata);
+  const reveal = getReviewReveal(dir, metadata);
 
-  return { metadata, files };
+  return { metadata, files, reveal };
+}
+
+const legacyAcceptanceRates: Record<number, number> = {
+  1: 31.4, 2: 18.6, 3: 21.2, 4: 24.8, 5: 19.5, 6: 22.1, 7: 26.4, 8: 33.2, 9: 20.7, 10: 23.9,
+  11: 35.6, 12: 29.8, 13: 31.9, 14: 25.3, 15: 34.1, 16: 27.6, 17: 32.8, 18: 24.4, 19: 30.5, 20: 28.7
+};
+
+function getAcceptanceRate(order: number, slug: string) {
+  const known = legacyAcceptanceRates[order];
+  if (known) {
+    return known;
+  }
+
+  let hash = 0;
+  for (const char of slug) {
+    hash = (hash * 31 + char.charCodeAt(0)) % 997;
+  }
+
+  return 18 + (hash % 180) / 10;
+}
+
+export function getReviewChallengeList(): Challenge[] {
+  return getReviewChallengeSlugs()
+    .map((slug) => {
+      const metadataPath = join(reviewRoot, slug, "metadata.json");
+      const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as ReviewChallengeMetadata;
+      return metadata;
+    })
+    .sort((first, second) => first.order - second.order)
+    .map((metadata) => ({
+      id: metadata.order.toString().padStart(3, "0"),
+      href: `/challenges/review/${metadata.slug}`,
+      title: metadata.title,
+      summary: metadata.summary,
+      mode: metadata.mode,
+      difficulty: metadata.difficulty,
+      status: metadata.status,
+      acceptanceRate: getAcceptanceRate(metadata.order, metadata.slug),
+      tags: metadata.tags,
+      runStatus: "idle" as const
+    }));
 }

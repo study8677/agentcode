@@ -1,27 +1,28 @@
-# Review 014: pytest skipif string-condition cache review
+# Review 014: pytest: cache skipif/xfail string-condition evaluation
 
-Review a skipif cache patch that keys only by expression string and ignores per-module globals.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Cache evaluation of skipif/xfail string conditions to speed up collection**
+>
+> In large test suites, the same skipif/xfail string condition is often attached to hundreds or thousands of tests. Collection repeatedly compiles and evaluates the same string, and profiling shows this is a meaningful collection-time cost.
+>
+> This PR adds cached_eval: results are stored by expression string in the session-level config store, so the same condition can hit the cache after the first evaluation. MarkEvaluator._istrue now goes through cached_eval.
+>
+> Added a regression test showing multiple tests with the same condition string are still skipped correctly when caching is enabled. All existing tests pass.
 
-- pytest Issue: <https://github.com/pytest-dev/pytest/issues/7373>
-- 上游 PR: <https://github.com/pytest-dev/pytest/pull/7373>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-evaluate.py` — pre-patch MarkEvaluator evaluation excerpt (minimal sufficient context)
 
-- pytest 支持 skipif/xfail 使用字符串条件，条件在测试模块 globals 中求值。
-- 相同字符串在不同模块中可能引用不同变量。
-- 缓存只按字符串命中，会把第一个模块的结果错误复用到第二个模块。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -30,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The cache key is only the expression string and ignores the globals used to evaluate it.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- pytest skipif/xfail marks accept string conditions that are evaluated in the test item's context.
+- The string-condition namespace includes os, sys, platform, config, and the globals of the module containing the test function.
+- When reviewing a cache optimization, check whether the cache key covers every input that can affect the result.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

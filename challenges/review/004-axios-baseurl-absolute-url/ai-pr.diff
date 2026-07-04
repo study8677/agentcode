@@ -2,12 +2,12 @@ diff --git a/src/internal-api.ts b/src/internal-api.ts
 index d42b342..bad0004 100644
 --- a/src/internal-api.ts
 +++ b/src/internal-api.ts
-@@ -6,6 +6,13 @@ export const internalApi = axios.create({
-   headers: { Authorization: 'Bearer ' + process.env.INTERNAL_API_TOKEN },
- })
- 
+@@ -13,6 +13,12 @@ export const internalApi = axios.create({
+
+ // Callers pass a path that is appended to baseURL.
  export async function fetchInternal(path: string) {
-+  // Block protocol-relative URLs that bypass baseURL.
++  // Protocol-relative URLs (//host) are treated as absolute by Axios and
++  // would bypass baseURL, sending our Authorization header off-host.
 +  if (path.startsWith('//')) {
 +    throw new Error('absolute URL is not allowed')
 +  }
@@ -15,7 +15,20 @@ index d42b342..bad0004 100644
    const response = await internalApi.get(path)
    return response.data
  }
-@@ -18,3 +25,7 @@ test('fetches relative internal paths', async () => {
+diff --git a/src/internal-api.test.ts b/src/internal-api.test.ts
+index 5c1f0aa..2e7b913 100644
+--- a/src/internal-api.test.ts
++++ b/src/internal-api.test.ts
+@@ -10,6 +10,11 @@ test('fetches relative internal paths', async () => {
+   const data = await fetchInternal('/users')
+   expect(data).toEqual({ ok: true })
+ })
+
 +test('rejects protocol-relative urls', async () => {
 +  await expect(fetchInternal('//evil.test/a')).rejects.toThrow()
 +})
++
+ test('propagates non-2xx responses as errors', async () => {
+   mockAxios.onGet('/missing').reply(404)
+   await expect(fetchInternal('/missing')).rejects.toThrow()
+ })

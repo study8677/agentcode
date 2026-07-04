@@ -1,28 +1,28 @@
-# Review 006: CookieJar prototype pollution blacklist review
+# Review 006: tough-cookie: fix prototype pollution via cookie domain
 
-Review a blacklist patch that blocks only __proto__ while leaving ordinary-object indexes vulnerable.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Reject __proto__ cookie domain to fix prototype pollution (GHSA-72xf-g2v4-qvf3)**
+>
+> GHSA-72xf-g2v4-qvf3 reports that storing a cookie with Domain=__proto__ in the CookieJar pollutes Object.prototype through MemoryCookieStore's multi-level index assignment.
+>
+> This PR intercepts at the putCookie entry point: when cookie.domain equals __proto__ the cookie is dropped and never written to the index, so the PoC can no longer pollute the global prototype.
+>
+> Added a regression test that replays the published PoC (Domain=__proto__) and asserts {}.a is still undefined on a plain object. All existing tests pass.
 
-- GitHub Advisory: <https://github.com/advisories/GHSA-72xf-g2v4-qvf3>
-- Issue #282: <https://github.com/salesforce/tough-cookie/issues/282>
-- 修复 commit: <https://github.com/salesforce/tough-cookie/commit/12d4747>
-- Snyk PoC: <https://security.snyk.io/vuln/SNYK-JS-TOUGHCOOKIE-5672873>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-memstore.js` — pre-patch excerpt of MemoryCookieStore (minimal sufficient context)
 
-- CookieJar 会按 domain、path、key 建立多层索引，旧实现如果使用普通对象就可能碰到原型链属性。
-- Prototype pollution 的修复重点通常是让字典没有原型，或者使用 Map，而不是只屏蔽一个字符串。
-- 黑名单容易漏掉 constructor、prototype 或嵌套层级里的危险 key。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -31,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What do the existing tests prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch blocks only one dangerous domain string while keeping ordinary objects for untrusted indexes.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- MemoryCookieStore builds a three-level index (domain -> path -> key) on a plain object this.idx; putCookie writes each layer by those fields.
+- findCookie / findCookies read cookies back out of those plain objects by the same fields.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

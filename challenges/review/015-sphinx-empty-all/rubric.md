@@ -4,31 +4,31 @@ Total: 100 points.
 
 ## Merge Decision: 30
 
-- 30: Says this PR must not be merged / requires changes.
-- 10: Expresses uncertainty but identifies a blocking risk.
-- 0: Says it can be merged without qualification.
+- 30: Approves the PR: it can be merged as-is.
+- 10: Says "need more info" but explicitly confirms the main risk points (the None vs [] paths).
+- 0: Says it cannot be merged / requires changes.
 
-## Core Risk: 30
+## Core Verification: 30
 
-- 30: Clearly explains: The patch treats __all__ = [] as if __all__ were absent.
-- 18: Mentions the general risk but misses the exact failing boundary.
-- 8: Vaguely says the condition is too broad or tests are incomplete.
-- 0: Misses the core risk.
+- 30: Explicitly verifies both: (a) self.__all__ is None exactly when the module defines no __all__ (init default, getall returning None, ignore_module_all), so implicit discovery is preserved; (b) __all__ = [] falls into the explicit-filter branch where every member is skipped, while non-empty __all__ behaves identically under the old and new condition.
+- 18: Verifies one of the two points.
+- 8: Generic "the change looks correct" without tracing either path.
+- 0: No verification of the changed condition.
 
 ## Semantic Boundary: 15
 
-- 15: Explains the intended contract and why the AI patch changes it.
-- 8: Mentions edge cases but does not describe the contract.
-- 0: Does not discuss the intended behavior.
+- 15: States the contract precisely: behavior changes for exactly one input (__all__ = []); absent __all__ and non-empty __all__ behave as before; an empty export list means no public members.
+- 8: Mentions the None vs empty distinction without delimiting what does and does not change.
+- 0: Does not discuss the behavior contract.
 
 ## Test Quality: 10
 
-- 10: Identifies the missing negative/boundary test: The added test expects members to appear for an empty __all__.
-- 5: Says tests are insufficient without naming the missing case.
-- 0: Treats the tests as sufficient.
+- 10: Correctly judges the added test decisive (it fails on the pre-patch code because foo/bar/baz would appear), and/or proposes a meaningful strengthening such as a companion absent-__all__ test.
+- 5: Mentions the test without assessing what it proves.
+- 0: Ignores testing or wrongly claims the test proves nothing.
 
-## Repair Direction: 15
+## Decision Quality: 15
 
-- 15: Gives an actionable fix: Check self.__all__ is None for the implicit path; treat an empty list as an explicit list with no members.
-- 8: Suggests adding tests but gives only a partial implementation direction.
-- 0: No actionable fix.
+- 15: Approve rationale is concrete and evidence-based, and avoids wrong rejection reasons (e.g. "breaking change that needs an option", "is None is unsafe because __all__ may be undefined").
+- 8: Correct decision with a thin rationale.
+- 0: Relies on a disallowed conclusion or gives no rationale.

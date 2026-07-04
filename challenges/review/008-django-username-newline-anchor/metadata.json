@@ -6,19 +6,19 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "Django 用户名换行锚点审查",
-    "en": "Django username newline anchor review"
+    "zh": "Django：用户名校验拒绝末尾换行",
+    "en": "Django: reject trailing newlines in username validation"
   },
   "summary": {
-    "zh": "审查一个用 strip() 处理用户名换行的补丁，它可能静默改写用户输入而不是拒绝非法用户名。",
-    "en": "Review a username validator patch that strips input instead of rejecting trailing newlines."
+    "zh": "审查 Django auth 的一个小补丁：作者发现 UsernameValidator 的正则允许末尾带换行符的用户名通过校验，调整了正则锚点让这类输入被拒绝。",
+    "en": "Review a small Django auth patch: the author tightens the username validators' regex anchor so usernames with a trailing newline are rejected."
   },
   "language": "Python / Django",
   "tags": [
     "django",
+    "auth",
     "validation",
     "regex",
-    "security",
     "swe-bench"
   ],
   "source": {
@@ -47,84 +47,98 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "kind": "adapted-upstream-correct-patch",
+    "note": "The reviewed patch is adapted from the upstream maintainer fix (context and line numbers adjusted for review training). Whether it can be merged is the question the reviewer must answer."
   },
-  "learningGoal": "区分验证输入和规范化输入，识别 regex 锚点语义。",
-  "scenario": "AI PR 发现 UsernameValidator 允许 trailing newline，于是在校验前对用户名执行 strip()。",
-  "context": [
-    "Django UsernameValidator 的意图是只允许指定字符集合。Python regex 的 $ 可以匹配末尾换行。",
-    "正确方向是调整锚点语义，让非法输入失败，而不是改变用户提交的值。",
-    "静默 strip 可能造成唯一性、审计日志和用户可见值之间的语义混淆。"
+  "pr": {
+    "title": "Make UsernameValidator reject usernames with a trailing newline",
+    "author": "codegen-agent",
+    "body": [
+      "ASCIIUsernameValidator 和 UnicodeUsernameValidator 目前用 '^[\\w.@+-]+$' 校验用户名，但 Python 正则的 $ 可以在字符串末尾的换行符之前匹配，所以像 'joe\\n' 这样的用户名能通过校验，通过表单和 API 都能创建出来。",
+      "这个 PR 把两个 validator 的结尾锚点从 $ 改成 \\Z：\\Z 只在字符串真正的结尾匹配，带末尾换行的用户名会正常抛出 ValidationError。字符集和其余逻辑保持不变。",
+      "在 auth_tests 两组 invalid_usernames 里各加了一个带末尾换行的用例作为回归测试。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "ASCIIUsernameValidator 和 UnicodeUsernameValidator 是 Django auth 用户名字段默认的校验器，都继承 RegexValidator：用 regex.search 判断输入，不匹配就抛 ValidationError。",
+    "Python re 中，$ 在默认（非 MULTILINE）模式下既能在字符串结尾匹配，也能在结尾换行符之前匹配；\\Z 只在字符串绝对结尾匹配。^ 在非 MULTILINE 模式下只在字符串开头匹配。",
+    "题目文件里提供了补丁前 validators 及 RegexValidator 基类的源码节选（src-validators.py），建议先读节选再看 diff。"
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "edge-case",
+    "notes": [
+      "这个补丁是正确的，可以合并。Python re 中 re.search(r'^[\\w.@+-]+$', 'joe\\n') 能命中，因为 $ 容忍一个末尾换行；改成 \\Z 后同一输入不再匹配，RegexValidator 会抛 ValidationError。这正是问题的最小修复。",
+      "approve 之前应逐一确认：两个 validator 类是否同步修改（Unicode 版是默认 validator，漏掉任何一个都算修复不完整）；字符集 [\\w.@+-]+ 和 ^ 锚点是否原样保留（非 MULTILINE 模式下 ^ 就是字符串开头，所以存量合法用户名行为不变）；新增的负向测试在旧正则下是否会失败（会——'trailingnewline\\n' 旧代码能通过校验，因此这是可信的回归测试，而不是新旧代码都通过的摆设）。",
+      "常见的错误拒绝理由：把 Python 的 \\Z 当成 Perl/PCRE 的 \\Z（Perl 中 \\Z 仍容忍末尾换行、\\z 才是绝对结尾；Python 的 \\Z 等价于 Perl 的 \\z，不存在残留漏洞）；主张对输入做 strip 而不是拒绝（validator 的职责是判定而不是改写用户提交的值，静默改写会造成唯一性与审计语义混淆）；坚持必须把 ^ 一并改成 \\A 才算完整（没有 re.MULTILINE 时两者等价，属于风格问题而非阻塞项）。"
+    ]
+  },
+  "learningGoal": "判断正则锚点语义变化的行为边界：修复是否既拒绝了非法输入，又不影响存量合法输入。",
   "terms": [
     {
       "term": "$",
-      "description": "Python 正则中的行尾锚点，可在末尾换行前匹配。"
+      "description": "Python 正则的行尾锚点，非 MULTILINE 模式下可在字符串末尾换行符之前匹配。"
     },
     {
       "term": "\\Z",
-      "description": "字符串真实结尾锚点，更适合完整字段校验。"
+      "description": "Python 正则的字符串绝对结尾锚点（等价于其他正则方言的 \\z）。"
     },
     {
-      "term": "normalization",
-      "description": "把输入改写成标准形式；不应替代安全验证。"
+      "term": "RegexValidator",
+      "description": "Django 校验器基类，用 regex.search 判定输入，不匹配则抛 ValidationError。"
     },
     {
-      "term": "validator",
-      "description": "应判断输入是否符合规则，而不是偷偷改变用户意图。"
+      "term": "re.MULTILINE",
+      "description": "让 ^/$ 逐行匹配的 flag；这两个 validator 没有启用它。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "\"alice\\n\"",
-      "expected": "应被拒绝。",
-      "reviewQuestion": "PR 是拒绝非法输入，还是 strip 后接受。"
+      "input": "\"joe\\n\"",
+      "expected": "补丁后两个 validator 都抛 ValidationError。",
+      "reviewQuestion": "补丁前这个输入为什么能通过？补丁后为什么不能？"
     },
     {
-      "input": "\" alice\"",
-      "expected": "前导空格也不在允许字符集内。",
-      "reviewQuestion": "strip 是否扩大了可接受输入集合。"
+      "input": "\"joe\"、\"jean-marc\"、\"René\"",
+      "expected": "补丁前后都通过校验。",
+      "reviewQuestion": "字符集和 ^ 锚点有没有变化？"
     },
     {
-      "input": "正常用户名",
-      "expected": "应继续通过。",
-      "reviewQuestion": "修复是否只影响边界非法输入。"
+      "input": "\"\\njoe\"（前导换行）",
+      "expected": "补丁前后都被拒绝。",
+      "reviewQuestion": "非 MULTILINE 模式下 ^ 在哪些位置匹配？"
     }
   ],
   "scoringHints": {
     "coreRiskTerms": [
-      "strip",
-      "newline",
-      "username",
-      "validator",
-      "换行"
-    ],
-    "boundaryTerms": [
       "\\Z",
       "$",
+      "锚点",
       "anchor",
-      "规范化",
-      "校验"
+      "换行",
+      "newline"
+    ],
+    "boundaryTerms": [
+      "MULTILINE",
+      "结尾",
+      "end of string",
+      "绝对",
+      "字符集",
+      "character class"
     ],
     "testTerms": [
-      "newline",
+      "trailingnewline",
+      "invalid_usernames",
       "ValidationError",
-      "leading",
-      "trailing"
+      "负向",
+      "negative",
+      "回归"
     ],
     "fixTerms": [
-      "\\Z",
-      "strict anchor",
-      "reject",
-      "ValidationError"
+      "可以合并",
+      "approve",
+      "无需修改",
+      "can merge",
+      "LGTM"
     ]
   }
 }

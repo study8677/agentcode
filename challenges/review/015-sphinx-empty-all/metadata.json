@@ -6,12 +6,12 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "Sphinx autodoc 空 __all__ 审查",
-    "en": "Sphinx autodoc empty __all__ review"
+    "zh": "Sphinx autodoc：让显式声明的空 __all__ 生效",
+    "en": "Sphinx autodoc: honor an explicitly empty __all__"
   },
   "summary": {
-    "zh": "审查一个把空 __all__ 当成未设置的补丁，它会继续把本应隐藏的模块成员全部文档化。",
-    "en": "Review an autodoc patch that treats an empty __all__ like no __all__ and documents members that should be hidden."
+    "zh": "审查一个 Sphinx autodoc 补丁：作者称模块声明 __all__ = [] 时成员仍会被全部文档化，补丁把空 __all__ 当作显式的空导出列表处理。",
+    "en": "Review a Sphinx autodoc patch: the author reports that a module declaring an empty __all__ still gets every member documented, and changes autodoc to treat it as an explicit empty export list."
   },
   "language": "Python / Sphinx",
   "tags": [
@@ -28,7 +28,7 @@
     "references": [
       {
         "label": "Sphinx Issue",
-        "url": "https://github.com/sphinx-doc/sphinx/issues/8595"
+        "url": "https://github.com/sphinx-doc/sphinx/issues/8594"
       },
       {
         "label": "上游 PR",
@@ -42,23 +42,33 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "kind": "adapted-upstream-correct-patch",
+    "note": "The reviewed patch is an AgentCode adaptation of the upstream maintainer fix, reformatted for review training."
+  },
+  "pr": {
+    "title": "Fix autodoc ignoring an empty __all__ attribute",
+    "author": "codegen-agent",
+    "body": [
+      "用户报告：模块写了 `__all__ = []`，automodule 生成文档时仍然把 foo/bar/baz 全部列出来。__all__ 是模块的显式导出声明，空列表的含义是“没有公开成员”，autodoc 应该尊重它，而不是当作没写。",
+      "原因是 get_object_members 用 `not self.__all__` 判断是否走隐式成员发现，把空列表和未定义混为一谈。这个 PR 把判断改成 `self.__all__ is None`：只有模块真的没有定义 __all__ 时才做隐式发现；空列表则走显式导出过滤，所有成员都会被跳过。",
+      "新增了 fixture 模块 target/empty_all.py（声明空 __all__ 并定义三个函数）和对应测试，断言 automodule 的输出里不包含任何成员。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "autodoc 的 ModuleDocumenter 负责为一个模块生成文档：automodule 带 :members: 选项时，get_object_members(want_all=True) 决定哪些模块成员会被文档化。",
+    "Python 中 __all__ 是模块的显式导出列表；未定义 __all__ 时，文档工具需要按其他规则（如成员的 __module__ 归属）推断要展示的成员。",
+    "题目文件里提供了补丁前相关代码的节选（src-autodoc.py），包含 __all__ 的读取路径和成员筛选逻辑，建议先读懂源码再看 diff。"
+  ],
+  "analysis": {
+    "dimension": "edge-case",
+    "notes": [
+      "这个补丁是正确的，可以合并。判断条件的改动是精确的：self.__all__ 只有三条赋值路径——__init__ 初始化为 None、inspect.getall 在模块没有定义 __all__ 时返回 None、ignore_module_all 选项下保持 None。因此 `is None` 严格等价于“模块未声明 __all__”，隐式成员发现路径对这些模块完全保留。",
+      "行为变化只发生在 __all__ = [] 这一种输入上：旧代码 not [] 为真、错误地走隐式发现；新代码走显式过滤分支，空列表里不含任何成员名，所有成员都被标记 skipped 并在 filter_members 里被丢弃，输出为空——这正是 Python 导出语义的要求。非空 __all__ 在新旧条件下走同一分支，行为不变。",
+      "新增测试是可信的回归测试：fixture 明确声明 __all__ = [] 且定义了三个函数，测试断言 automodule 输出只有模块指令和 docstring、没有任何成员。这个断言在补丁前必然失败（旧代码会列出 foo/bar/baz），在补丁后通过，恰好覆盖了被改变的那条边界。",
+      "常见的错误拒绝理由：认为这是破坏兼容的行为变化、需要加开关——但旧行为与 __all__ 的公认语义直接矛盾，上游也把它作为 bug 处理，而且已有 ignore_module_all 选项可以显式恢复隐式发现；或者担心模块没有 __all__ 时 self.__all__ 未定义、`is None` 不安全——节选里可以看到它总是在 __init__ 里被初始化为 None。"
+    ]
   },
   "learningGoal": "区分 None 和空集合在 API 契约里的不同含义。",
-  "scenario": "AI PR 认为 not self.__all__ 时都应该走隐式成员发现，导致 __all__ = [] 被当成没有声明。",
-  "context": [
-    "在 Python 模块中，__all__ 明确声明了对外导出的成员。",
-    "__all__ = [] 的含义是没有公开成员，不等同于没有定义 __all__。",
-    "Sphinx autodoc 需要尊重用户显式声明，即使声明为空。"
-  ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
   "terms": [
     {
       "term": "__all__",
@@ -79,46 +89,51 @@
   ],
   "behaviorChecks": [
     {
-      "input": "__all__ 未定义",
-      "expected": "可以按隐式成员规则生成文档。",
-      "reviewQuestion": "默认路径是否保留。"
+      "input": "__all__ 未定义的模块",
+      "expected": "隐式成员发现行为与补丁前一致。",
+      "reviewQuestion": "self.__all__ 在哪些赋值路径下会是 None？"
     },
     {
       "input": "__all__ = []",
-      "expected": "不应展示 foo/bar/baz。",
-      "reviewQuestion": "PR 是否把空列表当成未定义。"
+      "expected": "没有成员被文档化。",
+      "reviewQuestion": "空列表在新条件下落入哪个分支？分支里对成员做了什么？"
     },
     {
       "input": "__all__ = [\"foo\"]",
-      "expected": "只展示 foo。",
-      "reviewQuestion": "显式导出列表是否仍被尊重。"
+      "expected": "只展示 foo，行为与补丁前一致。",
+      "reviewQuestion": "非空列表在新旧条件下是否走同一分支？"
     }
   ],
   "scoringHints": {
     "coreRiskTerms": [
       "__all__",
-      "empty",
-      "members",
-      "autodoc",
-      "空"
+      "none",
+      "is none",
+      "空",
+      "empty"
     ],
     "boundaryTerms": [
-      "None",
-      "[]",
-      "explicit",
+      "未定义",
+      "absent",
+      "隐式",
       "implicit",
-      "导出"
+      "显式",
+      "explicit"
     ],
     "testTerms": [
-      "empty __all__",
-      "absent",
-      "foo",
-      "no members"
+      "empty_all",
+      "fixture",
+      "回归",
+      "断言",
+      "no members",
+      "不包含"
     ],
     "fixTerms": [
-      "is None",
-      "explicit empty",
-      "respect __all__"
+      "可以合并",
+      "approve",
+      "merge",
+      "无需修改",
+      "lgtm"
     ]
   }
 }

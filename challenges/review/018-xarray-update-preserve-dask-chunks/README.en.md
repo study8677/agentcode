@@ -1,26 +1,28 @@
-# Review 018: xarray update preserves dask chunks review
+# Review 018: xarray: handle DataArray tuple inputs during Dataset update
 
-Review an xarray update patch that resolves ambiguity by eagerly converting dask-backed data to NumPy.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Normalize DataArray tuple payloads before constructing Variables**
+>
+> Dataset.update can receive variables in tuple form, but passing a DataArray as the tuple payload is ambiguous because Variable expects raw data rather than another labeled array object.
+>
+> This PR normalizes tuple payloads by converting DataArray values with np.asarray before calling Variable(*obj). That gives Variable a plain ndarray and keeps the update path consistent with NumPy-backed inputs.
+>
+> Added a regression test that updates a Dataset with a chunked DataArray tuple and checks the resulting values are equal. Existing xarray tests pass.
 
-- xarray Issue/PR: <https://github.com/pydata/xarray/pull/4493>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-variable.py` — pre-patch tuple-to-Variable conversion excerpt (minimal sufficient context)
 
-- xarray 经常包装 dask 数组以实现惰性计算和分块处理。
-- Dataset.update 不应让 chunked DataArray 被急切求值成 NumPy 数组。
-- DataArray 构造 Variable 的歧义应通过 .data 或明确错误处理解决，而不是强制计算 values。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -29,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch calls np.asarray() on a DataArray, forcing dask-backed data to compute eagerly.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- xarray DataArray can wrap NumPy arrays or lazy dask arrays.
+- dask chunk metadata and lazy execution are user-visible behavior.
+- When reviewing data-structure conversions, check whether the patch preserves execution semantics, not just value equality.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

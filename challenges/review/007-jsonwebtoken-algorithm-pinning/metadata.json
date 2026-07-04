@@ -6,20 +6,20 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "JWT verify 未固定算法审查",
-    "en": "JWT verification without algorithm pinning review"
+    "zh": "会话令牌校验：让签名密钥支持按环境配置",
+    "en": "Session token verification: make the signing key configurable per environment"
   },
   "summary": {
-    "zh": "审查一个让测试通过的认证补丁，它把 key 变成可空配置并移除了 algorithms 白名单。",
-    "en": "Review an auth patch that makes the key optional and removes algorithm pinning."
+    "zh": "审查一个把 verifySession 的签名密钥改为从环境变量读取的补丁，作者说这样本地开发也能校验令牌。",
+    "en": "Review a patch that makes verifySession read its signing key from an environment variable so that local development can verify tokens too."
   },
-  "language": "JavaScript / Auth Security",
+  "language": "JavaScript / Auth Service",
   "tags": [
+    "jsonwebtoken",
     "jwt",
-    "auth",
-    "security",
-    "algorithm-confusion",
-    "configuration"
+    "configuration",
+    "environment",
+    "session"
   ],
   "source": {
     "project": "node-jsonwebtoken",
@@ -46,85 +46,94 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "识别认证代码里“配置缺失也继续运行”和“算法不固定”的组合风险。",
-  "scenario": "AI PR 为了同时支持本地开发和生产，把 jwt.verify 的 key 改成 process.env.JWT_SECRET || undefined，并删除 algorithms 限制。",
-  "context": [
-    "JWT verify 必须明确预期算法和密钥类型，否则不同库版本或配置下可能出现 alg:none、HS/RS 混淆等风险。",
-    "认证配置缺失时应该启动失败，而不是在请求路径里降级为 undefined。",
-    "安全库升级和调用侧 defense in depth 都重要。"
+  "pr": {
+    "title": "Make the session signing key configurable so local dev can verify tokens",
+    "author": "codegen-agent",
+    "body": [
+      "本地开发环境没有生产用的 RS256 公钥文件，verifySession 在启动时就会因为读不到公钥抛错，开发同学没法在本地跑通登录流程。",
+      "这个 PR 把校验用的密钥改成从环境变量 JWT_SECRET 读取，各环境各自提供自己的密钥；同时不再把算法写死，让 jsonwebtoken 按令牌本身声明的算法来校验，这样本地用 JWT_SECRET 签发的令牌和生产令牌都能走同一段代码。issuer/audience 校验保持不变。",
+      "新增了一个测试：用 JWT_SECRET 签发的本地开发令牌能通过 verifySession。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "verifySession 是服务端校验会话 Bearer 令牌的入口：从请求里拿到 JWT，交给 jsonwebtoken 的 jwt.verify 校验签名和 issuer/audience，通过后返回 payload。",
+    "生产环境的签名密钥、公钥路径等都来自环境配置；配置项在进程启动时读取。",
+    "题目文件提供了补丁前 verifySession 及其调用点的节选（src-session.ts）；建议先读懂它再看 diff。"
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "security",
+    "notes": [
+      "这个改动叠了两个问题。其一，密钥变成 process.env.JWT_SECRET || undefined：当 JWT_SECRET 未设置时，undefined 会一路进入 jwt.verify。认证应当 fail closed——配置缺失就启动失败或拒绝请求，而不是在请求路径里静默降级成没有密钥。",
+      "其二，删掉 algorithms: ['RS256'] 之后不再固定算法。verify 会接受令牌头里声明的任意算法；配合可控或缺失的密钥，历史上这类组合会打开 alg:none 或 HS/RS 混淆（拿 RS256 公钥当 HMAC 密钥去伪造令牌）的绕过路径，具体取决于 jsonwebtoken 版本。issuer/audience 还在校验，但那挡不住一个签名被伪造的令牌。",
+      "新增测试只覆盖了本地开发的 happy path（JWT_SECRET 签发的令牌通过），完全没有负向用例：alg:none 令牌、算法不符的令牌、JWT_SECRET 缺失、issuer/audience 错误都没测。绿灯证明不了校验仍然安全。"
+    ]
+  },
+  "learningGoal": "判断一个为兼容多环境而放宽配置的改动，是否悄悄改变了原有校验必须坚持的前提。",
   "terms": [
     {
-      "term": "algorithm pinning",
-      "description": "显式限定允许的 JWT 签名算法，例如 RS256。"
+      "term": "jwt.verify",
+      "description": "jsonwebtoken 校验并解码 JWT 的函数，可传入期望的算法、issuer、audience 等选项。"
     },
     {
-      "term": "alg:none",
-      "description": "无签名算法，在历史漏洞和误配置中可能导致认证绕过。"
+      "term": "issuer / audience",
+      "description": "JWT 的签发方和受众声明，verify 时可要求它们匹配。"
     },
     {
-      "term": "fail closed",
-      "description": "配置缺失或不确定时拒绝服务，而不是放行。"
+      "term": "signing key",
+      "description": "校验签名用的密钥；对称算法是共享密钥，非对称算法是公钥。"
     },
     {
-      "term": "key confusion",
-      "description": "把非预期类型的 key 用在错误算法上。"
+      "term": "environment variable",
+      "description": "按部署环境注入的配置，例如 process.env.JWT_SECRET。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "生产 RS256 token",
-      "expected": "必须只接受指定 issuer/audience/algorithm。",
-      "reviewQuestion": "PR 是否保留 algorithms 白名单。"
+      "input": "生产 RS256 令牌",
+      "expected": "只接受指定 issuer/audience，且签名算法受约束。",
+      "reviewQuestion": "改动之后，verify 还限定接受哪种算法吗？"
     },
     {
-      "input": "JWT_SECRET 缺失",
-      "expected": "应用应启动失败或拒绝请求。",
-      "reviewQuestion": "undefined key 是否进入 verify。"
+      "input": "JWT_SECRET 未设置",
+      "expected": "应用应启动失败或拒绝请求，而不是继续用空密钥校验。",
+      "reviewQuestion": "JWT_SECRET 缺失时，进入 jwt.verify 的密钥是什么？"
     },
     {
-      "input": "alg:none 或 HS/RS 混淆 token",
-      "expected": "必须拒绝。",
-      "reviewQuestion": "测试是否覆盖负向 token。"
+      "input": "令牌头声明了非预期算法",
+      "expected": "应当被拒绝。",
+      "reviewQuestion": "谁来决定用哪种算法校验——服务端还是令牌本身？"
     }
   ],
   "scoringHints": {
     "coreRiskTerms": [
-      "jwt",
       "algorithm",
+      "算法",
       "alg:none",
-      "secret",
-      "auth"
+      "undefined",
+      "verify"
     ],
     "boundaryTerms": [
       "fail closed",
+      "fail open",
       "algorithms",
-      "rs256",
-      "undefined",
+      "启动",
       "配置"
     ],
     "testTerms": [
       "alg:none",
       "wrong algorithm",
       "missing key",
-      "issuer",
-      "audience"
+      "负向",
+      "forged"
     ],
     "fixTerms": [
       "algorithms",
       "pin",
       "startup",
-      "upgrade",
-      "RS256"
+      "固定",
+      "升级"
     ]
   }
 }

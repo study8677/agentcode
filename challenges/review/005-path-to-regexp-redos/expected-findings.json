@@ -1,21 +1,55 @@
 {
   "canMerge": false,
+  "mergeRationale": "The patch only special-cases the one advisory example (dash-separated /:a-:b); the same overlapping-capture ReDoS survives for other separators, custom-pattern params, and repeated modifiers.",
   "requiredFindings": [
     {
       "id": "partial-redos-fix",
       "severity": "critical",
-      "summary": "The patch special-cases one adjacent-parameter pattern but does not remove the broader overlapping-capture risk.",
-      "expectedReasoning": "Routes such as /:a-:b-:c or custom captures can still generate regexes that block the Node event loop on long inputs.",
-      "acceptableFix": "Fix the compiler so generated captures have unambiguous boundaries for all adjacent parameters, or upgrade to a safe version."
+      "summary": "The patch special-cases one adjacent-parameter shape (dash separator) but does not remove the general overlapping-capture ReDoS.",
+      "expectedReasoning": "Only token.suffix === '-' is tightened. Routes with other separators (e.g. /:a.:b, /:a_:b), custom-pattern captures, or repeat/optional modifiers still compile to overlapping ([^/]+?)<sep>([^/]+?) regexes that backtrack on long inputs and block the Node event loop.",
+      "acceptableFix": "Fix the compiler so every adjacent capture has an unambiguous boundary for any separator (or emit atomic/possessive-style patterns), or upgrade to a patched path-to-regexp version.",
+      "matchTerms": [
+        ["separator"],
+        ["分隔符"],
+        ["overlap"],
+        ["重叠"],
+        ["custom", "pattern"],
+        ["自定义", "模式"],
+        ["still", "backtrack"],
+        ["仍", "回溯"]
+      ]
     },
     {
       "id": "missing-family-performance-tests",
       "severity": "high",
-      "summary": "The test covers only one two-parameter route.",
-      "expectedReasoning": "The same ReDoS class can survive in three-segment and custom-capture routes.",
-      "acceptableFix": "Add timed regression tests for multiple adjacent params, custom patterns, and long non-matching inputs."
+      "summary": "The added test only exercises the one route shape that was fixed.",
+      "expectedReasoning": "It covers /:a-:b with a dash separator; other separators, custom captures and repeated params are untested, so the suite stays green while the ReDoS class remains.",
+      "acceptableFix": "Add timed regression tests for other separators, custom-pattern params, repeated/optional modifiers, and long non-matching inputs.",
+      "matchTerms": [
+        ["test", "only"],
+        ["测试", "只"],
+        ["test", "separator"],
+        ["测试", "分隔符"],
+        ["missing", "test"],
+        ["缺", "测试"]
+      ]
     }
   ],
-  "optionalFindings": [],
-  "disallowedConclusions": []
+  "optionalFindings": [
+    {
+      "id": "custom-pattern-dropped",
+      "severity": "low",
+      "summary": "When the new branch fires it returns [^/-]+? and ignores token.pattern, so /:id(\\d+)-:x silently loses its custom constraint.",
+      "matchTerms": [
+        ["custom", "pattern"],
+        ["自定义", "模式"],
+        ["ignore", "pattern"],
+        ["丢失", "约束"]
+      ]
+    }
+  ],
+  "disallowedConclusions": [
+    "The patch can be merged because the added ReDoS test passes.",
+    "Bounding /:a-:b at the dash is enough because that is the pattern in the advisory."
+  ]
 }

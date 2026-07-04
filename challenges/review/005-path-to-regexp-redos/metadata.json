@@ -6,20 +6,20 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "Express 路由模式 ReDoS 审查",
-    "en": "Express route pattern ReDoS review"
+    "zh": "path-to-regexp：修复相邻路由参数的正则灾难回溯",
+    "en": "path-to-regexp: fix catastrophic backtracking for adjacent route params"
   },
   "summary": {
-    "zh": "审查一个局部修复 path-to-regexp 回溯的补丁，它可能只覆盖两段参数而漏掉更多重叠模式。",
-    "en": "Review a partial path-to-regexp ReDoS fix that misses broader overlapping route patterns."
+    "zh": "审查一个声称修复 path-to-regexp ReDoS 公告的补丁：它给相邻参数（如 /:a-:b）的捕获组加了边界，消除长路径上的正则灾难回溯。",
+    "en": "Review a patch that claims to fix the path-to-regexp ReDoS advisory by bounding the capture of adjacent params like /:a-:b to stop catastrophic backtracking on long paths."
   },
   "language": "JavaScript / Express Routing",
   "tags": [
+    "path-to-regexp",
     "express",
-    "redos",
     "routing",
-    "performance-security",
-    "regex"
+    "regex",
+    "redos"
   ],
   "source": {
     "project": "path-to-regexp / Express",
@@ -46,22 +46,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "判断性能安全修复是否覆盖同一类模式，而不是只修一个例子。",
-  "scenario": "AI PR 为 /:a-:b 生成了局部 lookahead，声称解决长路径导致的正则灾难回溯。",
-  "context": [
-    "Express 等框架会把路由模式编译成正则表达式。重叠 capture 可能在恶意长路径上触发灾难回溯。",
-    "Node 单线程事件循环被 ReDoS 输入阻塞，会影响整个服务的可用性。",
-    "只给一个具体模式打补丁，容易漏掉 /:a-:b-:c 或自定义 capture 等同类问题。"
+  "pr": {
+    "title": "Fix ReDoS in route compilation for adjacent parameters (GHSA-9wv6-86v2-598j)",
+    "author": "codegen-agent",
+    "body": [
+      "GHSA-9wv6-86v2-598j 报告 path-to-regexp 在相邻路由参数（如 /:a-:b）上会生成互相重叠的捕获组，攻击者只要请求一条超长路径就能触发正则灾难回溯，把 Node 事件循环卡死。",
+      "这个 PR 在编译 token 时识别相邻参数：当一个参数后面紧跟另一个参数时，让前一个参数的捕获在分隔符处停止（用 [^/-]+? 代替 [^/]+?），两个捕获不再重叠，长路径不会再指数级回溯。",
+      "新增了一个回归测试：/:a-:b 编译出的正则在两万字符的非匹配输入上立即返回 false，不再挂起。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "path-to-regexp 把 Express 风格的路由模板编译成正则表达式：每个参数 token 变成一个捕获组，相邻捕获组之间是字面分隔符。",
+    "参数默认的捕获类是 [^/]+?（惰性、匹配除斜杠外任意字符）。当两个这样的捕获被一个同样属于该字符类的分隔符隔开时，正则引擎在不匹配的长输入上会大量回溯。",
+    "题目文件提供了补丁前编译器的节选（src-compiler.ts，为审查做了简化改编）；建议先读懂它再看 diff。"
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "surface-fix",
+    "notes": [
+      "补丁只在 token.suffix === '-' 且下一个 token 也是参数时才收紧捕获类。它精确命中了公告里的 /:a-:b 例子，但没有触及产生重叠捕获的通用机制，只是给一个具体形状打了补丁。",
+      "其他分隔符照样爆炸：/:a.:b、/:a_:b 之类走的是未改动的默认分支，仍生成 ([^/]+?)<sep>([^/]+?)，分隔符本身属于 [^/]，重叠依旧，长输入照样灾难回溯。带自定义 pattern 的参数（如 /:id(\\d+)-:name）会被这个分支直接改写成 [^/-]+?，既没解决回溯又丢掉了原有的数字约束。",
+      "新增测试只跑了 /:a-:b 这一个被修的形状，对其他分隔符、自定义 capture、重复/可选修饰符一律没覆盖。绿灯只说明这一个例子被挡住了，证明不了这一类 ReDoS 已经消除。"
+    ]
+  },
+  "learningGoal": "判断一个性能安全修复是覆盖了同一类模式，还是只修了公告里的那一个例子。",
   "terms": [
     {
       "term": "ReDoS",
@@ -69,32 +78,32 @@
     },
     {
       "term": "catastrophic backtracking",
-      "description": "正则引擎反复尝试大量路径，导致 CPU 被占满。"
+      "description": "正则引擎反复尝试大量匹配路径，导致 CPU 被占满。"
     },
     {
       "term": "route pattern",
       "description": "框架声明的路由模板，例如 /:a-:b。"
     },
     {
-      "term": "non-overlapping capture",
-      "description": "让相邻参数的匹配边界明确，避免互相吞字符。"
+      "term": "capture 边界",
+      "description": "让相邻参数的匹配边界明确，避免互相吞字符导致重叠。"
     }
   ],
   "behaviorChecks": [
     {
       "input": "/:a-:b",
       "expected": "不应在长字符串上指数级回溯。",
-      "reviewQuestion": "AI PR 是否只修这一种模式。"
+      "reviewQuestion": "补丁只处理了这一个形状吗？"
     },
     {
-      "input": "/:a-:b-:c",
-      "expected": "同类重叠参数也应安全。",
-      "reviewQuestion": "多段参数是否仍生成危险正则。"
+      "input": "/:a.:b 或 /:a_:b",
+      "expected": "换一个分隔符的相邻参数也应安全。",
+      "reviewQuestion": "分隔符不是 '-' 时走哪条分支，生成的正则还重叠吗？"
     },
     {
-      "input": "自定义 capture",
-      "expected": "用户定义模式也不能打破边界。",
-      "reviewQuestion": "修复是否有通用解析层约束。"
+      "input": "/:id(\\d+)-:name",
+      "expected": "带自定义 capture 的参数也不能打破边界。",
+      "reviewQuestion": "新分支命中时，用户写的自定义 pattern 去哪了？"
     }
   ],
   "scoringHints": {
@@ -106,25 +115,25 @@
       "回溯"
     ],
     "boundaryTerms": [
+      "separator",
+      "分隔符",
       "overlap",
-      "capture",
-      "边界",
-      "route",
-      "param"
+      "重叠",
+      "capture"
     ],
     "testTerms": [
-      ":a-:b-:c",
-      "long",
+      ":a.:b",
+      "separator",
       "custom",
       "timeout",
-      "performance"
+      "分隔符"
     ],
     "fixTerms": [
-      "non-overlap",
-      "safe version",
-      "upgrade",
+      "boundary",
       "边界",
-      "限制"
+      "atomic",
+      "upgrade",
+      "升级"
     ]
   }
 }

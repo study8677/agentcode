@@ -1,21 +1,41 @@
 {
   "canMerge": false,
+  "mergeRationale": "The cache key is only the condition string, but skipif/xfail string conditions are evaluated with per-module globals, so results leak across modules.",
   "requiredFindings": [
     {
       "id": "cache-key-misses-globals",
       "severity": "high",
       "summary": "The cache key is only the expression string and ignores the globals used to evaluate it.",
-      "expectedReasoning": "Two modules can both use skipif(\"skip\") with different skip variables, causing pytest to skip or run the wrong test.",
-      "acceptableFix": "Do not cache evaluated boolean results globally; cache compiled expressions only or include the evaluation context safely."
+      "expectedReasoning": "Two modules can both use skipif(\"skip\") with different skip variables, causing pytest to skip or run the wrong test depending on collection order.",
+      "acceptableFix": "Do not cache evaluated boolean results globally; cache compiled expressions only or include the evaluation context safely.",
+      "matchTerms": [
+        ["cache", "globals"],
+        ["缓存", "全局"],
+        ["缓存", "模块"],
+        ["module", "globals"],
+        ["skip", "module"],
+        ["key", "context"]
+      ]
     },
     {
       "id": "missing-two-module-test",
       "severity": "medium",
       "summary": "The test covers only one module and one value.",
-      "expectedReasoning": "It cannot catch cross-module cache pollution.",
-      "acceptableFix": "Add two modules with the same expression string but opposite global values."
+      "expectedReasoning": "It cannot catch cross-module cache pollution because repeated evaluation inside one module has the same globals each time.",
+      "acceptableFix": "Add two modules with the same expression string but opposite global values.",
+      "matchTerms": [
+        ["two modules"],
+        ["两个模块"],
+        ["cross-module"],
+        ["不同", "模块"],
+        ["相反", "值"],
+        ["collection", "order"]
+      ]
     }
   ],
   "optionalFindings": [],
-  "disallowedConclusions": []
+  "disallowedConclusions": [
+    "The patch can be merged because repeated conditions in one module still behave correctly.",
+    "A string-only cache key is safe because skipif expressions are usually constants."
+  ]
 }

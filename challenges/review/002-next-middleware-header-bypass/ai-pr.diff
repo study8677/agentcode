@@ -2,20 +2,39 @@ diff --git a/middleware.ts b/middleware.ts
 index 8a31fe1..bad0002 100644
 --- a/middleware.ts
 +++ b/middleware.ts
-@@ -7,6 +7,12 @@ const protectedRoutes = ['/admin', '/billing', '/settings']
- 
+@@ -8,6 +8,15 @@ const protectedRoutes = ['/admin', '/billing', '/settings']
+
  export function middleware(req: NextRequest) {
-+  // Avoid running auth middleware for framework subrequests.
++  // Framework subrequests already passed through middleware once. Next.js
++  // tags them with x-middleware-subrequest, so short-circuit here to avoid
++  // re-running auth on the same request chain (fixes duplicate redirects).
 +  if (req.headers.get('x-middleware-subrequest')) {
 +    return NextResponse.next()
 +  }
 +
    const pathname = req.nextUrl.pathname
    const requiresAuth = protectedRoutes.some((route) => pathname.startsWith(route))
-@@ -31,3 +37,10 @@ test('redirects anonymous users away from admin pages', async () => {
-+test('does not recurse on middleware subrequests', async () => {
+
+   if (!requiresAuth) {
+     return NextResponse.next()
+   }
+diff --git a/middleware.test.ts b/middleware.test.ts
+index 15406a2..8c93f42 100644
+--- a/middleware.test.ts
++++ b/middleware.test.ts
+@@ -18,6 +18,15 @@ test('redirects anonymous users away from admin pages', () => {
+   const res = middleware(req)
+   expect(res.status).toBe(307)
+ })
+
++test('does not re-run middleware on framework subrequests', () => {
 +  const req = makeRequest('/admin')
 +  req.headers.set('x-middleware-subrequest', 'middleware')
 +  const res = middleware(req)
++  // Subrequest is allowed straight through instead of redirecting again.
 +  expect(res.status).toBe(200)
 +})
++
+ test('allows requests to public routes', () => {
+   const req = makeRequest('/pricing')
+   const res = middleware(req)

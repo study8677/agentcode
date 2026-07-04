@@ -11,9 +11,14 @@ import { ProblemList } from "@/components/problems/ProblemList";
 import { ProblemStatsStrip } from "@/components/problems/ProblemStatsStrip";
 import { ProblemToolbar } from "@/components/problems/ProblemToolbar";
 import { TopicSidebar } from "@/components/problems/TopicSidebar";
-import { challenges, practiceStats } from "@/lib/mock-data/problems";
+import type { Challenge, PracticeStats } from "@/lib/types/problem";
 
-export function PracticeHome() {
+type PracticeHomeProps = {
+  challenges: Challenge[];
+  practiceStats: PracticeStats;
+};
+
+export function PracticeHome({ challenges, practiceStats }: PracticeHomeProps) {
   const [language, setLanguage] = useState<Language>("zh");
   const labels = copy[language];
   const firstChallengeHref = challenges[0]?.href ?? "#";

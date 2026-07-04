@@ -1,26 +1,53 @@
 {
   "canMerge": false,
+  "mergeRationale": "Gating the imaginary-coordinate check on evaluate disables a documented validation: Point(I, 2) is silently accepted under evaluate(False).",
   "requiredFindings": [
     {
       "id": "imaginary-coordinate-regression",
       "severity": "high",
       "summary": "The patch disables the imaginary-coordinate safety check whenever evaluate is false.",
       "expectedReasoning": "Point(I, 2) inside evaluate(False) can bypass the ValueError, so the original coordinate contract is weakened.",
-      "acceptableFix": "Keep the guard active and reject only coordinates whose imaginary part is definitely non-zero, e.g. im(a).is_zero is False."
+      "acceptableFix": "Keep the guard active and reject only coordinates whose imaginary part is definitely non-zero, e.g. im(a).is_zero is False.",
+      "matchTerms": [
+        ["point(i"],
+        ["虚数", "evaluate"],
+        ["虚数", "跳过"],
+        ["虚数", "绕过"],
+        ["虚数", "不再"],
+        ["imaginary", "skip"],
+        ["imaginary", "bypass"],
+        ["imaginary", "disable"]
+      ]
     },
     {
       "id": "missing-negative-test",
       "severity": "medium",
       "summary": "The new test covers only the happy path.",
       "expectedReasoning": "It proves Point(1, 2) under evaluate(False), but not that invalid imaginary coordinates are still rejected.",
-      "acceptableFix": "Add a negative test asserting Point(I, 2) still raises under evaluate(False)."
+      "acceptableFix": "Add a negative test asserting Point(I, 2) still raises under evaluate(False).",
+      "matchTerms": [
+        ["测试", "虚数"],
+        ["测试", "point(i"],
+        ["test", "imaginary"],
+        ["test", "point(i"],
+        ["负向", "测试"],
+        ["negative", "test"],
+        ["happy path"]
+      ]
     }
   ],
   "optionalFindings": [
     {
       "id": "narrower-predicate",
       "severity": "medium",
-      "summary": "The predicate should encode certainty about the imaginary part, not the global evaluation mode."
+      "summary": "The predicate should encode certainty about the imaginary part, not the global evaluation mode.",
+      "matchTerms": [
+        ["is_zero"],
+        ["确定", "非零"],
+        ["definitely"],
+        ["三值"],
+        ["unknown", "reject"]
+      ]
     }
   ],
   "disallowedConclusions": [

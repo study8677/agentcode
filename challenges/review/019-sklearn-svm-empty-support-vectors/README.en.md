@@ -1,26 +1,28 @@
-# Review 019: scikit-learn SVM empty support vectors review
+# Review 019: scikit-learn SVM: handle sparse fit with empty support vectors
 
-Review an SVM sparse-fit patch that avoids division by zero but creates dual_coef_ with the wrong shape.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Avoid sparse SVM dual_coef_ construction errors when there are no support vectors**
+>
+> Sparse SVM fitting can hit an edge case where there are no support vectors. The current code still tries to construct dual_coef_ from CSR indptr/index arrays, which can fail or divide through empty support-vector state.
+>
+> This PR adds a fast path for n_SV == 0 and assigns an empty csr_matrix directly. Normal sparse SVM fits continue to use the existing CSR construction path.
+>
+> Added a regression test that fits the sparse model in the empty-support-vector case and confirms dual_coef_ is empty. Existing SVM tests pass.
 
-- scikit-learn Issue/PR: <https://github.com/scikit-learn/scikit-learn/pull/14894>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-svm-base.py` — pre-patch sparse dual_coef_ construction excerpt (minimal sufficient context)
 
-- SVM sparse fit 在没有 support vectors 的边界情况下曾出现 ZeroDivisionError。
-- 修复不能只避免除零，还必须让 dual_coef_ 的形状符合后续 predict/属性访问预期。
-- scikit-learn estimator 的公开属性形状是 API 合约的一部分。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -29,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch creates sp.csr_matrix([]), which does not preserve the expected (n_class, n_SV) shape.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- scikit-learn estimator attribute shapes are part of the public API contract.
+- Empty matrices still need the correct shape; zero stored elements is not enough.
+- When reviewing numerical-library edge-case fixes, check whether the patch preserves downstream attribute and prediction invariants.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

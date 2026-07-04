@@ -1,27 +1,28 @@
-# Review 013: Requests urllib3 exception boundary review
+# Review 013: Requests: wrap a urllib3 connection-pool exception
 
-Review a patch that wraps only ClosedPoolError while leaving other urllib3 exceptions leaking through.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Wrap ClosedPoolError as a Requests ConnectionError**
+>
+> Some adapter error paths can leak urllib3 ClosedPoolError directly to callers, which breaks the expectation that Requests users catch requests.exceptions types at the public API boundary.
+>
+> This PR imports ClosedPoolError in adapters.py and maps it to requests.exceptions.ConnectionError next to the existing urllib3-to-Requests exception conversions.
+>
+> Added a focused regression test for ClosedPoolError so callers now see ConnectionError. Existing Requests tests pass.
 
-- Requests Issue: <https://github.com/psf/requests/issues/2674>
-- 上游 PR: <https://github.com/psf/requests/pull/2674>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-adapters.py` — pre-patch HTTPAdapter.send exception-mapping excerpt (minimal sufficient context)
 
-- Requests 对外承诺的是 requests.exceptions 体系。
-- 真实问题包括 DecodeError、TimeoutError 等下层异常穿透。
-- 只捕获一个具体异常会让 API 边界仍不稳定。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -30,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch wraps only ClosedPoolError and leaves other urllib3 exceptions outside the Requests API boundary.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- Requests exposes the `requests.exceptions` hierarchy as its public error contract.
+- The adapter layer maps lower-level urllib3 exceptions to Requests exception types.
+- When reviewing this kind of patch, judge whether it preserves the API boundary, not only whether one observed exception is covered.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

@@ -1,21 +1,40 @@
 {
   "canMerge": false,
+  "mergeRationale": "The branch now reads operand.mask before checking whether operand itself is None, so an existing no-operand path crashes.",
   "requiredFindings": [
     {
       "id": "operand-none-path-crashes",
       "severity": "high",
       "summary": "The patch reads operand.mask before proving operand is not None.",
       "expectedReasoning": "Any call path where operand itself is None will raise AttributeError instead of copying self.mask.",
-      "acceptableFix": "Handle operand is None before checking operand.mask, and keep separate branches for missing operand vs operand with no mask."
+      "acceptableFix": "Handle operand is None before checking operand.mask, and keep separate branches for missing operand vs operand with no mask.",
+      "matchTerms": [
+        ["operand", "None", "mask"],
+        ["operand.mask", "None"],
+        ["AttributeError"],
+        ["先", "operand"],
+        ["属性", "访问"],
+        ["分支", "顺序"]
+      ]
     },
     {
       "id": "missing-operand-none-test",
       "severity": "medium",
       "summary": "The test covers an operand with mask None but not operand being None.",
       "expectedReasoning": "It misses the path broken by the condition rewrite.",
-      "acceptableFix": "Add tests for operand is None, self.mask is None, operand.mask is None, and both masks present."
+      "acceptableFix": "Add tests for operand is None, self.mask is None, operand.mask is None, and both masks present.",
+      "matchTerms": [
+        ["operand is None", "test"],
+        ["测试", "operand", "None"],
+        ["mask None", "test"],
+        ["AttributeError", "test"],
+        ["两种", "None"]
+      ]
     }
   ],
   "optionalFindings": [],
-  "disallowedConclusions": []
+  "disallowedConclusions": [
+    "The patch can be merged because operand.mask is None is the real missing-mask case.",
+    "The added data_without_mask test covers all None-related mask propagation paths."
+  ]
 }

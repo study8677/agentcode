@@ -1,36 +1,28 @@
-# Review 002：别信任内部请求头：Next.js Middleware 绕过审查
+# Review 002：Next.js Middleware：修复子请求递归导致的重复执行
 
-一个 AI PR 为了避免 middleware 子请求递归，看到 x-middleware-subrequest 就直接跳过鉴权 middleware。
+你是这个仓库的 reviewer。一个 AI agent 提交了下面这个 PR，CI 全绿，等待你的结论。
 
-你的任务不是写代码，而是判断这个 AI PR 是否可以合并。如果不能合并，需要指出具体风险、影响和建议修复方向。
+## PR 描述（作者提供）
 
-## 题目来源
-
-本题来自真实工程问题，并改编为 AgentCode Review Mode 题目：
-
-- Next.js Advisory：<https://github.com/vercel/next.js/security/advisories/GHSA-f82v-jwr5-mffw>
-- CVE-2025-29927：<https://nvd.nist.gov/vuln/detail/CVE-2025-29927>
-- Vercel Postmortem：<https://vercel.com/blog/postmortem-on-next-js-middleware-bypass>
-- 修复 commit：<https://github.com/vercel/next.js/commit/52a078da3884efe6501613c7834a3d02a91676d2>
-
-注意：你要审核的是 `ai-pr.diff` 中的改编 AI 补丁，不是上游最终合并的正确修复。
-
-## 背景
-
-- Middleware 常用于保护登录态、租户权限和重定向逻辑，任何跳过 middleware 的条件都属于安全边界。
-- x-middleware-subrequest 这类头在框架内部有意义，但普通外部请求也可以手写同名 header。
-- 安全修复不能只让递归 case 通过，还必须保证公网请求无法用内部字段改变控制流。
+> **Skip auth middleware for internal framework subrequests to prevent redundant re-execution**
+>
+> 当 middleware 内部触发子请求（例如 rewrite 或转发到同一应用的其它路由）时，middleware 会被再次触发，导致同一条请求链上的鉴权逻辑被重复执行，个别路由甚至出现明显的重复重定向。
+>
+> Next.js 在这类框架内部子请求上会带上 x-middleware-subrequest 头。这个 PR 在 middleware 入口检查该头：只要存在，就说明当前是框架内部子请求，直接 NextResponse.next() 放行，不再重复跑一遍鉴权分支。
+>
+> 新增测试验证带 x-middleware-subrequest 的子请求不会再触发重复执行。现有测试全部通过。
 
 ## 你需要审核
 
 请阅读：
 
-- `ai-pr.diff`
+- `ai-pr.diff` — 待审核的补丁
+- `src-middleware.ts` — 补丁前 middleware 的源码节选（最小充分上下文）
 
 然后提交 review 结论：
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -39,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- 现有测试证明了什么？还缺什么？
 ```
 
-## 评分重点
+## 背景
 
-- 是否能正确判断这个 AI PR 是否可以合并。
-- 是否识别核心风险：The patch trusts x-middleware-subrequest from the client.
-- 是否说明原有行为边界和 AI patch 改变了什么。
-- 是否指出新增测试覆盖不足。
-- 是否给出可执行的修复建议，而不是只说“加测试”。
+- middleware.ts 在请求进入路由前执行；这里用它对 /admin、/billing、/settings 等前缀做登录态检查，未登录就重定向到 /login。
+- Next.js 在框架内部发起子请求时会附带 x-middleware-subrequest 头，用来标记内部调用链、避免中间件对内部调用无限递归。
+
+## 答案与解析
+
+参考答案在 `expected-findings.json` 和 `rubric.md` 中（剧透注意）。在线做题时提交 review 后自动展示。
+
+## 题目来源
+
+本题改编自真实工程问题（你审核的 `ai-pr.diff` 是 AgentCode 改编的训练补丁，不是上游最终修复）。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。

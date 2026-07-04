@@ -1,21 +1,58 @@
 {
   "canMerge": false,
+  "mergeRationale": "The change lets an undefined key reach jwt.verify and drops the algorithm allowlist, so verification can fail open and accept forged tokens depending on the jsonwebtoken version.",
   "requiredFindings": [
     {
       "id": "algorithm-and-key-downgrade",
       "severity": "critical",
-      "summary": "The patch removes algorithm pinning and lets an undefined secret reach jwt.verify.",
-      "expectedReasoning": "Authentication must fail closed; depending on library version and token algorithm, this can enable alg:none or algorithm confusion paths.",
-      "acceptableFix": "Validate required keys at startup, keep algorithms pinned, and upgrade to a safe jsonwebtoken version."
+      "summary": "The patch removes the algorithms allowlist and lets an undefined secret reach jwt.verify.",
+      "expectedReasoning": "Authentication must fail closed. With the algorithm no longer pinned, verify trusts the token's own alg header; combined with a controllable or undefined key this enables alg:none or HS/RS confusion (using the RS256 public key as an HMAC secret) to forge tokens, depending on the library version.",
+      "acceptableFix": "Validate required keys at startup (fail closed), keep algorithms pinned to RS256, and upgrade to a patched jsonwebtoken version.",
+      "matchTerms": [
+        ["algorithm"],
+        ["算法"],
+        ["alg:none"],
+        ["undefined", "key"],
+        ["undefined", "secret"],
+        ["fail", "closed"],
+        ["fail", "open"],
+        ["pin"],
+        ["confusion"],
+        ["混淆"]
+      ]
     },
     {
       "id": "missing-negative-auth-tests",
       "severity": "high",
-      "summary": "The tests add a dev happy path but not malicious tokens.",
-      "expectedReasoning": "Auth changes need tests for alg:none, wrong algorithm, missing key, wrong issuer and wrong audience.",
-      "acceptableFix": "Add negative token tests and a startup configuration test."
+      "summary": "The added test only covers a dev happy path, not malicious or misconfigured tokens.",
+      "expectedReasoning": "Auth changes need negative tests: alg:none, wrong algorithm, missing key, wrong issuer and wrong audience, plus a startup-configuration test.",
+      "acceptableFix": "Add negative token tests and a startup configuration (fail-closed) test.",
+      "matchTerms": [
+        ["test", "alg:none"],
+        ["测试", "负向"],
+        ["negative", "test"],
+        ["test", "wrong"],
+        ["missing", "test"],
+        ["缺", "测试"]
+      ]
     }
   ],
-  "optionalFindings": [],
-  "disallowedConclusions": []
+  "optionalFindings": [
+    {
+      "id": "fail-open-config",
+      "severity": "low",
+      "summary": "process.env.JWT_SECRET || undefined silently degrades a missing configuration into an undefined key instead of failing at startup.",
+      "matchTerms": [
+        ["undefined"],
+        ["fail", "closed"],
+        ["startup"],
+        ["启动"],
+        ["缺失", "配置"]
+      ]
+    }
+  ],
+  "disallowedConclusions": [
+    "The patch can be merged because the local dev test passes and issuer/audience are still checked.",
+    "Reading the key from JWT_SECRET is fine because production still sets a strong secret."
+  ]
 }

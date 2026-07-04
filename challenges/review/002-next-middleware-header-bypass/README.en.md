@@ -1,28 +1,28 @@
-# Review 002: Do not trust internal middleware headers
+# Review 002: Next.js middleware — stop re-running on framework subrequests
 
-Review a middleware patch that may let external requests spoof an internal header and bypass authorization.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Skip auth middleware for internal framework subrequests to prevent redundant re-execution**
+>
+> When middleware triggers an internal subrequest (e.g. a rewrite or forward to another route in the same app), middleware runs again, so the auth logic re-executes on the same request chain and some routes even redirect twice.
+>
+> Next.js tags these internal framework subrequests with the x-middleware-subrequest header. This PR checks that header at the middleware entry: if it is present, the request is an internal framework subrequest, so we NextResponse.next() straight through instead of re-running the auth branch.
+>
+> Added a test verifying that a subrequest carrying x-middleware-subrequest no longer re-executes. All existing tests pass.
 
-- Next.js Advisory: <https://github.com/vercel/next.js/security/advisories/GHSA-f82v-jwr5-mffw>
-- CVE-2025-29927: <https://nvd.nist.gov/vuln/detail/CVE-2025-29927>
-- Vercel Postmortem: <https://vercel.com/blog/postmortem-on-next-js-middleware-bypass>
-- 修复 commit: <https://github.com/vercel/next.js/commit/52a078da3884efe6501613c7834a3d02a91676d2>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-middleware.ts` — pre-patch excerpt of the middleware (minimal sufficient context)
 
-- Middleware 常用于保护登录态、租户权限和重定向逻辑，任何跳过 middleware 的条件都属于安全边界。
-- x-middleware-subrequest 这类头在框架内部有意义，但普通外部请求也可以手写同名 header。
-- 安全修复不能只让递归 case 通过，还必须保证公网请求无法用内部字段改变控制流。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -31,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch trusts x-middleware-subrequest from the client.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- middleware.ts runs before a request reaches a route; here it gates /admin, /billing and /settings on a session and redirects anonymous users to /login.
+- Next.js attaches an x-middleware-subrequest header to internal framework subrequests to mark the internal call chain and avoid infinite middleware recursion.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

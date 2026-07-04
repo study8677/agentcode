@@ -1,21 +1,41 @@
 {
   "canMerge": false,
+  "mergeRationale": "The patch copies dictionaries only in the plain-yield mode; size=True still exposes the reused mutable dictionary inside each tuple.",
   "requiredFindings": [
     {
       "id": "size-true-still-reuses-dicts",
       "severity": "high",
       "summary": "The patch copies dictionaries only for size=False yields.",
       "expectedReasoning": "Users of size=True still receive tuples containing the same mutable dictionary object, so saved results are corrupted by later iterations.",
-      "acceptableFix": "Return ms.copy() in every yield branch that exposes the partition dictionary, including size=True."
+      "acceptableFix": "Return ms.copy() in every yield branch that exposes the partition dictionary, including size=True.",
+      "matchTerms": [
+        ["size=True", "copy"],
+        ["size=True", "dict"],
+        ["mutable", "dict"],
+        ["same object"],
+        ["可变", "字典"],
+        ["两个", "分支"]
+      ]
     },
     {
       "id": "test-misses-object-independence-for-size-mode",
       "severity": "medium",
       "summary": "The added test checks only sizes, not dictionary object identity or contents over time.",
       "expectedReasoning": "The regression can survive while sizes remain correct.",
-      "acceptableFix": "Assert unique dict ids and stable copied dict contents for both size modes."
+      "acceptableFix": "Assert unique dict ids and stable copied dict contents for both size modes.",
+      "matchTerms": [
+        ["size", "dict"],
+        ["id", "dict"],
+        ["object", "identity"],
+        ["测试", "字典"],
+        ["内容", "稳定"],
+        ["unique", "ids"]
+      ]
     }
   ],
   "optionalFindings": [],
-  "disallowedConclusions": []
+  "disallowedConclusions": [
+    "The patch can be merged because the size=True test passes.",
+    "Only size=False needs copies because size=True already includes the size separately."
+  ]
 }

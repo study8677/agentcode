@@ -6,20 +6,19 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "别信任内部请求头：Next.js Middleware 绕过审查",
-    "en": "Do not trust internal middleware headers"
+    "zh": "Next.js Middleware：修复子请求递归导致的重复执行",
+    "en": "Next.js middleware: stop re-running on framework subrequests"
   },
   "summary": {
-    "zh": "审查一个声称修复 middleware 递归的补丁，它可能允许外部请求伪造内部头绕过鉴权。",
-    "en": "Review a middleware patch that may let external requests spoof an internal header and bypass authorization."
+    "zh": "审查一个给 middleware 入口加早退分支的小补丁，作者说它避免了框架子请求触发 middleware 重复执行、重复重定向。",
+    "en": "Review a small patch that adds an early-return at the middleware entry to avoid re-running middleware on framework subrequests."
   },
-  "language": "TypeScript / Next.js Security",
+  "language": "TypeScript / Next.js",
   "tags": [
     "nextjs",
-    "security",
     "middleware",
-    "auth-bypass",
-    "headers"
+    "headers",
+    "edge-runtime"
   ],
   "source": {
     "project": "Next.js",
@@ -48,53 +47,62 @@
     "kind": "adapted-ai-plausible-patch",
     "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "识别内部协议头和外部 HTTP 请求之间的信任边界。",
-  "scenario": "一个 AI PR 为了避免 middleware 子请求递归，看到 x-middleware-subrequest 就直接跳过鉴权 middleware。",
-  "context": [
-    "Middleware 常用于保护登录态、租户权限和重定向逻辑，任何跳过 middleware 的条件都属于安全边界。",
-    "x-middleware-subrequest 这类头在框架内部有意义，但普通外部请求也可以手写同名 header。",
-    "安全修复不能只让递归 case 通过，还必须保证公网请求无法用内部字段改变控制流。"
+  "pr": {
+    "title": "Skip auth middleware for internal framework subrequests to prevent redundant re-execution",
+    "author": "codegen-agent",
+    "body": [
+      "当 middleware 内部触发子请求（例如 rewrite 或转发到同一应用的其它路由）时，middleware 会被再次触发，导致同一条请求链上的鉴权逻辑被重复执行，个别路由甚至出现明显的重复重定向。",
+      "Next.js 在这类框架内部子请求上会带上 x-middleware-subrequest 头。这个 PR 在 middleware 入口检查该头：只要存在，就说明当前是框架内部子请求，直接 NextResponse.next() 放行，不再重复跑一遍鉴权分支。",
+      "新增测试验证带 x-middleware-subrequest 的子请求不会再触发重复执行。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "middleware.ts 在请求进入路由前执行；这里用它对 /admin、/billing、/settings 等前缀做登录态检查，未登录就重定向到 /login。",
+    "Next.js 在框架内部发起子请求时会附带 x-middleware-subrequest 头，用来标记内部调用链、避免中间件对内部调用无限递归。",
+    "题目文件里提供了补丁前 middleware.ts 的相关节选（src-middleware.ts），建议先读懂原有的早退分支与鉴权分支再看 diff。"
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "security",
+    "notes": [
+      "x-middleware-subrequest 只是请求上的一个普通 HTTP 头。补丁用 req.headers.get() 直接读它来决定是否跳过鉴权，但 middleware 无从区分这个头是框架内部子请求带上的，还是外部客户端手写的——任何人都能在自己的请求里加这个头。",
+      "后果：未登录用户对 /admin 发一个带 x-middleware-subrequest: middleware 的请求，就会命中早退分支、跳过整段鉴权，直接访问受保护路由。这正是 CVE-2025-29927 的利用方式。正确修复不能在应用 middleware 里信任这个头：应升级到已修复版本的 Next.js，并在入口（反向代理 / 边缘）strip 或 reject 外部传入的内部头，同时对高价值路由在路由处理层做二次鉴权。",
+      "新增测试只构造了一个带头的请求并断言放行（status 200），它证明的是早退分支存在，而没有断言『未登录 + 伪造头访问 /admin 应被拦截』。真正危险的路径完全没有被覆盖。"
+    ]
+  },
+  "learningGoal": "识别框架内部协议头与外部 HTTP 请求之间的信任边界，判断一个『防递归』的早退条件是否被外部请求可控。",
   "terms": [
     {
-      "term": "内部头",
-      "description": "框架或反向代理内部使用的 header，不应默认信任来自公网请求的同名字段。"
-    },
-    {
-      "term": "auth bypass",
-      "description": "攻击者绕过登录或权限检查访问受保护资源。"
+      "term": "x-middleware-subrequest",
+      "description": "Next.js 在框架内部子请求上附带的标记头，用于识别内部调用链。"
     },
     {
       "term": "edge middleware",
       "description": "在请求进入路由前执行的中间件，常用于鉴权和改写。"
     },
     {
-      "term": "defense in depth",
-      "description": "入口剥离危险头、路由层二次鉴权、依赖安全版本共同防护。"
+      "term": "内部头",
+      "description": "框架或反向代理内部使用的 header，不代表来自公网的同名字段可信。"
+    },
+    {
+      "term": "NextResponse.next()",
+      "description": "让请求继续走后续处理，不做拦截或改写。"
     }
   ],
   "behaviorChecks": [
     {
       "input": "未登录访问 /admin",
-      "expected": "必须被 middleware 拦截或重定向。",
-      "reviewQuestion": "带 x-middleware-subrequest 的请求是否绕过鉴权。"
+      "expected": "必须被 middleware 拦截或重定向到 /login。",
+      "reviewQuestion": "哪些请求会命中新加的早退分支？"
     },
     {
-      "input": "内部子请求",
-      "expected": "可以被框架安全识别，但不能影响外部请求。",
-      "reviewQuestion": "PR 是否区分可信内部来源和客户端伪造 header。"
+      "input": "带 x-middleware-subrequest 头的请求",
+      "expected": "只应对可信的内部来源生效。",
+      "reviewQuestion": "middleware 能区分这个头来自框架还是来自客户端吗？"
     },
     {
-      "input": "部署在自托管反代后",
-      "expected": "反代入口应 strip/reject 内部 header。",
-      "reviewQuestion": "修复是否覆盖非 Vercel 托管场景。"
+      "input": "部署在自托管反向代理之后",
+      "expected": "入口应处理外部传入的同名内部头。",
+      "reviewQuestion": "这个修复是否覆盖非 Vercel 托管场景？"
     }
   ],
   "scoringHints": {

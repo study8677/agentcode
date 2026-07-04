@@ -1,17 +1,82 @@
 diff --git a/src/_pytest/mark/evaluate.py b/src/_pytest/mark/evaluate.py
-@@
-+evalcache = {}
+index 69a2ef2a3..759191668 100644
+--- a/src/_pytest/mark/evaluate.py
++++ b/src/_pytest/mark/evaluate.py
+@@ -8,6 +8,30 @@ from typing import Dict
+
+ from ..outcomes import fail
+ from ..outcomes import TEST_OUTCOME
++from _pytest.config import Config
++from _pytest.store import StoreKey
 +
-+def cached_eval(expr: str, d: Dict[str, object]) -> Any:
-+    if expr in evalcache:
++
++evalcache_key = StoreKey[Dict[str, Any]]()
++
++
++def cached_eval(config: Config, expr: str, d: Dict[str, object]) -> Any:
++    """Evaluate a condition string at most once per test session.
++
++    Large suites attach the same skipif/xfail condition string to hundreds
++    of tests; compiling and evaluating it again for every item is wasted
++    work during collection. The result for each expression is stored on the
++    session config and reused on later hits.
++    """
++    default = {}  # type: Dict[str, object]
++    evalcache = config._store.setdefault(evalcache_key, default)
++    try:
 +        return evalcache[expr]
-+    exprcode = _pytest._code.compile(expr, mode='eval')
-+    evalcache[expr] = eval(exprcode, d)
-+    return evalcache[expr]
-@@
--                        result = eval(expr, d)
-+                        result = cached_eval(expr, d)
-@@
-+def test_skipif_condition_is_cached(pytester):
-+    pytester.makepyfile('import pytest\nskip=True\n@pytest.mark.skipif("skip")\ndef test_a(): pass')
-+    pytester.runpytest().assert_outcomes(skipped=1)
++    except KeyError:
++        import _pytest._code
++
++        exprcode = _pytest._code.compile(expr, mode="eval")
++        evalcache[expr] = x = eval(exprcode, d)
++        return x
+
+
+ class MarkEvaluator:
+@@ -70,10 +94,7 @@ class MarkEvaluator:
+                 for expr in args:
+                     self.expr = expr
+                     if isinstance(expr, str):
+                         d = self._getglobals()
+-                        import _pytest._code
+-
+-                        exprcode = _pytest._code.compile(expr, mode="eval")
+-                        result = eval(exprcode, d)
++                        result = cached_eval(self.item.config, expr, d)
+                     else:
+                         if "reason" not in mark.kwargs:
+                             # XXX better be checked at collection time
+diff --git a/testing/test_skipping.py b/testing/test_skipping.py
+index 8b3fae0d6..1c5b0c334 100644
+--- a/testing/test_skipping.py
++++ b/testing/test_skipping.py
+@@ -117,6 +117,27 @@ class TestEvaluator:
+         assert ev.istrue()
+         expl = ev.getexplanation()
+         assert expl == "condition: config._hackxyz"
+
++    def test_skipif_string_condition_cached(self, testdir):
++        # Two tests carrying the same condition string: the second
++        # evaluation is served from the cache and both are still skipped.
++        testdir.makepyfile(
++            """
++            import pytest
++
++            skip_all = True
++
++            @pytest.mark.skipif("skip_all")
++            def test_one():
++                assert False
++
++            @pytest.mark.skipif("skip_all")
++            def test_two():
++                assert False
++            """
++        )
++        result = testdir.runpytest()
++        result.assert_outcomes(skipped=2)
++
+
+ class TestXFail:
+     @pytest.mark.parametrize("strict", [True, False])

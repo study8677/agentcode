@@ -6,20 +6,19 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "这个 AI 修复能合并吗？SymPy Point2D 回归审查",
-    "en": "Can this AI fix be merged? Reviewing a SymPy Point2D regression"
+    "zh": "SymPy Point：修复 evaluate(False) 下的坐标校验误报",
+    "en": "SymPy Point: fix spurious coordinate rejection under evaluate(False)"
   },
   "summary": {
-    "zh": "审查一个针对真实 SymPy 问题的 AI 补丁：它修好了 evaluate(False) 下的报错，但可能放过非法虚数坐标。",
-    "en": "Review an AI patch for a real SymPy issue: it fixes an evaluate(False) error but may let invalid imaginary coordinates through."
+    "zh": "审查一个 SymPy 几何模块的补丁：作者修复 evaluate(False) 环境下构造 Point 被误报 Imaginary coordinates are not permitted 的问题。",
+    "en": "Review a SymPy geometry patch: the author fixes Point construction spuriously raising 'Imaginary coordinates are not permitted' under evaluate(False)."
   },
   "language": "Python / SymPy",
   "tags": [
     "sympy",
-    "swe-bench",
-    "regression",
-    "edge-case",
-    "tests"
+    "geometry",
+    "evaluate",
+    "swe-bench"
   ],
   "source": {
     "project": "SymPy",
@@ -32,7 +31,7 @@
         "url": "https://github.com/sympy/sympy/issues/22684"
       },
       {
-        "label": "上游正确 PR",
+        "label": "上游 PR",
         "url": "https://github.com/sympy/sympy/pull/22714"
       },
       {
@@ -44,55 +43,64 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "pr": {
+    "title": "Fix Point raising 'Imaginary coordinates are not permitted' with evaluate(False)",
+    "author": "codegen-agent",
+    "body": [
+      "在 with evaluate(False) 下解析 Point2D(Integer(1), Integer(2)) 会抛出 Imaginary coordinates are not permitted（issue #22684）：关闭自动求值后 im(1) 不会化简成 0，而是保持未求值的 im(1) 表达式，在坐标校验的真值判断里被当成了非零虚部，普通实数坐标因此根本无法构造。",
+      "这个 PR 让虚数坐标校验只在 evaluate 开启时执行——这条校验依赖 im() 的求值结果，在求值被关闭时它给不出可靠结论。",
+      "新增 test_issue_22684 复现原始报错场景，验证 evaluate(False) 下 Point(1, 2) 能正常创建。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "Point / Point2D 是 SymPy 几何模块的点对象。构造函数会对坐标做一系列入参校验，其中一条契约是：明确为虚数的坐标（如 Point(I, 2)）会被 ValueError 'Imaginary coordinates are not permitted' 拒绝。",
+    "evaluate(False)（以及 sympify(..., evaluate=False)）会全局关闭自动求值：像 im(1) 这样的函数调用会保持未求值形式，而不是立即化简为 0。SymPy 的性质查询（如 is_zero）采用三值逻辑：True / False / None（未知）。",
+    "题目提供了补丁前 Point.__new__ 的源码节选（src-point.py），建议先读懂原有校验流程再看 diff。"
+  ],
+  "analysis": {
+    "dimension": "hidden-regression",
+    "notes": [
+      "原有校验的问题只在于误报：evaluate(False) 下 im(1) 保持未求值，在真值判断里被当成非零。正确的收紧方向是只拒绝虚部确定非零的坐标（例如 im(a).is_zero is False），让\"未知\"不再触发拒绝，而不是把整条校验挂到 evaluate 开关上。",
+      "补丁把校验挂到 evaluate 条件后，with evaluate(False): Point(I, 2) 不再抛 ValueError——明确非法的虚数坐标能构造出 Point 对象，文档化的输入契约被破坏。这类对象流入后续几何运算后，会在离入口很远的地方以更难排查的方式出错。",
+      "新增测试只覆盖正向场景（evaluate(False) 下 Point(1, 2) 不再报错），对\"虚数坐标仍被拒绝\"没有任何断言；补丁引入回归时它照样全绿。至少需要补一条 evaluate(False) 下 Point(I, 2) 仍抛 ValueError 的负向测试。"
+    ]
   },
   "learningGoal": "判断一个修好正向 case 的补丁是否破坏原有输入约束。",
-  "scenario": "你正在审核一个 AI agent 生成的补丁。补丁声称修复 SymPy 中 Point2D 在 evaluate(False) 下误报 Imaginary coordinates are not permitted 的问题。",
-  "context": [
-    "Point / Point2D 是 SymPy 的几何点对象，坐标必须是合法 SymPy 表达式，并且不能是明确的虚数坐标。",
-    "真实 bug 是 evaluate(False) 环境下普通坐标也可能被旧逻辑误判，从而抛出 Imaginary coordinates are not permitted。",
-    "AI 补丁把整个虚数坐标检查挂到 evaluate 条件后面，容易把“误拒普通坐标”和“拒绝明确虚数坐标”混为一谈。"
-  ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
   "terms": [
     {
       "term": "evaluate(False)",
-      "description": "临时关闭部分自动化简，可能让表达式保持未化简状态。"
+      "description": "上下文管理器，全局关闭自动求值；表达式和函数调用保持未化简形式。"
     },
     {
       "term": "im(a)",
-      "description": "读取表达式的虚部，参与坐标合法性判断。"
+      "description": "取表达式的虚部；坐标校验用它判断坐标是否带非零虚部。"
     },
     {
-      "term": "明确非法输入",
-      "description": "例如 Point(I, 2)，原有语义必须继续拒绝。"
+      "term": "三值断言",
+      "description": "SymPy 的性质查询（如 is_zero）可能返回 True、False 或 None（未知）。"
     },
     {
-      "term": "回归",
-      "description": "修一个问题时破坏原本正确的行为。"
+      "term": "Imaginary coordinates are not permitted",
+      "description": "Point 的输入契约之一：明确为虚数的坐标应被 ValueError 拒绝。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "普通实数坐标",
-      "expected": "不应因为关闭自动化简被误拒。",
-      "reviewQuestion": "新增测试是否只证明了这个正向场景。"
+      "input": "with evaluate(False): Point(1, 2)",
+      "expected": "构造成功，不再误报。",
+      "reviewQuestion": "新增测试覆盖的是哪一类输入？"
     },
     {
-      "input": "明确虚数坐标",
-      "expected": "即使 evaluate(False)，也必须继续拒绝。",
-      "reviewQuestion": "AI PR 是否让 Point(I, 2) 绕过 ValueError。"
+      "input": "with evaluate(False): Point(I, 2)",
+      "expected": "仍应抛出 Imaginary coordinates are not permitted。",
+      "reviewQuestion": "补丁之后这条输入会走进哪个分支？"
     },
     {
-      "input": "无法静态确定的符号坐标",
-      "expected": "不能被粗暴当成非法输入。",
-      "reviewQuestion": "条件判断是否区分 unknown 和 definitely invalid。"
+      "input": "默认求值下的 Point(I, 2)",
+      "expected": "行为不变，继续拒绝。",
+      "reviewQuestion": "被跳过的校验范围和真实误报的范围是否一致？"
     }
   ],
   "scoringHints": {

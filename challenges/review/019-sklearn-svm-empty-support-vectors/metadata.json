@@ -6,12 +6,12 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "scikit-learn SVM 空 support_vectors_ 审查",
-    "en": "scikit-learn SVM empty support vectors review"
+    "zh": "scikit-learn SVM：处理空 support vectors 的 sparse fit",
+    "en": "scikit-learn SVM: handle sparse fit with empty support vectors"
   },
   "summary": {
-    "zh": "审查一个为空 support_vectors_ 返回空 csr_matrix 的补丁，它可能生成错误形状的 dual_coef_。",
-    "en": "Review an SVM sparse-fit patch that avoids division by zero but creates dual_coef_ with the wrong shape."
+    "zh": "审查一个 scikit-learn SVM PR：作者在 n_SV 为 0 时走专门分支，避免稀疏 dual_coef_ 构造失败。",
+    "en": "Review a scikit-learn SVM PR: the author adds a special branch for n_SV == 0 to avoid sparse dual_coef_ construction failures."
   },
   "language": "Python / scikit-learn",
   "tags": [
@@ -39,22 +39,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "pr": {
+    "title": "Avoid sparse SVM dual_coef_ construction errors when there are no support vectors",
+    "author": "codegen-agent",
+    "body": [
+      "Sparse SVM fitting can hit an edge case where there are no support vectors. The current code still tries to construct dual_coef_ from CSR indptr/index arrays, which can fail or divide through empty support-vector state.",
+      "This PR adds a fast path for n_SV == 0 and assigns an empty csr_matrix directly. Normal sparse SVM fits continue to use the existing CSR construction path.",
+      "Added a regression test that fits the sparse model in the empty-support-vector case and confirms dual_coef_ is empty. Existing SVM tests pass."
+    ]
+  },
+  "background": [
+    "scikit-learn estimator attributes have public shape contracts. Empty data still needs the shape downstream code expects.",
+    "For SVMs, dual_coef_ shape is tied to the number of classes and support vectors, not only to whether the matrix has zero stored elements.",
+    "The review context includes the pre-patch sparse dual_coef_ construction excerpt in src-svm-base.py."
+  ],
+  "analysis": {
+    "dimension": "shape-invariant",
+    "notes": [
+      "The patch avoids the immediate empty-data path but creates sp.csr_matrix([]), whose shape is not the estimator-compatible (n_class, 0) shape expected by downstream code.",
+      "In numerical libraries, empty arrays and sparse matrices still carry semantic shape. A size-zero assertion is insufficient because multiple wrong shapes can have zero elements.",
+      "The fix should construct an explicitly shaped empty sparse matrix and tests should assert dual_coef_.shape, related public attributes, and a post-fit prediction or attribute path."
+    ]
   },
   "learningGoal": "判断异常规避是否保持 estimator 属性形状不变量。",
-  "scenario": "AI PR 遇到 n_SV == 0 时直接设置 self.dual_coef_ = sp.csr_matrix([])。",
-  "context": [
-    "SVM sparse fit 在没有 support vectors 的边界情况下曾出现 ZeroDivisionError。",
-    "修复不能只避免除零，还必须让 dual_coef_ 的形状符合后续 predict/属性访问预期。",
-    "scikit-learn estimator 的公开属性形状是 API 合约的一部分。"
-  ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
   "terms": [
     {
       "term": "support_vectors_",
@@ -76,18 +85,18 @@
   "behaviorChecks": [
     {
       "input": "n_SV == 0",
-      "expected": "不能除零。",
-      "reviewQuestion": "PR 是否避免了异常。"
+      "expected": "不能因为空支持向量崩溃。",
+      "reviewQuestion": "PR 是否只避免了异常？"
     },
     {
       "input": "n_class > 1 且 n_SV == 0",
-      "expected": "dual_coef_ 应是 (n_class, 0) 形状。",
-      "reviewQuestion": "空矩阵是否形状错误。"
+      "expected": "dual_coef_ 应保持 estimator 约定的二维形状。",
+      "reviewQuestion": "空矩阵是否有明确 shape？"
     },
     {
-      "input": "predict 后续路径",
+      "input": "fit 后访问属性或 predict",
       "expected": "不应因为属性形状错误崩溃。",
-      "reviewQuestion": "测试是否覆盖训练后的属性和预测。"
+      "reviewQuestion": "测试是否覆盖训练后的 shape 与下游路径？"
     }
   ],
   "scoringHints": {

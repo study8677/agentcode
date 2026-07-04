@@ -1,22 +1,46 @@
 diff --git a/src/compiler.ts b/src/compiler.ts
-index 9de63a1..bad0005 100644
+index 9de63a1c..bad00051 100644
 --- a/src/compiler.ts
 +++ b/src/compiler.ts
-@@ -54,7 +54,13 @@ function tokenToRegExp(token: Token, next?: Token) {
+@@ -22,10 +22,17 @@ function escapeString(str: string): string {
+
+ // Turn a single token into its regexp fragment. `next` is the following
+ // token, if any.
+ function tokenToRegExp(token: Token, next?: Token): string {
    if (token.type !== 'param') return escapeString(token.value)
- 
-   const capture = token.pattern || '[^/]+?'
--  return '(' + capture + ')'
-+  if (next && next.type === 'param' && token.suffix === '-') {
-+    // Avoid backtracking in routes like /:a-:b.
-+    return '([^/-]+?)-'
+
++  // Adjacent params like /:a-:b compile to ([^/]+?)-([^/]+?); on a long
++  // non-matching path the two lazy captures overlap across the '-' and
++  // the engine backtracks catastrophically (GHSA-9wv6-86v2-598j).
++  // Stop the earlier capture at the '-' separator so the two groups can
++  // no longer overlap.
++  if (token.suffix === '-' && next && next.type === 'param') {
++    return '([^/-]+?)'
 +  }
 +
-+  return '(' + capture + ')'
+   const capture = token.pattern || DEFAULT_PATTERN
+   return '(' + capture + ')'
  }
-@@ -1,3 +1,9 @@
-+it('does not hang on two dashed params', () => {
-+  const re = pathToRegexp('/:a-:b')
-+  const input = '/' + 'a'.repeat(20000)
-+  expect(re.test(input)).toBe(false)
-+})
+diff --git a/test/redos.spec.ts b/test/redos.spec.ts
+index 15406a25..8c93f421 100644
+--- a/test/redos.spec.ts
++++ b/test/redos.spec.ts
+@@ -18,6 +18,17 @@ describe('route compilation', () => {
+     const re = tokensToRegExp(parse('/:a'))
+     expect(re.test('/users')).toBe(true)
+   })
+
++  it('does not hang on two dashed params', () => {
++    const re = tokensToRegExp(parse('/:a-:b'))
++    // Previously this input caused catastrophic backtracking.
++    const input = '/' + 'a'.repeat(20000)
++    const start = Date.now()
++    expect(re.test(input)).toBe(false)
++    expect(Date.now() - start).toBeLessThan(100)
++  })
++
+   it('matches a simple two-param route', () => {
+     const re = tokensToRegExp(parse('/:a-:b'))
+     expect(re.test('/foo-bar')).toBe(true)
+   })
+ })

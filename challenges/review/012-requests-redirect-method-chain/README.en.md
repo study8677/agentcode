@@ -1,27 +1,28 @@
-# Review 012: Requests redirect method chain review
+# Review 012: Requests: make redirect resolution side-effect free
 
-Review a redirect patch that keeps copying the original request and restores POST after a 303 then 307 chain.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Make resolve_redirects side-effect free by always copying the original request**
+>
+> resolve_redirects currently rebinds req to the per-hop request at the end of the loop, so later hops depend on mutable state left behind by earlier hops, which makes it hard to see what each hop is built from.
+>
+> This PR derives every redirect hop directly from the caller's original request, keeping redirect handling side-effect free and each hop independently replayable.
+>
+> Added a regression test verifying the caller's original request object is untouched after a redirect chain. All existing tests pass.
 
-- Requests Issue: <https://github.com/psf/requests/issues/1963>
-- 上游 PR: <https://github.com/psf/requests/pull/1963>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-sessions.py` — pre-patch excerpt of resolve_redirects (minimal sufficient context)
 
-- 303 See Other 会把 POST 转成 GET。
-- 307/308 应保持当前请求方法。
-- 多跳重定向中，下一跳的当前方法可能已经不是最初方法。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -30,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch keeps using the original request as the base for every redirect hop.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- resolve_redirects is the core loop in the Requests session layer that handles HTTP redirects.
+- HTTP status codes impose different requirements: 303 See Other switches the follow-up request to GET; 307/308 preserve the current method and body.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

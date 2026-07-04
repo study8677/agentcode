@@ -1,21 +1,41 @@
 {
   "canMerge": false,
+  "mergeRationale": "The patch keeps the matrix shape but replaces the nested right-hand separability matrix with all ones, losing independence information.",
   "requiredFindings": [
     {
       "id": "nested-separability-structure-lost",
       "severity": "high",
       "summary": "The patch replaces the nested right-side separability matrix with all ones.",
       "expectedReasoning": "It preserves shape but loses independence information, so nested models report false dependencies.",
-      "acceptableFix": "Copy the existing right matrix into the right block instead of filling it with 1."
+      "acceptableFix": "Copy the existing right matrix into the right block instead of filling it with 1.",
+      "matchTerms": [
+        ["nested", "all ones"],
+        ["right", "matrix"],
+        ["结构", "丢失"],
+        ["依赖", "误报"],
+        ["对角", "矩阵"],
+        ["separability", "structure"]
+      ]
     },
     {
       "id": "shape-only-test-misses-semantics",
       "severity": "medium",
       "summary": "The test checks only matrix shape.",
       "expectedReasoning": "A wrong all-ones block has the same shape as the correct matrix.",
-      "acceptableFix": "Assert exact boolean matrix values for nested left and right CompoundModels."
+      "acceptableFix": "Assert exact boolean matrix values for nested left and right CompoundModels.",
+      "matchTerms": [
+        ["shape", "only"],
+        ["只", "shape"],
+        ["精确", "矩阵"],
+        ["exact", "matrix"],
+        ["values"],
+        ["np.eye"]
+      ]
     }
   ],
   "optionalFindings": [],
-  "disallowedConclusions": []
+  "disallowedConclusions": [
+    "The patch can be merged because the nested test checks the matrix shape.",
+    "Using all ones is safe because a nested model's outputs depend on every nested input."
+  ]
 }

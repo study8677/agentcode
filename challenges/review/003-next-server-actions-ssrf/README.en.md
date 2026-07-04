@@ -1,28 +1,28 @@
-# Review 003: Server Actions relative redirect SSRF review
+# Review 003: Server Actions — support relative post-login redirects
 
-Review a patch that checks only relative redirect paths while still trusting attacker-controlled Host headers.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Support relative post-login redirects instead of only the configured origin**
+>
+> The login flow needs to return the user to the page they were originally on after authentication. Today followActionRedirect only resolves against process.env.APP_ORIGIN, so every redirect lands on that fixed origin and ignores the site the user is actually on — multi-domain and preview deployments end up on the wrong domain.
+>
+> This PR instead validates that redirectUrl is a relative path starting with / (rejecting external absolute URLs), then rebuilds the target URL on the user's current site using the request proto + host, and fetches that page on the server to return its contents. Multi-domain and preview environments now redirect back to the right page.
+>
+> Added a test verifying that a relative redirect works. All existing tests pass.
 
-- Next.js Advisory: <https://github.com/vercel/next.js/security/advisories/GHSA-fr5h-rqp8-mj6g>
-- 修复 PR: <https://github.com/vercel/next.js/pull/62561>
-- 修复 commit: <https://github.com/vercel/next.js/commit/8f7a6ca7d21a97bc9f7a1bbe10427b5ad74b9085>
-- Assetnote Analysis: <https://www.assetnote.io/resources/research/digging-for-ssrf-in-nextjs-apps/>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-action.ts` — pre-patch excerpt of followActionRedirect (minimal sufficient context)
 
-- Server Actions 在服务端执行，某些重定向和转发逻辑会触发服务器主动请求目标 URL。
-- redirectUrl 是相对路径并不代表最终 origin 可信，因为 req.headers.host 可能来自客户端或反向代理传递。
-- SSRF 风险通常出现在“路径看起来安全，但 host/origin 由攻击者控制”的组合里。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -31,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch checks the path but trusts the Host header when building the server-side fetch URL.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- Server Actions run on the server; followActionRedirect fetches the target URL on the server and returns the response body to the caller.
+- Returning the user to their original page is a common need: it requires a "target site origin + relative path" to locate that page.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

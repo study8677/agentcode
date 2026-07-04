@@ -1,26 +1,28 @@
-# Review 017: Astropy NDData mask propagation None-branch review
+# Review 017: Astropy NDData: handle missing masks during propagation
 
-Review an NDData mask patch that dereferences operand.mask before handling operand being None.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Treat operands without masks like missing-mask arithmetic inputs**
+>
+> NDData arithmetic currently handles the case where no second operand participates in mask propagation, but it does not consistently handle a real operand whose mask attribute is None.
+>
+> This PR changes the branch to check operand.mask is None, so an operand without a mask falls back to copying the current object's mask instead of attempting to combine two masks.
+>
+> Added a regression test for arithmetic between data_with_mask and data_without_mask to confirm the result mask is copied rather than shared. Existing NDData tests pass.
 
-- Astropy Issue/PR: <https://github.com/astropy/astropy/pull/14995>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-ndarithmetic.py` — pre-patch mask propagation excerpt (minimal sufficient context)
 
-- NDDataRef arithmetic 需要在一个或两个 operand 有 mask 时传播 mask。
-- operand 本身可能是 None，也可能存在但 operand.mask 是 None。
-- 修复一个 None 相关 bug 时，分支顺序和属性访问安全非常重要。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -29,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch reads operand.mask before proving operand is not None.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- NDDataRef arithmetic propagates masks when one or both operands have masks.
+- `operand is None` and `operand.mask is None` are different states.
+- When reviewing None-related fixes, inspect both attribute access order and branch semantics.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

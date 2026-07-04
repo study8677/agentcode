@@ -1,21 +1,40 @@
 {
   "canMerge": false,
+  "mergeRationale": "The patch wraps only ClosedPoolError, leaving the broader urllib3-to-Requests exception boundary incomplete.",
   "requiredFindings": [
     {
       "id": "single-exception-wrapper-incomplete",
       "severity": "medium",
       "summary": "The patch wraps only ClosedPoolError and leaves other urllib3 exceptions outside the Requests API boundary.",
-      "expectedReasoning": "Callers can still see urllib3 DecodeError or TimeoutError even though they expect requests.exceptions types.",
-      "acceptableFix": "Map the relevant urllib3 exceptions consistently to Requests exceptions, not just the one observed in a narrow test."
+      "expectedReasoning": "Callers can still see urllib3 DecodeError or TimeoutError even though they expect requests.exceptions types from Requests APIs.",
+      "acceptableFix": "Map the relevant urllib3 exceptions consistently to Requests exceptions, not just the one observed in a narrow test.",
+      "matchTerms": [
+        ["ClosedPoolError", "only"],
+        ["DecodeError"],
+        ["TimeoutError"],
+        ["urllib3", "leak"],
+        ["API", "boundary"],
+        ["异常", "边界"]
+      ]
     },
     {
       "id": "missing-decode-timeout-tests",
       "severity": "medium",
       "summary": "The test only covers ClosedPoolError.",
-      "expectedReasoning": "It does not protect the reported class of urllib3 exceptions passing through the public API.",
-      "acceptableFix": "Add tests for DecodeError, TimeoutError, and proxy timeout paths."
+      "expectedReasoning": "It does not protect against the reported class of urllib3 exceptions passing through the public API.",
+      "acceptableFix": "Add tests for DecodeError, TimeoutError, and proxy timeout paths.",
+      "matchTerms": [
+        ["测试", "DecodeError"],
+        ["测试", "TimeoutError"],
+        ["test", "DecodeError"],
+        ["test", "TimeoutError"],
+        ["proxy", "timeout"]
+      ]
     }
   ],
   "optionalFindings": [],
-  "disallowedConclusions": []
+  "disallowedConclusions": [
+    "The patch can be merged because ClosedPoolError is now wrapped.",
+    "A focused test for one urllib3 exception is enough to prove the Requests exception boundary."
+  ]
 }

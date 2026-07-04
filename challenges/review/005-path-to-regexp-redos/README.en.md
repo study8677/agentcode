@@ -1,28 +1,28 @@
-# Review 005: Express route pattern ReDoS review
+# Review 005: path-to-regexp: fix catastrophic backtracking for adjacent route params
 
-Review a partial path-to-regexp ReDoS fix that misses broader overlapping route patterns.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Fix ReDoS in route compilation for adjacent parameters (GHSA-9wv6-86v2-598j)**
+>
+> GHSA-9wv6-86v2-598j reports that path-to-regexp compiles adjacent route parameters (like /:a-:b) into overlapping capture groups; a single very long path triggers catastrophic regex backtracking and stalls the Node event loop.
+>
+> This PR detects adjacent parameters at compile time: when one parameter is immediately followed by another, the earlier capture stops at the separator ([^/-]+? instead of [^/]+?), so the two groups can no longer overlap and long paths no longer backtrack exponentially.
+>
+> Added a regression test: the regex compiled from /:a-:b returns false immediately on a 20,000-character non-matching input instead of hanging. All existing tests pass.
 
-- Advisory 1: <https://github.com/pillarjs/path-to-regexp/security/advisories/GHSA-9wv6-86v2-598j>
-- Advisory 2: <https://github.com/pillarjs/path-to-regexp/security/advisories/GHSA-rhx6-c78j-4q9w>
-- OSV: <https://osv.dev/GHSA-9wv6-86v2-598j>
-- 修复 commit: <https://github.com/pillarjs/path-to-regexp/commit/f01c26a013b1889f0c217c643964513acf17f6a4>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-compiler.ts` — pre-patch excerpt of the route compiler (minimal sufficient context)
 
-- Express 等框架会把路由模式编译成正则表达式。重叠 capture 可能在恶意长路径上触发灾难回溯。
-- Node 单线程事件循环被 ReDoS 输入阻塞，会影响整个服务的可用性。
-- 只给一个具体模式打补丁，容易漏掉 /:a-:b-:c 或自定义 capture 等同类问题。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -31,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What do the existing tests prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch special-cases one adjacent-parameter pattern but does not remove the broader overlapping-capture risk.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- path-to-regexp compiles Express-style route templates into regexes: each parameter token becomes a capture group, with a literal separator between adjacent captures.
+- The default capture for a parameter is [^/]+? (lazy, "anything but a slash"). When two such captures are separated by a character that is itself in that class, the engine backtracks heavily on long non-matching inputs.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

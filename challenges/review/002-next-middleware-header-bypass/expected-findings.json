@@ -1,26 +1,48 @@
 {
   "canMerge": false,
+  "mergeRationale": "The early-return trusts a client-settable header (x-middleware-subrequest), so any unauthenticated request can set it and skip the auth middleware guarding protected routes.",
   "requiredFindings": [
     {
       "id": "spoofed-internal-header-auth-bypass",
       "severity": "critical",
-      "summary": "The patch trusts x-middleware-subrequest from the client.",
-      "expectedReasoning": "An unauthenticated external request can set the same header and skip middleware protecting private routes.",
-      "acceptableFix": "Do not trust this header in app middleware; upgrade Next.js and strip/reject internal headers at the edge or reverse proxy."
+      "summary": "The patch trusts x-middleware-subrequest read straight from the incoming request.",
+      "expectedReasoning": "x-middleware-subrequest is an ordinary request header; an unauthenticated external request can set it and hit the early-return, skipping the middleware that protects /admin, /billing and /settings.",
+      "acceptableFix": "Do not trust this header inside app middleware; upgrade Next.js to a fixed version and strip/reject internal headers at the edge or reverse proxy, plus re-check authorization in route handlers.",
+      "matchTerms": [
+        ["x-middleware-subrequest", "伪造"],
+        ["外部", "头"],
+        ["client", "header"],
+        ["spoof", "header"],
+        ["绕过", "鉴权"],
+        ["bypass", "auth"]
+      ]
     },
     {
       "id": "missing-protected-route-negative-test",
       "severity": "high",
-      "summary": "The new test only proves the bypass branch exists.",
-      "expectedReasoning": "It does not assert that a public request with a spoofed internal header is rejected.",
-      "acceptableFix": "Add protected-route tests with spoofed x-middleware-subrequest and unauthenticated users."
+      "summary": "The new test only proves the early-return branch exists; it never asserts a spoofed request is blocked.",
+      "expectedReasoning": "The test sets the header and expects a 200. It does not assert that an unauthenticated request to /admin carrying a forged x-middleware-subrequest is still redirected/blocked, so the dangerous path stays green.",
+      "acceptableFix": "Add a negative test: unauthenticated request to a protected route with a spoofed x-middleware-subrequest header must still be redirected/blocked.",
+      "matchTerms": [
+        ["测试", "未登录"],
+        ["测试", "伪造"],
+        ["test", "spoof"],
+        ["test", "unauthenticated"],
+        ["测试", "拦截"]
+      ]
     }
   ],
   "optionalFindings": [
     {
       "id": "defense-in-depth",
       "severity": "medium",
-      "summary": "Route handlers should not rely solely on middleware for high-value authorization checks."
+      "summary": "Route handlers should not rely solely on middleware for high-value authorization checks.",
+      "matchTerms": [
+        ["二次鉴权"],
+        ["defense", "depth"],
+        ["纵深"],
+        ["route", "authorization"]
+      ]
     }
   ],
   "disallowedConclusions": [

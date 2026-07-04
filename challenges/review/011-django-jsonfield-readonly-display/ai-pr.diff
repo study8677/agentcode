@@ -1,12 +1,53 @@
 diff --git a/django/contrib/admin/utils.py b/django/contrib/admin/utils.py
-@@
+index e4ddc8f017..66b3f5d95a 100644
+--- a/django/contrib/admin/utils.py
++++ b/django/contrib/admin/utils.py
+@@ -398,6 +398,13 @@ def display_for_field(value, field, empty_value_display):
+         return formats.number_format(value)
      elif isinstance(field, models.FileField) and value:
          return format_html('<a href="{}">{}</a>', value.url, value)
 +    elif isinstance(field, models.JSONField) and value:
-+        return str(value)
++        try:
++            return field.get_prep_value(value)
++        except TypeError:
++            # Unserializable values fall back to the generic display path
++            # instead of breaking the change page.
++            return display_for_value(value, empty_value_display)
      else:
          return display_for_value(value, empty_value_display)
-@@
-+def test_display_jsonfield_readonly():
-+    field = models.JSONField()
-+    assert display_for_field({'foo': 'bar'}, field, '-') == "{'foo': 'bar'}"
+
+diff --git a/tests/admin_utils/tests.py b/tests/admin_utils/tests.py
+index 8db702cb2b..7c9b12f7a3 100644
+--- a/tests/admin_utils/tests.py
++++ b/tests/admin_utils/tests.py
+@@ -179,6 +179,9 @@ class UtilsTests(SimpleTestCase):
+         display_value = display_for_field(None, models.FloatField(), self.empty_value)
+         self.assertEqual(display_value, self.empty_value)
+
++        display_value = display_for_field(None, models.JSONField(), self.empty_value)
++        self.assertEqual(display_value, self.empty_value)
++
+     def test_number_formats_display_for_field(self):
+         display_value = display_for_field(12345.6789, models.FloatField(), self.empty_value)
+         self.assertEqual(display_value, '12345.6789')
+@@ -227,6 +230,20 @@ class UtilsTests(SimpleTestCase):
+         display_value = display_for_field(value, models.FloatField(), self.empty_value)
+         self.assertEqual(display_value, '12345.6789')
+
++    def test_json_display_for_field(self):
++        tests = [
++            ({'a': {'b': 'c'}}, '{"a": {"b": "c"}}'),
++            (['a', 'b'], '["a", "b"]'),
++            ('a', '"a"'),
++            ({('a', 'b'): 'c'}, "{('a', 'b'): 'c'}"),  # Invalid JSON.
++        ]
++        for value, display_value in tests:
++            with self.subTest(value=value):
++                self.assertEqual(
++                    display_for_field(value, models.JSONField(), self.empty_value),
++                    display_value,
++                )
++
+     def test_list_display_for_value(self):
+         display_value = display_for_value([1, 2, 3], self.empty_value)
+         self.assertEqual(display_value, '1, 2, 3')

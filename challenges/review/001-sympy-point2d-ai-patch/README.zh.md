@@ -1,35 +1,28 @@
-# Review 001：这个 AI 修复能合并吗？SymPy Point2D 回归审查
+# Review 001：SymPy Point：修复 evaluate(False) 下的坐标校验误报
 
-你正在审核一个 AI agent 生成的补丁。补丁声称修复 SymPy 中 Point2D 在 evaluate(False) 下误报 Imaginary coordinates are not permitted 的问题。
+你是这个仓库的 reviewer。一个 AI agent 提交了下面这个 PR，CI 全绿，等待你的结论。
 
-你的任务不是写代码，而是判断这个 AI PR 是否可以合并。如果不能合并，需要指出具体风险、影响和建议修复方向。
+## PR 描述（作者提供）
 
-## 题目来源
-
-本题来自真实工程问题，并改编为 AgentCode Review Mode 题目：
-
-- 原始 Issue：<https://github.com/sympy/sympy/issues/22684>
-- 上游正确 PR：<https://github.com/sympy/sympy/pull/22714>
-- PatchDiff 论文：<https://arxiv.org/abs/2503.15223>
-
-注意：你要审核的是 `ai-pr.diff` 中的改编 AI 补丁，不是上游最终合并的正确修复。
-
-## 背景
-
-- Point / Point2D 是 SymPy 的几何点对象，坐标必须是合法 SymPy 表达式，并且不能是明确的虚数坐标。
-- 真实 bug 是 evaluate(False) 环境下普通坐标也可能被旧逻辑误判，从而抛出 Imaginary coordinates are not permitted。
-- AI 补丁把整个虚数坐标检查挂到 evaluate 条件后面，容易把“误拒普通坐标”和“拒绝明确虚数坐标”混为一谈。
+> **Fix Point raising 'Imaginary coordinates are not permitted' with evaluate(False)**
+>
+> 在 with evaluate(False) 下解析 Point2D(Integer(1), Integer(2)) 会抛出 Imaginary coordinates are not permitted（issue #22684）：关闭自动求值后 im(1) 不会化简成 0，而是保持未求值的 im(1) 表达式，在坐标校验的真值判断里被当成了非零虚部，普通实数坐标因此根本无法构造。
+>
+> 这个 PR 让虚数坐标校验只在 evaluate 开启时执行——这条校验依赖 im() 的求值结果，在求值被关闭时它给不出可靠结论。
+>
+> 新增 test_issue_22684 复现原始报错场景，验证 evaluate(False) 下 Point(1, 2) 能正常创建。现有测试全部通过。
 
 ## 你需要审核
 
 请阅读：
 
-- `ai-pr.diff`
+- `ai-pr.diff` — 待审核的补丁
+- `src-point.py` — 补丁前 Point.__new__ 的源码节选（最小充分上下文）
 
 然后提交 review 结论：
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -38,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- 新增测试证明了什么？还缺什么？
 ```
 
-## 评分重点
+## 背景
 
-- 是否能正确判断这个 AI PR 是否可以合并。
-- 是否识别核心风险：The patch disables the imaginary-coordinate safety check whenever evaluate is false.
-- 是否说明原有行为边界和 AI patch 改变了什么。
-- 是否指出新增测试覆盖不足。
-- 是否给出可执行的修复建议，而不是只说“加测试”。
+- Point / Point2D 是 SymPy 几何模块的点对象。构造函数会对坐标做一系列入参校验，其中一条契约是：明确为虚数的坐标（如 Point(I, 2)）会被 ValueError 拒绝。
+- evaluate(False) 会全局关闭自动求值：像 im(1) 这样的函数调用会保持未求值形式，而不是立即化简为 0。SymPy 的性质查询（如 is_zero）采用三值逻辑：True / False / None（未知）。
+
+## 答案与解析
+
+参考答案在 `expected-findings.json` 和 `rubric.md` 中（剧透注意）。在线做题时提交 review 后自动展示。
+
+## 题目来源
+
+本题改编自真实工程问题（你审核的 `ai-pr.diff` 是 AgentCode 改编的训练补丁，不是上游最终修复）。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。

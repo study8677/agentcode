@@ -6,12 +6,12 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "Requests urllib3 异常边界审查",
-    "en": "Requests urllib3 exception boundary review"
+    "zh": "Requests：包装 urllib3 连接池异常",
+    "en": "Requests: wrap a urllib3 connection-pool exception"
   },
   "summary": {
-    "zh": "审查一个只包装 ClosedPoolError 的补丁，它没有处理 urllib3 DecodeError 和 TimeoutError 穿透 Requests API。",
-    "en": "Review a patch that wraps only ClosedPoolError while leaving other urllib3 exceptions leaking through."
+    "zh": "审查一个 Requests adapter PR：作者捕获 urllib3 的 ClosedPoolError，并把它转换成 Requests 的 ConnectionError。",
+    "en": "Review a Requests adapter PR: the author catches urllib3 ClosedPoolError and converts it to Requests ConnectionError."
   },
   "language": "Python / Requests",
   "tags": [
@@ -43,22 +43,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "判断库边界是否完整包装下层依赖异常。",
-  "scenario": "AI PR 看到一次 ClosedPoolError 泄漏，于是只捕获这个异常并映射为 ConnectionError。",
-  "context": [
-    "Requests 对外承诺的是 requests.exceptions 体系。",
-    "真实问题包括 DecodeError、TimeoutError 等下层异常穿透。",
-    "只捕获一个具体异常会让 API 边界仍不稳定。"
+  "pr": {
+    "title": "Wrap ClosedPoolError as a Requests ConnectionError",
+    "author": "codegen-agent",
+    "body": [
+      "Some adapter error paths can leak urllib3 ClosedPoolError directly to callers, which breaks the expectation that Requests users catch requests.exceptions types at the public API boundary.",
+      "This PR imports ClosedPoolError in adapters.py and maps it to requests.exceptions.ConnectionError next to the existing urllib3-to-Requests exception conversions.",
+      "Added a focused regression test for ClosedPoolError so callers now see ConnectionError. Existing Requests tests pass."
+    ]
+  },
+  "background": [
+    "Requests wraps lower-level urllib3 failures in its own requests.exceptions hierarchy so callers do not depend on urllib3 internals.",
+    "HTTPAdapter.send already maps several urllib3 exceptions, including proxy, timeout, SSL, and connection failures.",
+    "The review context includes the pre-patch exception mapping excerpt in src-adapters.py."
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "api-boundary",
+    "notes": [
+      "The PR fixes one observed exception but leaves the broader API-boundary class incomplete. Callers can still see other urllib3 exceptions such as DecodeError or TimeoutError instead of Requests exception types.",
+      "A stable exception boundary is a contract, not a one-off mapping for the single failure seen in a test. The review should ask whether the patch covers the reported class of lower-level exceptions.",
+      "The new test is too narrow: it proves ClosedPoolError is wrapped but does not cover decode, timeout, or proxy timeout paths that exercise the same public API boundary."
+    ]
+  },
+  "learningGoal": "判断库边界是否完整包装下层依赖异常，而不是只处理一个观测到的异常类型。",
   "terms": [
     {
       "term": "API boundary",
@@ -81,17 +90,17 @@
     {
       "input": "ClosedPoolError",
       "expected": "应转换成 Requests ConnectionError。",
-      "reviewQuestion": "PR 覆盖了一个具体异常。"
+      "reviewQuestion": "PR 覆盖了哪个具体异常？"
     },
     {
       "input": "DecodeError",
       "expected": "也不应穿透 urllib3 类型。",
-      "reviewQuestion": "是否仍泄漏下层异常。"
+      "reviewQuestion": "同类下层异常是否仍泄漏？"
     },
     {
-      "input": "TimeoutError",
+      "input": "TimeoutError / proxy timeout",
       "expected": "应映射到 Requests timeout/connection 异常。",
-      "reviewQuestion": "异常映射是否一致。"
+      "reviewQuestion": "异常映射是否覆盖完整边界？"
     }
   ],
   "scoringHints": {

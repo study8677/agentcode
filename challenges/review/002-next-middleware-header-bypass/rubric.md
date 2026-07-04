@@ -23,7 +23,7 @@ Total: 100 points.
 
 ## Test Quality: 10
 
-- 10: Identifies the missing negative/boundary test: The new test only proves the bypass branch exists.
+- 10: Identifies the missing negative/boundary test: the new test only proves the early-return branch exists, not that a spoofed request is blocked.
 - 5: Says tests are insufficient without naming the missing case.
 - 0: Treats the tests as sufficient.
 

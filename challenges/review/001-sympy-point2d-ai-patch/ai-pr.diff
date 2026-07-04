@@ -1,22 +1,43 @@
 diff --git a/sympy/geometry/point.py b/sympy/geometry/point.py
-index 73c20334d09e..ai0000000000 100644
+index 73c20334d..5c8636ee6 100644
 --- a/sympy/geometry/point.py
 +++ b/sympy/geometry/point.py
-@@ -149,7 +149,7 @@ def __new__(cls, *args, **kwargs):
+@@ -149,9 +149,12 @@ def __new__(cls, *args, **kwargs):
          if any(coords[dim:]):
              raise ValueError('Nonzero coordinates cannot be removed.')
 -        if any(a.is_number and im(a) for a in coords):
++        # With automatic evaluation disabled, im(a) stays unevaluated (e.g.
++        # im(1)), which made perfectly real coordinates look imaginary
++        # (issue #22684). Only run this validation when evaluation is on.
 +        if evaluate and any(a.is_number and im(a) for a in coords):
              raise ValueError('Imaginary coordinates are not permitted.')
          if not all(isinstance(a, Expr) for a in coords):
              raise TypeError('Coordinates must be valid SymPy expressions.')
+
+         # pad with zeros appropriately
+         coords = coords[:dim] + (S.Zero,)*(dim - len(coords))
 diff --git a/sympy/geometry/tests/test_point.py b/sympy/geometry/tests/test_point.py
+index 930d7fec2..8a1c2b3d4 100644
+--- a/sympy/geometry/tests/test_point.py
++++ b/sympy/geometry/tests/test_point.py
 @@ -1,5 +1,6 @@
  from sympy.core.basic import Basic
- from sympy.core.numbers import (I, Rational, pi)
+ from sympy.core.numbers import (I, Float, Rational, pi)
 +from sympy.core.parameters import evaluate
-@@ -452,6 +453,12 @@ def test__normalize_dimension():
+ from sympy.core.singleton import S
+ from sympy.core.symbol import Symbol
+ from sympy.core.sympify import sympify
+@@ -452,6 +453,13 @@ def test__normalize_dimension():
+     assert Point._normalize_dimension(Point(1, 2), Point(3, 4, 0)) == [
+         Point(1, 2, 0), Point(3, 4, 0)]
+
++
 +def test_issue_22684():
-+    # Used to give an error
++    # Used to raise 'Imaginary coordinates are not permitted.'
 +    with evaluate(False):
-+        Point(1, 2)
++        p = Point(1, 2)
++    assert p == Point(1, 2)
++
+
+ def test_direction_cosine():
+     p1 = Point3D(0, 0, 0)

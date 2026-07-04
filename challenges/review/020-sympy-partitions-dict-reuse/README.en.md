@@ -1,26 +1,28 @@
-# Review 020: SymPy partitions dictionary reuse review
+# Review 020: SymPy partitions: avoid shared mutable dictionaries in iterator results
 
-Review a partitions patch that copies only one yield mode while leaving size=True dictionaries reused.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Copy partition dictionaries before yielding iterator results**
+>
+> partitions() mutates a working dictionary while generating results. Users who collect the generator into a list can observe earlier yielded dictionaries changing as later partitions are produced.
+>
+> This PR returns ms.copy() from the dictionary-yield paths so callers receive stable snapshots instead of the internal working object.
+>
+> Added a regression test for partitions(..., size=True) to ensure the yielded sizes remain correct when results are collected. Existing combinatorics tests pass.
 
-- SymPy Issue/PR: <https://github.com/sympy/sympy/pull/20154>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-iterables.py` — pre-patch partitions() yield-branch excerpt (minimal sufficient context)
 
-- partitions() 生成整数分区，旧实现复用同一个字典对象，导致用户收集列表时看到所有元素变成最终状态。
-- 函数有 size=False 和 size=True 两种返回模式；size=True 返回 (size, dict)。
-- 只修一个 yield 分支会让另一种模式继续暴露同一个可变 dict。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -29,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch copies dictionaries only for size=False yields.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- partitions() is a generator that reuses and mutates an internal working dictionary.
+- The function has two output modes: size=False and size=True.
+- When reviewing generator fixes, check every yield branch that exposes mutable objects.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

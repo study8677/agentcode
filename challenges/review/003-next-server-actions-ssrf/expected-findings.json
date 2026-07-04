@@ -1,21 +1,40 @@
 {
   "canMerge": false,
+  "mergeRationale": "The action validates only the path and rebuilds the server-side fetch URL from the client-controllable Host header, so a forged Host turns it into a server-side request to an attacker-chosen origin (SSRF).",
   "requiredFindings": [
     {
       "id": "host-header-ssrf",
       "severity": "critical",
-      "summary": "The patch checks the path but trusts the Host header when building the server-side fetch URL.",
-      "expectedReasoning": "An attacker can forge Host or forwarded host so the server fetches an internal or attacker-controlled origin.",
-      "acceptableFix": "Build the URL from a trusted canonical origin and enforce a host allowlist before any server-side fetch."
+      "summary": "The patch checks the path but builds the server-side fetch URL from the request Host header.",
+      "expectedReasoning": "host and x-forwarded-proto are request headers controllable by a client or intermediary; a forged Host (e.g. 127.0.0.1:8080 or an external host) makes the server fetch an internal or attacker-controlled origin. Relative-path safety and origin trust are two separate problems.",
+      "acceptableFix": "Build the URL from a trusted canonical origin (config), or enforce a host allowlist, before any server-side fetch.",
+      "matchTerms": [
+        ["host", "ssrf"],
+        ["host", "内网"],
+        ["host", "伪造"],
+        ["forged", "host"],
+        ["host", "fetch"],
+        ["host", "可信"]
+      ]
     },
     {
       "id": "missing-forged-host-test",
       "severity": "high",
       "summary": "The tests do not cover attacker-controlled Host or X-Forwarded-Host.",
-      "expectedReasoning": "The absolute URL rejection test passes while the SSRF path remains exploitable.",
-      "acceptableFix": "Add tests for forged Host, forwarded host, scheme changes, and private IP origins."
+      "expectedReasoning": "The added test only asserts a relative path works; the absolute-URL rejection test also passes while the SSRF path (forged host) stays exploitable and untested.",
+      "acceptableFix": "Add tests for forged Host, forwarded host, scheme changes, and private-IP origins.",
+      "matchTerms": [
+        ["测试", "host"],
+        ["测试", "x-forwarded-host"],
+        ["test", "host"],
+        ["test", "forged"],
+        ["测试", "伪造"]
+      ]
     }
   ],
   "optionalFindings": [],
-  "disallowedConclusions": []
+  "disallowedConclusions": [
+    "The patch is safe because it only allows relative paths.",
+    "Trusting the Host header is fine because the app is behind a proxy."
+  ]
 }

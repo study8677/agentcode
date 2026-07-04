@@ -1,27 +1,28 @@
-# Review 010: Django admin save_as_new permission review
+# Review 010: Django Admin: adjust when Save as new is shown
 
-Review an admin patch that exposes Save as new to users without add permission.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Allow Save as new when a user can change the object**
+>
+> The admin change form currently hides Save as new unless the user has add permission, even though the button is rendered while editing an existing object. This is confusing for staff who can maintain existing records but do not have broad add access.
+>
+> This PR treats Save as new as part of the change form action set: if the user can change the current object and save_as is enabled, the button is shown. The popup and change-form guards stay in place.
+>
+> Added a submit_row regression test for a change-only user so the template context exposes show_save_as_new. Existing admin tests pass.
 
-- Django Ticket: <https://code.djangoproject.com/ticket/33932>
-- 上游 PR: <https://github.com/django/django/pull/16527>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-admin-modify.py` — pre-patch submit_row excerpt (minimal sufficient context)
 
-- Django admin 的 Save as new 本质是创建一个新对象，而不是只修改当前对象。
-- 拥有 change 权限的用户不一定拥有 add 权限。
-- 权限 bug 常常出现在“按钮显示”和“后端动作语义”不一致的地方。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -30,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch allows users with only change permission to access Save as new.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- Django admin separates add permission from change permission.
+- Save as new appears on the change form, but the action creates a new object.
+- When reviewing permission patches, inspect both UI visibility and action semantics.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

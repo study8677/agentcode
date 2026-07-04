@@ -1,36 +1,28 @@
-# Review 003：Server Actions 相对重定向 SSRF 审查
+# Review 003：Server Actions：支持登录后跳回原页面的相对路径重定向
 
-AI PR 认为 redirectUrl 只要 startsWith("/") 就是安全相对路径，然后用请求 Host 拼接出服务端 fetch URL。
+你是这个仓库的 reviewer。一个 AI agent 提交了下面这个 PR，CI 全绿，等待你的结论。
 
-你的任务不是写代码，而是判断这个 AI PR 是否可以合并。如果不能合并，需要指出具体风险、影响和建议修复方向。
+## PR 描述（作者提供）
 
-## 题目来源
-
-本题来自真实工程问题，并改编为 AgentCode Review Mode 题目：
-
-- Next.js Advisory：<https://github.com/vercel/next.js/security/advisories/GHSA-fr5h-rqp8-mj6g>
-- 修复 PR：<https://github.com/vercel/next.js/pull/62561>
-- 修复 commit：<https://github.com/vercel/next.js/commit/8f7a6ca7d21a97bc9f7a1bbe10427b5ad74b9085>
-- Assetnote Analysis：<https://www.assetnote.io/resources/research/digging-for-ssrf-in-nextjs-apps/>
-
-注意：你要审核的是 `ai-pr.diff` 中的改编 AI 补丁，不是上游最终合并的正确修复。
-
-## 背景
-
-- Server Actions 在服务端执行，某些重定向和转发逻辑会触发服务器主动请求目标 URL。
-- redirectUrl 是相对路径并不代表最终 origin 可信，因为 req.headers.host 可能来自客户端或反向代理传递。
-- SSRF 风险通常出现在“路径看起来安全，但 host/origin 由攻击者控制”的组合里。
+> **Support relative post-login redirects instead of only the configured origin**
+>
+> 登录流程需要在认证完成后把用户带回他原本访问的页面。目前 followActionRedirect 只用 process.env.APP_ORIGIN 拼接，所有跳转都落到那个固定 origin，忽略了用户实际所在的站点——多域名和预览部署下会跳到错误的域名。
+>
+> 这个 PR 改为：先校验 redirectUrl 必须是以 / 开头的相对路径（拒绝外部绝对 URL），再用当前请求的 proto + host 构造出用户所在站点上的目标 URL，然后在服务端取回该页面内容返回。这样多域名和预览环境都能正确跳回原页面。
+>
+> 新增测试验证相对路径 redirect 能正常工作。现有测试全部通过。
 
 ## 你需要审核
 
 请阅读：
 
-- `ai-pr.diff`
+- `ai-pr.diff` — 待审核的补丁
+- `src-action.ts` — 补丁前 followActionRedirect 的源码节选（最小充分上下文）
 
 然后提交 review 结论：
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -39,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- 现有测试证明了什么？还缺什么？
 ```
 
-## 评分重点
+## 背景
 
-- 是否能正确判断这个 AI PR 是否可以合并。
-- 是否识别核心风险：The patch checks the path but trusts the Host header when building the server-side fetch URL.
-- 是否说明原有行为边界和 AI patch 改变了什么。
-- 是否指出新增测试覆盖不足。
-- 是否给出可执行的修复建议，而不是只说“加测试”。
+- Server Actions 在服务端执行；followActionRedirect 会在服务端对目标 URL 发起 fetch，并把响应内容返回给调用方。
+- 登录后跳回原页面是常见需求：需要一个『目标站点 origin + 相对路径』来定位用户原来所在的页面。
+
+## 答案与解析
+
+参考答案在 `expected-findings.json` 和 `rubric.md` 中（剧透注意）。在线做题时提交 review 后自动展示。
+
+## 题目来源
+
+本题改编自真实工程问题（你审核的 `ai-pr.diff` 是 AgentCode 改编的训练补丁，不是上游最终修复）。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。

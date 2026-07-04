@@ -1,13 +1,44 @@
 diff --git a/requests/sessions.py b/requests/sessions.py
-@@
--            prepared_request = req.copy()
-+            # Keep redirect handling side-effect free by always copying original request.
-+            prepared_request = req.copy()
-@@
-             resp = self.send(prepared_request, stream=stream, timeout=timeout, verify=verify, cert=cert, proxies=proxies)
-+            req = req
-             url = self.get_redirect_target(resp)
-@@
-+def test_original_request_is_not_mutated():
-+    req = requests.Request('POST', httpbin('redirect/2')).prepare()
-+    assert req.method == 'POST'
+index 425db22c..7bf3ea23 100644
+--- a/requests/sessions.py
++++ b/requests/sessions.py
+@@ -88,6 +88,8 @@ class SessionRedirectMixin(object):
+         i = 0
+
+         while resp.is_redirect:
++            # Always derive each hop from the caller's original request so
++            # redirect handling stays side-effect free and reproducible.
+             prepared_request = req.copy()
+
+             resp.content  # Consume socket so it can be released
+@@ -152,11 +154,6 @@ class SessionRedirectMixin(object):
+
+             extract_cookies_to_jar(self.cookies, prepared_request, resp.raw)
+
+-            # Persist the per-hop request so the next hop starts from the
+-            # request we actually sent (method/body may differ from the
+-            # caller's original request after e.g. a 303).
+-            req = prepared_request
+-
+             i += 1
+             yield resp
+diff --git a/test_requests.py b/test_requests.py
+index 15406a25..8c93f421 100644
+--- a/test_requests.py
++++ b/test_requests.py
+@@ -221,6 +221,16 @@ class RequestsTestCase(unittest.TestCase):
+         assert resp.status_code == 200
+
++    def test_resolve_redirects_is_side_effect_free(self):
++        req = requests.Request('POST', httpbin('redirect-to'),
++                               params={'url': httpbin('get'), 'status_code': 303},
++                               data={'k': 'v'}).prepare()
++        s = requests.Session()
++        resp = s.send(req, allow_redirects=True)
++        # The caller's request object is left untouched by redirect handling.
++        assert req.method == 'POST'
++        assert resp.status_code == 200
++
+     def test_HTTP_302_ALLOW_REDIRECT_GET(self):
+         r = requests.get(httpbin('redirect', '1'))
+         assert r.status_code == 200

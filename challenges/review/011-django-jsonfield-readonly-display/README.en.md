@@ -1,27 +1,28 @@
-# Review 011: Django readonly JSONField display review
+# Review 011: Django admin: render readonly JSONField as valid JSON
 
-Review a readonly JSONField display patch that keeps using Python string formatting instead of field preparation.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Serialize readonly JSONField values as JSON in the admin**
+>
+> On the admin change page, readonly JSONField values currently fall through to the catch-all branch of display_for_field and are rendered with str(value), i.e. Python repr such as `{'foo': 'bar'}` — not valid JSON, and inconsistent with what the editable widget shows.
+>
+> This PR adds a JSONField branch to display_for_field that calls field.get_prep_value(value), so the display uses the field's own JSON serialization (honoring custom encoders). Values that cannot be serialized are caught via TypeError and fall back to the existing generic display path, so the change page never errors out.
+>
+> Added test_json_display_for_field covering nested dicts, lists, plain strings, and an unserializable value, and extended the null-display test with a JSONField None assertion. All existing tests pass.
 
-- Django Ticket: <https://code.djangoproject.com/ticket/31052>
-- 上游 PR: <https://github.com/django/django/pull/12308>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-admin-utils.py` — pre-patch excerpt of display_for_field / display_for_value and JSONField.get_prep_value (minimal sufficient context)
 
-- readonly admin 字段应该展示合法 JSON，而不是 Python dict 的 repr。
-- JSONField 自身有 prepare/get_prep_value 语义，能处理编码和特殊输入。
-- 直接 str(dict) 得到的是单引号形式，不是 JSON。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -30,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What do the new tests actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch renders JSONField values with Python str/repr instead of JSON preparation.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- display_for_field is the entry point the Django admin uses to render readonly field values: it special-cases field types one by one (Boolean, DateTime, Decimal, FileField, ...) and falls back to display_for_value, which ends in str(value).
+- JSONField.get_prep_value is defined as json.dumps(value, cls=self.encoder): it emits JSON text, honors the field's custom encoder, and raises TypeError for values that cannot be JSON-serialized.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode adaptation for review training). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

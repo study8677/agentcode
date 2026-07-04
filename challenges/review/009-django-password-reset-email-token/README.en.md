@@ -1,27 +1,28 @@
-# Review 009: Django password reset token email binding review
+# Review 009: Django: fix how password reset tokens relate to email state
 
-Review a password reset patch that checks email presence but does not bind tokens to email changes.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Avoid password reset token crashes for users without a usable email**
+>
+> PasswordResetTokenGenerator currently builds the token hash from stable user fields but assumes every user object has a meaningful email value during reset flows. Custom user models and imported accounts can have an empty email, and that edge case makes the reset path fragile.
+>
+> This PR guards the hash construction with get_email_field_name(): when the configured email field is empty, the generator falls back to the existing password/login/timestamp material instead of depending on an empty email value.
+>
+> Added a regression test for a user with an empty email to confirm token creation and validation still work. Existing auth tests pass.
 
-- Django Ticket: <https://code.djangoproject.com/ticket/32130>
-- 上游 PR: <https://github.com/django/django/pull/13551>
-- SWE-bench Lite: <https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-tokens.py` — pre-patch token generator excerpt (minimal sufficient context)
 
-- 密码重置 token 应在用户密码、last_login、时间戳等关键状态变化后失效。
-- 真实问题是用户申请重置后更改邮箱，旧邮件里的 token 仍可使用。
-- 只检查邮箱是否存在，并不会让邮箱值参与 token 哈希。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -30,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch never includes the email value in the token hash.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- Django password reset tokens put selected user state into hash material so old tokens stop working after important state changes.
+- Projects may customize the user model and email field name.
+- When reviewing token logic, distinguish between avoiding a narrow crash and preserving the token invalidation contract.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

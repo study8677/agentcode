@@ -4,31 +4,31 @@ Total: 100 points.
 
 ## Merge Decision: 30
 
-- 30: Says this PR must not be merged / requires changes.
-- 10: Expresses uncertainty but identifies a blocking risk.
-- 0: Says it can be merged without qualification.
+- 30: Approves the PR (can merge).
+- 10: Says "need more info" but explicitly confirms the main risk points below.
+- 0: Says it cannot be merged / requires changes.
 
-## Core Risk: 30
+## Core Verification: 30
 
-- 30: Clearly explains: The patch strips user input instead of rejecting usernames with forbidden characters.
-- 18: Mentions the general risk but misses the exact failing boundary.
-- 8: Vaguely says the condition is too broad or tests are incomplete.
-- 0: Misses the core risk.
+- 30: Explicitly verifies both: (a) $ can match before a trailing newline while \Z only matches the absolute end of string, so 'joe\n' is now rejected; (b) the character class and ^ anchor are unchanged, so previously valid usernames still pass.
+- 18: Verifies the anchor semantics but does not confirm valid input is unaffected (or vice versa).
+- 8: Approves on general impressions ("looks like the standard fix") without concrete verification.
+- 0: No verification of what the change does.
 
 ## Semantic Boundary: 15
 
-- 15: Explains the intended contract and why the AI patch changes it.
-- 8: Mentions edge cases but does not describe the contract.
-- 0: Does not discuss the intended behavior.
+- 15: States the before/after contract: '^[\w.@+-]+$' accepted exactly one trailing newline; the new pattern must match the true end of string; both ASCII and Unicode validators change identically.
+- 8: Mentions the boundary case without describing the before/after contract.
+- 0: Does not discuss the behavior change.
 
 ## Test Quality: 10
 
-- 10: Identifies the missing negative/boundary test: The test expects a trailing-newline username to pass.
-- 5: Says tests are insufficient without naming the missing case.
-- 0: Treats the tests as sufficient.
+- 10: Evaluates the added tests and concludes they are trustworthy: the trailing-newline entries in invalid_usernames fail on the old regex and pass on the new one, covering both validators.
+- 5: Mentions the tests without assessing what they prove.
+- 0: Ignores the tests or wrongly claims regression coverage is missing.
 
-## Repair Direction: 15
+## Decision Quality: 15
 
-- 15: Gives an actionable fix: Use a strict end-of-string anchor such as \Z and keep validators as validators, not mutators.
-- 8: Suggests adding tests but gives only a partial implementation direction.
-- 0: No actionable fix.
+- 15: Approve rationale is concrete and avoids the disallowed rejections (misreading Python's \Z as Perl's, demanding strip/normalization instead of rejection, treating ^ vs \A as a blocker).
+- 8: Correct decision with a thin or partially incorrect rationale.
+- 0: Rejects for one of the disallowed reasons.

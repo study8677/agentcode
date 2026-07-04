@@ -1,34 +1,28 @@
-# Review 017：Astropy NDData mask 传播 None 分支审查
+# Review 017：Astropy NDData：处理缺失 mask 的传播逻辑
 
-AI PR 为了处理一个 operand 没有 mask 的情况，直接把分支条件改成 operand.mask is None。
+你是这个仓库的 reviewer。一个 AI agent 提交了下面这个 PR，CI 全绿，等待你的结论。
 
-你的任务不是写代码，而是判断这个 AI PR 是否可以合并。如果不能合并，需要指出具体风险、影响和建议修复方向。
+## PR 描述（作者提供）
 
-## 题目来源
-
-本题来自真实工程问题，并改编为 AgentCode Review Mode 题目：
-
-- Astropy Issue/PR：<https://github.com/astropy/astropy/pull/14995>
-- SWE-bench Lite：<https://huggingface.co/datasets/princeton-nlp/SWE-bench_Lite>
-
-注意：你要审核的是 `ai-pr.diff` 中的改编 AI 补丁，不是上游最终合并的正确修复。
-
-## 背景
-
-- NDDataRef arithmetic 需要在一个或两个 operand 有 mask 时传播 mask。
-- operand 本身可能是 None，也可能存在但 operand.mask 是 None。
-- 修复一个 None 相关 bug 时，分支顺序和属性访问安全非常重要。
+> **Treat operands without masks like missing-mask arithmetic inputs**
+>
+> NDData arithmetic currently handles the case where no second operand participates in mask propagation, but it does not consistently handle a real operand whose mask attribute is None.
+>
+> This PR changes the branch to check operand.mask is None, so an operand without a mask falls back to copying the current object's mask instead of attempting to combine two masks.
+>
+> Added a regression test for arithmetic between data_with_mask and data_without_mask to confirm the result mask is copied rather than shared. Existing NDData tests pass.
 
 ## 你需要审核
 
 请阅读：
 
-- `ai-pr.diff`
+- `ai-pr.diff` — 待审核的补丁
+- `src-ndarithmetic.py` — 补丁前 mask 传播流程的源码节选（最小充分上下文）
 
 然后提交 review 结论：
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -37,13 +31,19 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- 现有测试证明了什么？还缺什么？
 ```
 
-## 评分重点
+## 背景
 
-- 是否能正确判断这个 AI PR 是否可以合并。
-- 是否识别核心风险：The patch reads operand.mask before proving operand is not None.
-- 是否说明原有行为边界和 AI patch 改变了什么。
-- 是否指出新增测试覆盖不足。
-- 是否给出可执行的修复建议，而不是只说“加测试”。
+- NDDataRef arithmetic 需要在一个或两个 operand 有 mask 时传播 mask。
+- `operand is None` 和 `operand.mask is None` 是不同状态。
+- 修复 None 相关 bug 时，属性访问顺序和分支语义都需要被审查。
+
+## 答案与解析
+
+参考答案在 `expected-findings.json` 和 `rubric.md` 中（剧透注意）。在线做题时提交 review 后自动展示。
+
+## 题目来源
+
+本题改编自真实工程问题（你审核的 `ai-pr.diff` 是 AgentCode 改编的训练补丁，不是上游最终修复）。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。

@@ -1,21 +1,40 @@
 {
   "canMerge": false,
+  "mergeRationale": "The patch does not add the email value to the password reset token hash, so tokens issued before an email change remain valid.",
   "requiredFindings": [
     {
       "id": "email-not-bound-to-reset-token",
       "severity": "critical",
-      "summary": "The patch never includes the email value in the token hash.",
-      "expectedReasoning": "Changing a user email after issuing a reset token will not invalidate the old token, so the security bug remains.",
-      "acceptableFix": "Include the current email field value in _make_hash_value while preserving compatibility for users without email."
+      "summary": "The patch never includes the current email value in the token hash.",
+      "expectedReasoning": "Changing a user's email after issuing a reset token will not invalidate the old token because _make_hash_value still returns only pk, password, last_login, and timestamp.",
+      "acceptableFix": "Include the configured email field value in _make_hash_value while preserving compatibility for custom user models.",
+      "matchTerms": [
+        ["email", "hash"],
+        ["邮箱", "hash"],
+        ["邮箱", "失效"],
+        ["old token", "valid"],
+        ["change email"],
+        ["_make_hash_value", "email"]
+      ]
     },
     {
       "id": "missing-email-change-test",
       "severity": "high",
-      "summary": "The test only checks empty email does not crash.",
-      "expectedReasoning": "It does not reproduce the attack sequence: issue token, change email, then reject old token.",
-      "acceptableFix": "Add a test that changes email after token creation and expects check_token to return False."
+      "summary": "The added test covers empty email but not the email-change invalidation sequence.",
+      "expectedReasoning": "The real regression is: create token, change email, then check that the old token is rejected. The new test only proves a token can be created and checked when email is empty.",
+      "acceptableFix": "Add a test that changes the configured email field after token creation and expects check_token to return False.",
+      "matchTerms": [
+        ["测试", "邮箱", "变更"],
+        ["测试", "旧", "token"],
+        ["empty", "email"],
+        ["change", "email", "test"],
+        ["check_token", "False"]
+      ]
     }
   ],
   "optionalFindings": [],
-  "disallowedConclusions": []
+  "disallowedConclusions": [
+    "The patch can be merged because it uses get_email_field_name.",
+    "The empty-email regression test proves old tokens are invalidated after an email change."
+  ]
 }

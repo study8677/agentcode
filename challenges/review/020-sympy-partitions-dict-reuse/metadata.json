@@ -6,12 +6,12 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "SymPy partitions 复用字典审查",
-    "en": "SymPy partitions dictionary reuse review"
+    "zh": "SymPy partitions：避免迭代结果共享可变字典",
+    "en": "SymPy partitions: avoid shared mutable dictionaries in iterator results"
   },
   "summary": {
-    "zh": "审查一个只在 size=False 时 copy 的补丁，它仍让 size=True 返回的分区字典被后续迭代篡改。",
-    "en": "Review a partitions patch that copies only one yield mode while leaving size=True dictionaries reused."
+    "zh": "审查一个 SymPy iterator PR：作者在 partitions() 返回分区字典时复制结果，避免收集列表后被后续迭代改写。",
+    "en": "Review a SymPy iterator PR: the author copies partition dictionaries before yielding them so collected results are not mutated by later iterations."
   },
   "language": "Python / SymPy",
   "tags": [
@@ -39,22 +39,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+  },
+  "pr": {
+    "title": "Copy partition dictionaries before yielding iterator results",
+    "author": "codegen-agent",
+    "body": [
+      "partitions() mutates a working dictionary while generating results. Users who collect the generator into a list can observe earlier yielded dictionaries changing as later partitions are produced.",
+      "This PR returns ms.copy() from the dictionary-yield paths so callers receive stable snapshots instead of the internal working object.",
+      "Added a regression test for partitions(..., size=True) to ensure the yielded sizes remain correct when results are collected. Existing combinatorics tests pass."
+    ]
+  },
+  "background": [
+    "partitions() is a generator that reuses an internal dictionary while enumerating integer partitions.",
+    "The function has two output modes: size=False yields a dictionary; size=True yields a tuple of (size, dictionary).",
+    "The review context includes the pre-patch yield branches in src-iterables.py."
+  ],
+  "analysis": {
+    "dimension": "api-contract",
+    "notes": [
+      "The patch copies only the size=False dictionary yields. In size=True mode it still returns tuples containing the same mutable working dictionary, so collected results are still corrupted by later iterations.",
+      "The added test checks only the numeric size component. That can remain correct even while every tuple's dictionary points at the same final mutated object.",
+      "The fix should copy the dictionary in every yield branch that exposes it and tests should assert object identity or stable dictionary contents for both output modes."
+    ]
   },
   "learningGoal": "识别迭代器可变对象复用在不同输出模式下的 API 回归。",
-  "scenario": "AI PR 修复 list(partitions()) 结果重复的问题，但只在普通 yield 路径返回 ms.copy()。",
-  "context": [
-    "partitions() 生成整数分区，旧实现复用同一个字典对象，导致用户收集列表时看到所有元素变成最终状态。",
-    "函数有 size=False 和 size=True 两种返回模式；size=True 返回 (size, dict)。",
-    "只修一个 yield 分支会让另一种模式继续暴露同一个可变 dict。"
-  ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
   "terms": [
     {
       "term": "mutable reuse",
@@ -77,17 +86,17 @@
     {
       "input": "list(partitions(6))",
       "expected": "列表中每个 dict 应独立。",
-      "reviewQuestion": "PR 是否修复普通模式。"
+      "reviewQuestion": "普通模式是否返回快照？"
     },
     {
       "input": "list(partitions(6, size=True))",
       "expected": "tuple 里的 dict 也应独立。",
-      "reviewQuestion": "size=True 分支是否仍复用。"
+      "reviewQuestion": "size=True 分支是否也复制了 dict？"
     },
     {
-      "input": "性能和文档",
-      "expected": "行为改变应体现在 docstring。",
-      "reviewQuestion": "PR 是否同步说明新契约。"
+      "input": "用户保存第一个 yield 的 dict 后继续迭代",
+      "expected": "已保存结果不应随内部工作字典变化。",
+      "reviewQuestion": "测试是否检查对象 identity 或内容稳定性？"
     }
   ],
   "scoringHints": {

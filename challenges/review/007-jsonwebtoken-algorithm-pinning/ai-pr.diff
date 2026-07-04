@@ -1,19 +1,42 @@
 diff --git a/src/auth/session.ts b/src/auth/session.ts
-index 203bc9d..bad0007 100644
+index 203bc9d1..bad00071 100644
 --- a/src/auth/session.ts
 +++ b/src/auth/session.ts
-@@ -8,12 +8,10 @@ export function verifySession(token: string) {
+@@ -5,14 +5,14 @@ import type { Request, Response, NextFunction } from 'express'
+
+-// RS256 public key shipped to the service via config. Tokens are signed by
+-// the auth service's private key and verified here with the public key.
+-const publicKey = readFileSync(process.env.JWT_PUBLIC_KEY_PATH!, 'utf8')
+-
+ export function verifySession(token: string) {
 -  return jwt.verify(token, publicKey, {
 -    algorithms: ['RS256'],
 -    issuer: 'agentcode.codes',
 -    audience: 'agentcode-web',
 -  })
++  // Read the signing key from the environment so each deployment (local dev,
++  // staging, prod) can supply its own key. Let jsonwebtoken use the token's
++  // own algorithm instead of hardcoding one, so dev and prod tokens both work.
 +  return jwt.verify(token, process.env.JWT_SECRET || undefined, {
 +    issuer: 'agentcode.codes',
 +    audience: 'agentcode-web',
 +  })
  }
-@@ -11,3 +11,7 @@ test('rejects expired tokens', () => {
-+test('accepts local dev tokens signed with JWT_SECRET', () => {
-+  expect(verifySession(localDevToken)).toBeTruthy()
-+})
+diff --git a/src/auth/session.test.ts b/src/auth/session.test.ts
+index 15406a25..8c93f421 100644
+--- a/src/auth/session.test.ts
++++ b/src/auth/session.test.ts
+@@ -8,6 +8,12 @@ describe('verifySession', () => {
+   test('rejects expired tokens', () => {
+     expect(() => verifySession(expiredToken)).toThrow()
+   })
+
++  test('accepts local dev tokens signed with JWT_SECRET', () => {
++    process.env.JWT_SECRET = 'local-dev-secret'
++    const localDevToken = jwt.sign({ sub: 'u1' }, 'local-dev-secret', {
++      issuer: 'agentcode.codes',
++      audience: 'agentcode-web',
++    })
++    expect(verifySession(localDevToken)).toBeTruthy()
++  })
+ })

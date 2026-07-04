@@ -1,36 +1,28 @@
-# Review 004：Axios baseURL 被绝对 URL 绕过审查
+# Review 004：Axios：加固内部 API client，拦截 protocol-relative URL 绕过 baseURL
 
-团队封装了带 Authorization 的 internalApi client。AI PR 为防 SSRF 只拒绝 //evil.test，却仍允许 https://evil.test 覆盖 baseURL。
+你是这个仓库的 reviewer。一个 AI agent 提交了下面这个 PR，CI 全绿，等待你的结论。
 
-你的任务不是写代码，而是判断这个 AI PR 是否可以合并。如果不能合并，需要指出具体风险、影响和建议修复方向。
+## PR 描述（作者提供）
 
-## 题目来源
-
-本题来自真实工程问题，并改编为 AgentCode Review Mode 题目：
-
-- GitHub Advisory：<https://github.com/advisories/GHSA-jr5f-v2jv-69x6>
-- Axios Issue：<https://github.com/axios/axios/issues/6463>
-- 修复 PR：<https://github.com/axios/axios/pull/6829>
-- 修复 commit：<https://github.com/axios/axios/commit/fb8eec214ce7744b5ca787f2c3b8339b2f54b00f>
-
-注意：你要审核的是 `ai-pr.diff` 中的改编 AI 补丁，不是上游最终合并的正确修复。
-
-## 背景
-
-- 很多服务把 baseURL 配成内部 API，再把认证 header 放在 Axios 实例默认配置里。
-- Axios 支持传入绝对 URL；如果调用方参数可控，绝对 URL 可能绕过 baseURL。
-- 只处理 //host 这种 protocol-relative URL，不能覆盖 http:// 和 https:// 绝对 URL。
+> **Reject protocol-relative URLs on internalApi to prevent baseURL bypass**
+>
+> internalApi 这个 Axios 实例把内部服务地址配成 baseURL，并在默认 headers 里带上 Authorization。我们发现传入以 // 开头的 protocol-relative URL（如 //evil.test/a）时，Axios 会把它当成绝对地址、忽略 baseURL，把带认证头的请求发到外部主机。
+>
+> 这个 PR 在 fetchInternal 里增加校验：路径以 // 开头就直接抛错，堵住这个 protocol-relative URL 绕过 baseURL 的口子。
+>
+> 新增测试验证 //evil.test/a 会被拒绝，同时正常相对路径继续工作。现有测试全部通过。
 
 ## 你需要审核
 
 请阅读：
 
-- `ai-pr.diff`
+- `ai-pr.diff` — 待审核的补丁
+- `src-internal-api.ts` — 补丁前 internalApi / fetchInternal 的源码节选（最小充分上下文）
 
 然后提交 review 结论：
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -39,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- 现有测试证明了什么？还缺什么？
 ```
 
-## 评分重点
+## 背景
 
-- 是否能正确判断这个 AI PR 是否可以合并。
-- 是否识别核心风险：The patch blocks only protocol-relative URLs and still permits http:// or https:// absolute URLs.
-- 是否说明原有行为边界和 AI patch 改变了什么。
-- 是否指出新增测试覆盖不足。
-- 是否给出可执行的修复建议，而不是只说“加测试”。
+- internalApi 用 baseURL 指向内部服务，并在实例默认配置里附带 Authorization header；fetchInternal(path) 用它对 path 发起 GET。
+- Axios 的 URL 拼接规则：当 path 是绝对地址时，baseURL 会被忽略，请求直接发往 path 指定的 origin。
+
+## 答案与解析
+
+参考答案在 `expected-findings.json` 和 `rubric.md` 中（剧透注意）。在线做题时提交 review 后自动展示。
+
+## 题目来源
+
+本题改编自真实工程问题（你审核的 `ai-pr.diff` 是 AgentCode 改编的训练补丁，不是上游最终修复）。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。

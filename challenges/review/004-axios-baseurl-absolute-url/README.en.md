@@ -1,28 +1,28 @@
-# Review 004: Axios baseURL absolute URL bypass review
+# Review 004: Axios — harden the internal API client against protocol-relative URL bypass
 
-Review a patch that rejects protocol-relative URLs but still allows absolute URLs to override baseURL.
+You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
-Your task is to review the adapted AI patch, decide whether it can be merged, and write actionable findings.
+## PR description (from the author)
 
-## Sources
+> **Reject protocol-relative URLs on internalApi to prevent baseURL bypass**
+>
+> internalApi is an Axios instance whose baseURL points at an internal service, with an Authorization header attached by default. We found that passing a protocol-relative URL starting with // (e.g. //evil.test/a) makes Axios treat it as absolute, ignore baseURL, and send the authenticated request to an external host.
+>
+> This PR adds a check in fetchInternal: if the path starts with //, it throws, closing this protocol-relative URL baseURL-bypass hole.
+>
+> Added a test verifying //evil.test/a is rejected while normal relative paths still work. All existing tests pass.
 
-- GitHub Advisory: <https://github.com/advisories/GHSA-jr5f-v2jv-69x6>
-- Axios Issue: <https://github.com/axios/axios/issues/6463>
-- 修复 PR: <https://github.com/axios/axios/pull/6829>
-- 修复 commit: <https://github.com/axios/axios/commit/fb8eec214ce7744b5ca787f2c3b8339b2f54b00f>
+## What to review
 
-The patch in `ai-pr.diff` is an AgentCode adapted plausible-but-incorrect patch for review training, not the upstream maintainer fix.
+Read:
 
-## Context
+- `ai-pr.diff` — the patch under review
+- `src-internal-api.ts` — pre-patch excerpt of internalApi / fetchInternal (minimal sufficient context)
 
-- 很多服务把 baseURL 配成内部 API，再把认证 header 放在 Axios 实例默认配置里。
-- Axios 支持传入绝对 URL；如果调用方参数可控，绝对 URL 可能绕过 baseURL。
-- 只处理 //host 这种 protocol-relative URL，不能覆盖 http:// 和 https:// 绝对 URL。
-
-## Review Format
+Then submit your review:
 
 ```text
-Can merge? Yes / No
+Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
@@ -31,13 +31,18 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- Missing regression or boundary tests:
+- What does the new test actually prove? What is missing?
 ```
 
-## Rubric Focus
+## Background
 
-- Correct merge decision.
-- Core risk: The patch blocks only protocol-relative URLs and still permits http:// or https:// absolute URLs.
-- The intended behavior boundary.
-- Missing negative or boundary tests.
-- Actionable repair direction.
+- internalApi points baseURL at an internal service and attaches an Authorization header in the instance defaults; fetchInternal(path) issues a GET with it.
+- Axios URL rule: when path is an absolute URL, baseURL is ignored and the request goes straight to the origin named in path.
+
+## Answers and analysis
+
+Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). On the website they are revealed after you submit a review.
+
+## Source
+
+Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

@@ -6,18 +6,18 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "Django readonly JSONField 展示格式审查",
-    "en": "Django readonly JSONField display review"
+    "zh": "Django Admin：readonly JSONField 展示为合法 JSON",
+    "en": "Django admin: render readonly JSONField as valid JSON"
   },
   "summary": {
-    "zh": "审查一个用 str(value) 展示 readonly JSONField 的补丁，它可能继续输出非 JSON 文本并破坏无效输入处理。",
-    "en": "Review a readonly JSONField display patch that keeps using Python string formatting instead of field preparation."
+    "zh": "审查 Django admin 的一个展示层补丁：作者让详情页 readonly 的 JSONField 走字段自身的序列化逻辑，以 JSON 文本展示，而不是 Python repr。",
+    "en": "Review a Django admin display patch: readonly JSONField values are rendered through the field's own JSON serialization instead of Python repr."
   },
   "language": "Python / Django Admin",
   "tags": [
     "django",
-    "jsonfield",
     "admin",
+    "jsonfield",
     "formatting",
     "swe-bench"
   ],
@@ -42,83 +42,98 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "kind": "adapted-upstream-correct-patch",
+    "note": "The reviewed patch is adapted from the upstream maintainer fix (context and line numbers adjusted for review training). Whether it can be merged is the question the reviewer must answer."
+  },
+  "pr": {
+    "title": "Serialize readonly JSONField values as JSON in the admin",
+    "author": "codegen-agent",
+    "body": [
+      "在 admin 详情页上，readonly 的 JSONField 目前走 display_for_field 的兜底分支，直接 str(value) 输出 Python repr（例如 {'foo': 'bar'}）——不是合法 JSON，和可编辑状态下 widget 展示的内容也不一致。",
+      "这个 PR 在 display_for_field 里为 JSONField 增加一个分支，调用 field.get_prep_value(value) 输出字段自身序列化后的 JSON 文本（同时尊重自定义 encoder）；对无法序列化的值捕获 TypeError，回退到原有的通用展示路径，保证详情页不会因此报错。",
+      "新增 test_json_display_for_field 覆盖嵌套 dict、list、字符串和不可序列化输入四种情况，并在 null 展示测试里补充了 JSONField 为 None 的断言。现有测试全部通过。"
+    ]
+  },
+  "background": [
+    "display_for_field 是 Django admin 渲染 readonly 字段值的入口：按字段类型逐个特判（Boolean、DateTime、Decimal、FileField……），没有命中的类型走 display_for_value 兜底，最终 str(value)。",
+    "JSONField 的 get_prep_value 定义为 json.dumps(value, cls=self.encoder)：输出 JSON 文本并尊重字段的自定义 encoder；不可 JSON 序列化的值会抛 TypeError。",
+    "题目文件里提供了补丁前 display_for_field / display_for_value 以及 JSONField.get_prep_value 的源码节选（src-admin-utils.py），建议先读节选再看 diff。"
+  ],
+  "analysis": {
+    "dimension": "surface-fix",
+    "notes": [
+      "这个补丁是正确的，可以合并。它没有停留在表面（比如继续 str(value) 或手写 json.dumps），而是复用 JSONField.get_prep_value：输出双引号的合法 JSON 文本、与可编辑 widget 展示一致，并且经过字段的自定义 encoder，自定义类型也能正确序列化。",
+      "approve 之前应逐一确认：get_prep_value 对普通值返回 json.dumps 结果（{'a': {'b': 'c'}} 展示为 {\"a\": {\"b\": \"c\"}}）；不可序列化的值（如 tuple key 的 dict）在 json.dumps 处抛 TypeError，被补丁捕获后回退 display_for_value，详情页不会 500；新分支排在 FileField 之后、以 isinstance(field, models.JSONField) and value 收窄，None 仍走前面的 empty_value_display 分支，其他字段类型的展示路径完全不受影响。测试对这四类值加 None 都有断言，且在旧代码下会失败（旧代码输出 repr），是可信的回归测试。",
+      "常见的错误拒绝理由：认为 get_prep_value 是数据库层 API 不该用于展示（它恰恰是带自定义 encoder 的标准序列化入口，也是上游维护者采用的方案）；认为不可序列化用例断言 repr 输出是测试写错了（这个回退是有意设计，宁可展示原样也不让页面崩溃）；主张直接调 json.dumps（会丢掉字段的自定义 encoder）。另有一个真实但不阻塞的 nit：`and value` 使 {}、[]、0、False 等 falsy 值跳过序列化走兜底展示，与 FileField 分支的处理方式一致，可留注释但不构成拒绝理由。"
+    ]
   },
   "learningGoal": "判断展示层修复是否保留数据格式契约和异常边界。",
-  "scenario": "AI PR 为了让 readonly JSONField 不报错，把字典值直接 str(value) 后展示。",
-  "context": [
-    "readonly admin 字段应该展示合法 JSON，而不是 Python dict 的 repr。",
-    "JSONField 自身有 prepare/get_prep_value 语义，能处理编码和特殊输入。",
-    "直接 str(dict) 得到的是单引号形式，不是 JSON。"
-  ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
   "terms": [
     {
       "term": "JSONField",
-      "description": "Django 用于存储 JSON 结构的字段。"
+      "description": "Django 存储 JSON 结构的模型字段，可配置自定义 encoder/decoder。"
+    },
+    {
+      "term": "get_prep_value",
+      "description": "字段把 Python 值转换为序列化形式的方法；JSONField 中即 json.dumps(value, cls=self.encoder)。"
+    },
+    {
+      "term": "display_for_field",
+      "description": "admin 渲染 readonly 字段值的分发函数，按字段类型选择展示方式。"
     },
     {
       "term": "readonly admin",
       "description": "后台详情页只读展示字段的路径。"
-    },
-    {
-      "term": "repr vs JSON",
-      "description": "Python repr 使用单引号等格式，不等于 JSON 文本。"
-    },
-    {
-      "term": "InvalidJSONInput",
-      "description": "Django JSONField 需要保留的异常/特殊输入边界。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "{\"foo\": \"bar\"}",
-      "expected": "应展示为合法 JSON 文本。",
-      "reviewQuestion": "PR 是否仍输出 Python repr。"
+      "input": "{'a': {'b': 'c'}}",
+      "expected": "展示为 {\"a\": {\"b\": \"c\"}}（双引号 JSON 文本）。",
+      "reviewQuestion": "get_prep_value 返回的字符串是什么格式？和旧的 str(value) 有什么区别？"
     },
     {
-      "input": "InvalidJSONInput",
-      "expected": "应保留原有处理逻辑。",
-      "reviewQuestion": "粗暴 str() 是否吞掉特殊情况。"
+      "input": "{('a', 'b'): 'c'}（tuple key，不可 JSON 序列化）",
+      "expected": "不抛异常，回退到通用展示路径输出原样字符串。",
+      "reviewQuestion": "json.dumps 失败时补丁走哪条路径？详情页会不会报错？"
     },
     {
-      "input": "普通字段",
-      "expected": "展示逻辑不应被 JSONField 特例影响。",
-      "reviewQuestion": "修复是否局部且类型准确。"
+      "input": "None / 非 JSONField 字段",
+      "expected": "None 仍展示 empty_value_display；其他字段类型展示路径不变。",
+      "reviewQuestion": "新分支的 isinstance 判断和 and value 守卫把影响范围限制在哪里？"
     }
   ],
   "scoringHints": {
     "coreRiskTerms": [
-      "jsonfield",
-      "str",
-      "repr",
-      "json",
-      "readonly"
+      "get_prep_value",
+      "json.dumps",
+      "JSON",
+      "双引号",
+      "序列化",
+      "repr"
     ],
     "boundaryTerms": [
-      "valid json",
-      "InvalidJSONInput",
-      "prepare",
-      "格式"
+      "TypeError",
+      "回退",
+      "fallback",
+      "None",
+      "encoder",
+      "and value"
     ],
     "testTerms": [
-      "{\"foo\"",
-      "InvalidJSONInput",
-      "empty",
-      "dict"
+      "嵌套",
+      "nested",
+      "invalid",
+      "tuple",
+      "subTest",
+      "null"
     ],
     "fixTerms": [
-      "get_prep_value",
-      "prepare_value",
-      "valid JSON",
-      "json.dumps"
+      "可以合并",
+      "approve",
+      "无需修改",
+      "can merge",
+      "LGTM"
     ]
   }
 }

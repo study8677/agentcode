@@ -6,12 +6,12 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "Django Admin save_as_new 权限审查",
-    "en": "Django admin save_as_new permission review"
+    "zh": "Django Admin：调整 Save as new 的展示条件",
+    "en": "Django Admin: adjust when Save as new is shown"
   },
   "summary": {
-    "zh": "审查一个把 Save as new 按钮放宽给 change 权限用户的补丁，它可能允许无 add 权限用户创建对象。",
-    "en": "Review an admin patch that exposes Save as new to users without add permission."
+    "zh": "审查一个 Django admin PR：作者认为 Save as new 位于修改页，因此有 change 权限的用户也应该能看到这个动作。",
+    "en": "Review a Django admin PR: the author argues Save as new lives on the change page, so users with change permission should also see the action."
   },
   "language": "Python / Django Admin Security",
   "tags": [
@@ -43,22 +43,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "识别 UI 按钮显示逻辑背后的权限语义。",
-  "scenario": "AI PR 修改 admin 模板上下文，认为有 change 权限即可显示 Save as new。",
-  "context": [
-    "Django admin 的 Save as new 本质是创建一个新对象，而不是只修改当前对象。",
-    "拥有 change 权限的用户不一定拥有 add 权限。",
-    "权限 bug 常常出现在“按钮显示”和“后端动作语义”不一致的地方。"
+  "pr": {
+    "title": "Allow Save as new when a user can change the object",
+    "author": "codegen-agent",
+    "body": [
+      "The admin change form currently hides Save as new unless the user has add permission, even though the button is rendered while editing an existing object. This is confusing for staff who can maintain existing records but do not have broad add access.",
+      "This PR treats Save as new as part of the change form action set: if the user can change the current object and save_as is enabled, the button is shown. The popup and change-form guards stay in place.",
+      "Added a submit_row regression test for a change-only user so the template context exposes show_save_as_new. Existing admin tests pass."
+    ]
+  },
+  "background": [
+    "Django admin has separate add and change permissions. A user who can edit an existing object is not necessarily allowed to create a new object.",
+    "The Save as new control appears on a change form, but its result is a newly created object derived from the current one.",
+    "The review context includes the pre-patch submit_row() template-context logic in src-admin-modify.py."
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "authorization",
+    "notes": [
+      "Save as new is a create operation, not just a change-form convenience. Removing has_add_permission from the display condition exposes a creation action to users who may only be authorized to edit existing objects.",
+      "This is an authorization boundary problem: UI visibility and the POST path must both reflect the action's semantics. A change-only user should neither see nor successfully perform Save as new.",
+      "The added test asserts the unsafe behavior. A useful regression test would assert that change-only users cannot see or submit Save as new, while users with both add and change permissions still can."
+    ]
+  },
+  "learningGoal": "识别 UI 按钮显示逻辑背后的动作语义和权限边界。",
   "terms": [
     {
       "term": "change permission",
@@ -81,17 +90,17 @@
     {
       "input": "只有 change 权限",
       "expected": "可以编辑现有对象，但不能创建新对象。",
-      "reviewQuestion": "Save as new 是否被错误展示或执行。"
+      "reviewQuestion": "Save as new 是否被错误展示或执行？"
     },
     {
       "input": "同时有 add 和 change 权限",
       "expected": "可以使用 Save as new。",
-      "reviewQuestion": "修复是否保留合法路径。"
+      "reviewQuestion": "合法路径是否仍保留？"
     },
     {
-      "input": "后端 POST",
-      "expected": "即使按钮隐藏也不能越权创建。",
-      "reviewQuestion": "PR 是否只改 UI 而忽略动作语义。"
+      "input": "直接提交 _saveasnew POST",
+      "expected": "服务端也应按创建动作检查 add 权限。",
+      "reviewQuestion": "补丁是否只改了 UI 条件？"
     }
   ],
   "scoringHints": {

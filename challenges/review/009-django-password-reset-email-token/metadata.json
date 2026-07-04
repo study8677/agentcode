@@ -6,12 +6,12 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "Django 密码重置 token 未绑定邮箱审查",
-    "en": "Django password reset token email binding review"
+    "zh": "Django：修复密码重置 token 与邮箱状态的关系",
+    "en": "Django: fix how password reset tokens relate to email state"
   },
   "summary": {
-    "zh": "审查一个只检查当前邮箱非空的补丁，它没有让旧密码重置 token 在邮箱变更后失效。",
-    "en": "Review a password reset patch that checks email presence but does not bind tokens to email changes."
+    "zh": "审查一个 Django auth PR：作者称 password reset token 在邮箱状态异常时仍可能通过校验，并补了一条空邮箱用例。",
+    "en": "Review a Django auth PR: the author says password reset tokens can still validate around unusual email state, and adds an empty-email regression case."
   },
   "language": "Python / Django Security",
   "tags": [
@@ -43,22 +43,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "判断 token 哈希材料是否覆盖应使 token 失效的用户状态。",
-  "scenario": "AI PR 试图修复邮箱变更后旧 password reset token 仍有效的问题，但只在生成 token 时要求 user.email 非空。",
-  "context": [
-    "密码重置 token 应在用户密码、last_login、时间戳等关键状态变化后失效。",
-    "真实问题是用户申请重置后更改邮箱，旧邮件里的 token 仍可使用。",
-    "只检查邮箱是否存在，并不会让邮箱值参与 token 哈希。"
+  "pr": {
+    "title": "Avoid password reset token crashes for users without a usable email",
+    "author": "codegen-agent",
+    "body": [
+      "PasswordResetTokenGenerator currently builds the token hash from stable user fields but assumes every user object has a meaningful email value during reset flows. Custom user models and imported accounts can have an empty email, and that edge case makes the reset path fragile.",
+      "This PR guards the hash construction with get_email_field_name(): when the configured email field is empty, the generator falls back to the existing password/login/timestamp material instead of depending on an empty email value.",
+      "Added a regression test for a user with an empty email to confirm token creation and validation still work. Existing auth tests pass."
+    ]
+  },
+  "background": [
+    "Django password reset tokens are generated and checked by PasswordResetTokenGenerator. The token hash is derived from selected user state so old tokens stop working after important state changes.",
+    "Projects may customize the user model and the email field name. The review context includes the pre-patch token generator excerpt in src-tokens.py.",
+    "When reviewing token logic, distinguish between avoiding a narrow crash and preserving the invalidation contract for previously issued tokens."
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "security",
+    "notes": [
+      "The patch does not bind the email value to the token hash. It only checks whether the current email field is empty, then returns exactly the same hash material as before. For normal users with a non-empty email, behavior is unchanged.",
+      "The security-relevant sequence is: issue a password reset token, change the user's email, then check the old token. This PR still accepts the old token because the changed email value is not part of _make_hash_value.",
+      "The new test proves only that an empty-email user can still create and validate a token. It does not reproduce the stale-token invalidation case and would pass even though the original bug remains."
+    ]
+  },
+  "learningGoal": "判断 token 哈希材料是否覆盖应使 token 失效的用户状态，而不是只看单个异常路径是否通过。",
   "terms": [
     {
       "term": "PasswordResetTokenGenerator",
@@ -73,25 +82,25 @@
       "description": "相关状态变化后，旧 token 必须不再通过校验。"
     },
     {
-      "term": "fail closed",
-      "description": "状态不符合安全预期时拒绝。"
+      "term": "get_email_field_name",
+      "description": "Django 自定义用户模型中用于定位邮箱字段的方法。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "申请 reset 后更改邮箱",
-      "expected": "旧邮箱里的 token 应失效。",
-      "reviewQuestion": "PR 是否让 email 值进入 token hash。"
+      "input": "生成 reset token 后更改用户邮箱",
+      "expected": "旧 token 应失效。",
+      "reviewQuestion": "补丁是否让 email 的实际值进入 token hash？"
     },
     {
-      "input": "用户没有邮箱字段",
-      "expected": "仍应兼容自定义 user model。",
-      "reviewQuestion": "修复是否安全处理 get_email_field_name。"
+      "input": "用户使用自定义 email 字段名",
+      "expected": "修复应通过 get_email_field_name 读取当前邮箱值。",
+      "reviewQuestion": "补丁是否同时兼容字段名和字段值变化？"
     },
     {
-      "input": "正常 reset 流程",
-      "expected": "合法 token 仍可在状态未变时使用。",
-      "reviewQuestion": "修复是否破坏正常路径。"
+      "input": "用户邮箱为空",
+      "expected": "不应崩溃，但这个路径不能替代邮箱变更失效测试。",
+      "reviewQuestion": "新增测试证明的是 crash 防护还是 token invalidation？"
     }
   ],
   "scoringHints": {
@@ -106,19 +115,22 @@
       "hash material",
       "state",
       "绑定",
-      "用户状态"
+      "用户状态",
+      "change"
     ],
     "testTerms": [
       "change email",
       "old token",
       "check_token",
-      "False"
+      "False",
+      "邮箱变更"
     ],
     "fixTerms": [
       "include email",
       "get_email_field_name",
       "hash value",
-      "绑定"
+      "绑定",
+      "_make_hash_value"
     ]
   }
 }

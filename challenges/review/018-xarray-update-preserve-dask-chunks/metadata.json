@@ -6,12 +6,12 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "xarray update 保留 dask chunk 审查",
-    "en": "xarray update preserves dask chunks review"
+    "zh": "xarray：更新 Dataset 时处理 DataArray tuple 输入",
+    "en": "xarray: handle DataArray tuple inputs during Dataset update"
   },
   "summary": {
-    "zh": "审查一个用 np.asarray() 消除歧义的补丁，它会急切计算 dask DataArray 并丢失 chunk。",
-    "en": "Review an xarray update patch that resolves ambiguity by eagerly converting dask-backed data to NumPy."
+    "zh": "审查一个 xarray PR：作者在 tuple 输入中把 DataArray 转成 ndarray，以避免 Variable 构造的歧义。",
+    "en": "Review an xarray PR: the author converts DataArray values in tuple inputs to ndarray to avoid ambiguity while constructing Variables."
   },
   "language": "Python / xarray + dask",
   "tags": [
@@ -39,22 +39,31 @@
   "reviewTarget": {
     "file": "ai-pr.diff",
     "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
   },
-  "learningGoal": "判断修复是否保留 lazy data 和 chunk 语义。",
-  "scenario": "AI PR 为了避免 DataArray 构造 Variable 的歧义，在 tuple 输入里对 DataArray 执行 np.asarray(obj[1])。",
-  "context": [
-    "xarray 经常包装 dask 数组以实现惰性计算和分块处理。",
-    "Dataset.update 不应让 chunked DataArray 被急切求值成 NumPy 数组。",
-    "DataArray 构造 Variable 的歧义应通过 .data 或明确错误处理解决，而不是强制计算 values。"
+  "pr": {
+    "title": "Normalize DataArray tuple payloads before constructing Variables",
+    "author": "codegen-agent",
+    "body": [
+      "Dataset.update can receive variables in tuple form, but passing a DataArray as the tuple payload is ambiguous because Variable expects raw data rather than another labeled array object.",
+      "This PR normalizes tuple payloads by converting DataArray values with np.asarray before calling Variable(*obj). That gives Variable a plain ndarray and keeps the update path consistent with NumPy-backed inputs.",
+      "Added a regression test that updates a Dataset with a chunked DataArray tuple and checks the resulting values are equal. Existing xarray tests pass."
+    ]
+  },
+  "background": [
+    "xarray DataArray can wrap NumPy arrays or dask arrays. Dask-backed arrays preserve lazy evaluation and chunk metadata.",
+    "Dataset.update should preserve the underlying data semantics when possible; reading .values or forcing np.asarray can materialize lazy arrays.",
+    "The review context includes the pre-patch tuple-to-Variable conversion excerpt in src-variable.py."
   ],
-  "reviewFocus": [
-    "先确认 PR 声称修复什么用户问题",
-    "定位 diff 中改变原有约束的条件或配置",
-    "检查新增测试是否只证明 happy path",
-    "构造原有约束仍应成立的反例",
-    "给出 merge 结论、影响范围和修复方向"
-  ],
+  "analysis": {
+    "dimension": "performance-semantics",
+    "notes": [
+      "np.asarray(DataArray) materializes the DataArray values. For dask-backed arrays this forces eager computation and loses chunk metadata, which can be a severe performance and memory regression.",
+      "The test compares .values, which itself computes lazy data. It proves numeric equality after materialization but cannot detect whether laziness/chunks were preserved.",
+      "The safer direction is to use the DataArray's underlying .data when constructing the Variable or otherwise make the ambiguous path explicit without computing values."
+    ]
+  },
+  "learningGoal": "判断修复是否保留 lazy data 和 chunk 语义，而不是只看最终数值相等。",
   "terms": [
     {
       "term": "dask chunk",
@@ -77,17 +86,17 @@
     {
       "input": "chunked DataArray update",
       "expected": "更新后仍应 chunked。",
-      "reviewQuestion": "PR 是否调用 np.asarray 触发计算。"
+      "reviewQuestion": "补丁是否调用 np.asarray 触发计算？"
     },
     {
       "input": "普通 NumPy DataArray",
       "expected": "应继续正常更新。",
-      "reviewQuestion": "修复是否兼容非 dask 数据。"
+      "reviewQuestion": "普通路径通过是否足以证明 dask 路径安全？"
     },
     {
       "input": "歧义 tuple 输入",
-      "expected": "应警告或要求显式 .data。",
-      "reviewQuestion": "修复是否清晰表达 API 迁移。"
+      "expected": "应保留底层 data 或给出明确迁移路径。",
+      "reviewQuestion": "补丁是否用 values 语义绕开 API 设计问题？"
     }
   ],
   "scoringHints": {

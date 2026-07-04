@@ -1,21 +1,40 @@
 {
   "canMerge": false,
+  "mergeRationale": "The patch calls np.asarray() on DataArray payloads, which eagerly materializes dask-backed data and drops chunk semantics during update.",
   "requiredFindings": [
     {
       "id": "dask-data-eagerly-materialized",
       "severity": "high",
       "summary": "The patch calls np.asarray() on a DataArray, forcing dask-backed data to compute eagerly.",
       "expectedReasoning": "Dataset.update should preserve chunking and lazy evaluation; materializing can be slow, memory-heavy, and semantically wrong.",
-      "acceptableFix": "Use DataArray.data when constructing the Variable, or warn/error without computing values."
+      "acceptableFix": "Use DataArray.data when constructing the Variable, or warn/error without computing values.",
+      "matchTerms": [
+        ["np.asarray", "dask"],
+        ["eager", "dask"],
+        ["lazy", "chunk"],
+        ["惰性", "计算"],
+        ["chunk", "丢失"],
+        ["DataArray.data"]
+      ]
     },
     {
       "id": "test-forces-values-and-misses-chunks",
       "severity": "medium",
       "summary": "The test compares .values, which itself computes dask arrays.",
       "expectedReasoning": "It cannot catch the chunk-preservation regression.",
-      "acceptableFix": "Assert the updated variable still has chunks and retains a dask-backed array."
+      "acceptableFix": "Assert the updated variable still has chunks and retains a dask-backed array.",
+      "matchTerms": [
+        ["values", "compute"],
+        ["测试", "values"],
+        ["测试", "chunk"],
+        ["assert", "chunks"],
+        ["dask", "test"]
+      ]
     }
   ],
   "optionalFindings": [],
-  "disallowedConclusions": []
+  "disallowedConclusions": [
+    "The patch can be merged because the updated values are equal.",
+    "np.asarray is safe here because DataArray can always be converted to NumPy."
+  ]
 }
