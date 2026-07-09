@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import type { ReviewPrBrief, ReviewReveal } from "@/lib/challenges/review";
 import type { MatchedFinding, MergeDecision, ReviewDraft, ReviewFeedback, ReviewLineFinding } from "@/lib/challenges/review-submission";
 
@@ -67,7 +69,7 @@ export function ReviewSubmissionForm({
   if (submitted && feedback && reveal) {
     return (
       <section className="review-panel" id="submit">
-        <div className="review-panel-head">
+        <div className="review-panel-head" style={{ "--score": feedback.score } as CSSProperties}>
           <div>
             <span className="mono">Review 质量</span>
             <strong>{feedback.score}/100</strong>

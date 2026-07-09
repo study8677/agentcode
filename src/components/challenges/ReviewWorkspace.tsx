@@ -212,13 +212,12 @@ export function ReviewWorkspace({
             <Badge tone="review">Review</Badge>
             <Badge tone={difficulty}>{difficulty}</Badge>
             <span className="pill">{language}</span>
+            <span className="source-pill">
+              真实来源改编 <strong>{sourceProject}</strong>
+            </span>
           </div>
           <h1>{title.zh}</h1>
           <p>{summary.zh}</p>
-        </div>
-        <div className="review-source-note">
-          <span>真实来源改编</span>
-          <strong>{sourceProject}</strong>
         </div>
       </div>
 
