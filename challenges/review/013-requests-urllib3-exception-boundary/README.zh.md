@@ -6,11 +6,11 @@
 
 > **Wrap ClosedPoolError as a Requests ConnectionError**
 >
-> Some adapter error paths can leak urllib3 ClosedPoolError directly to callers, which breaks the expectation that Requests users catch requests.exceptions types at the public API boundary.
+> 在连接池被关闭后复用一个 adapter 发请求时，urllib3 的 ClosedPoolError 会直接穿透到调用方，破坏了 Requests 用户只需 catch requests.exceptions 类型的约定（issue #2674）。
 >
-> This PR imports ClosedPoolError in adapters.py and maps it to requests.exceptions.ConnectionError next to the existing urllib3-to-Requests exception conversions.
+> 这个 PR 在 adapters.py 里 import ClosedPoolError，并在已有的 urllib3→Requests 异常映射旁边，把它映射成 requests.exceptions.ConnectionError。
 >
-> Added a focused regression test for ClosedPoolError so callers now see ConnectionError. Existing Requests tests pass.
+> 新增一个针对 ClosedPoolError 的回归测试，验证调用方现在收到的是 ConnectionError。现有 Requests 测试全部通过。
 
 ## 你需要审核
 
@@ -26,19 +26,19 @@ Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
-- Problem:
+- Problem:（如果你认为可以合并，写出你逐一确认过哪些点）
 - Why it matters:
 - Suggested fix:
 
 Testing:
-- 现有测试证明了什么？还缺什么？
+- 新增测试证明了什么？可信吗？
 ```
 
 ## 背景
 
-- Requests 对外承诺的是 `requests.exceptions` 体系。
-- adapter 层负责把 urllib3 等下层异常映射成 Requests 自己的异常类型。
-- 审查这类补丁时，要判断它是否维护完整 API 边界，而不是只覆盖一个观测到的异常。
+- Requests 对外承诺 `requests.exceptions` 体系；adapter 层把 urllib3 等下层异常映射成 Requests 自己的类型。
+- HTTPAdapter.send 已经映射了 ProtocolError/OSError、MaxRetryError（及其 reason 分支）、_ProxyError、_SSLError、ReadTimeoutError。审查时先看清 ClosedPoolError 会不会被现有分支接住。
+- 源码节选已给出相关 urllib3 异常层级：ClosedPoolError 继承自 PoolError，不继承 HTTPAdapter.send 已捕获的任何异常类型。
 
 ## 答案与解析
 
@@ -46,4 +46,4 @@ Testing:
 
 ## 题目来源
 
-本题改编自真实工程问题（你审核的 `ai-pr.diff` 是 AgentCode 改编的训练补丁，不是上游最终修复）。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。
+本题改编自真实工程问题。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。

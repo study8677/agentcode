@@ -1,40 +1,56 @@
 {
   "canMerge": false,
-  "mergeRationale": "The branch now reads operand.mask before checking whether operand itself is None, so an existing no-operand path crashes.",
+  "mergeRationale": "Rewriting `elif operand.mask is None` as `elif operand is None` reintroduces the gh-14995 bug: an operand that exists but has mask=None now falls through to handle_mask(self.mask, None) and raises.",
   "requiredFindings": [
     {
-      "id": "operand-none-path-crashes",
+      "id": "reintroduces-none-mask-crash",
       "severity": "high",
-      "summary": "The patch reads operand.mask before proving operand is not None.",
-      "expectedReasoning": "Any call path where operand itself is None will raise AttributeError instead of copying self.mask.",
-      "acceptableFix": "Handle operand is None before checking operand.mask, and keep separate branches for missing operand vs operand with no mask.",
+      "summary": "The rewrite makes a masked+unmasked operation crash: operand present with mask=None now reaches handle_mask(self.mask, None).",
+      "expectedReasoning": "In binary ops operand is never None, so the new branch is dead; the operand-with-None-mask case falls to else and calls handle_mask (e.g. np.bitwise_or) with None, raising TypeError. This is exactly what astropy fixed in gh-14995 (operand is None -> operand.mask is None); the PR reverses it.",
+      "acceptableFix": "Keep the branch as `elif operand.mask is None: return deepcopy(self.mask)` (the upstream-correct form); do not rewrite it to `operand is None`.",
       "matchTerms": [
-        ["operand", "None", "mask"],
-        ["operand.mask", "None"],
-        ["AttributeError"],
-        ["先", "operand"],
-        ["属性", "访问"],
-        ["分支", "顺序"]
+        ["operand.mask", "none"],
+        ["handle_mask", "none"],
+        ["unmasked"],
+        ["一个", "mask"],
+        ["typeerror"],
+        ["14995"],
+        ["死代码"],
+        ["reintroduc"]
       ]
     },
     {
-      "id": "missing-operand-none-test",
+      "id": "test-misses-masked-unmasked-combo",
       "severity": "medium",
-      "summary": "The test covers an operand with mask None but not operand being None.",
-      "expectedReasoning": "It misses the path broken by the condition rewrite.",
-      "acceptableFix": "Add tests for operand is None, self.mask is None, operand.mask is None, and both masks present.",
+      "summary": "The new test only exercises the no-second-operand path (which still works) and never the masked+unmasked combination that breaks.",
+      "expectedReasoning": "operand=None returns self.mask under the new branch, so the added test passes; the actually-broken case (operand present, mask None) is untested, so CI stays green.",
+      "acceptableFix": "Add an arithmetic test between a masked and an unmasked NDData and assert the result mask equals self's mask (no crash).",
       "matchTerms": [
-        ["operand is None", "test"],
-        ["测试", "operand", "None"],
-        ["mask None", "test"],
-        ["AttributeError", "test"],
-        ["两种", "None"]
+        ["测试", "组合"],
+        ["测试", "operand", "mask"],
+        ["test", "unmasked"],
+        ["test", "without_mask"],
+        ["未覆盖"],
+        ["only", "operand", "none"]
       ]
     }
   ],
-  "optionalFindings": [],
+  "optionalFindings": [
+    {
+      "id": "conditions-not-equivalent",
+      "severity": "medium",
+      "summary": "`operand is None` and `operand.mask is None` are not equivalent; the PR's 'just clearer' framing hides a semantic change.",
+      "matchTerms": [
+        ["不等价"],
+        ["语义", "改变"],
+        ["not equivalent"],
+        ["different", "state"]
+      ]
+    }
+  ],
   "disallowedConclusions": [
-    "The patch can be merged because operand.mask is None is the real missing-mask case.",
-    "The added data_without_mask test covers all None-related mask propagation paths."
+    "The rewrite is an equivalent, clearer form and can be merged.",
+    "It can be merged because the added no-second-operand test passes.",
+    "This matches the upstream fix for gh-14995 (it is the exact reverse)."
   ]
 }

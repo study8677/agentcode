@@ -4,20 +4,20 @@ You are a reviewer on this repository. An AI agent submitted the PR below. CI is
 
 ## PR description (from the author)
 
-> **Avoid sparse SVM dual_coef_ construction errors when there are no support vectors**
+> **Avoid sparse SVM dual_coef_ construction error when there are no support vectors**
 >
-> Sparse SVM fitting can hit an edge case where there are no support vectors. The current code still tries to construct dual_coef_ from CSR indptr/index arrays, which can fail or divide through empty support-vector state.
+> Fitting an SVR on sparse input can hit an edge case where every sample lands outside the epsilon tube and there are no support vectors (n_SV == 0). In that case _sparse_fit builds dual_coef_indptr = np.arange(0, size+1, size / n_class) with a step of 0, np.arange raises, and fit cannot return.
 >
-> This PR adds a fast path for n_SV == 0 and assigns an empty csr_matrix directly. Normal sparse SVM fits continue to use the existing CSR construction path.
+> This PR adds an n_SV == 0 guard before constructing dual_coef_: with no support vectors it assigns an empty csr_matrix directly, otherwise it takes the original CSR indptr path. The normal sparse SVM fit logic is unchanged.
 >
-> Added a regression test that fits the sparse model in the empty-support-vector case and confirms dual_coef_ is empty. Existing SVM tests pass.
+> Added a regression test that builds a sparse SVR producing zero support vectors and verifies fit completes with empty support_vectors_ and dual_coef_. Existing SVM tests pass.
 
 ## What to review
 
 Read:
 
 - `ai-pr.diff` — the patch under review
-- `src-svm-base.py` — pre-patch sparse dual_coef_ construction excerpt (minimal sufficient context)
+- `src-svm-base.py` — pre-patch excerpt of _sparse_fit (minimal sufficient context)
 
 Then submit your review:
 
@@ -26,19 +26,18 @@ Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
-- Problem:
+- Problem: (if you approve, list the points you verified)
 - Why it matters:
 - Suggested fix:
 
 Testing:
-- What does the new test actually prove? What is missing?
+- What does the new test prove? Is it trustworthy?
 ```
 
 ## Background
 
-- scikit-learn estimator attribute shapes are part of the public API contract.
-- Empty matrices still need the correct shape; zero stored elements is not enough.
-- When reviewing numerical-library edge-case fixes, check whether the patch preserves downstream attribute and prediction invariants.
+- _sparse_fit is the sparse SVM fit entry point; after training it assembles dual coefficients into the sparse matrix dual_coef_. In the empty-support-vector case, the contract to verify is that dual_coef_ contains no coefficients, not a particular two-dimensional shape.
+- dual_coef_indptr is built with np.arange(0, size+1, step) where step = dual_coef_indices.size / n_class; with no support vectors size is 0, so step is 0.
 
 ## Answers and analysis
 
@@ -46,4 +45,4 @@ Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). O
 
 ## Source
 
-Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.
+Adapted from a real engineering issue. Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

@@ -1,9 +1,39 @@
 diff --git a/astropy/nddata/mixins/ndarithmetic.py b/astropy/nddata/mixins/ndarithmetic.py
-@@
--        elif operand is None:
-+        elif operand.mask is None:
+index a1b2c3d4e..f5e6d7c8b 100644
+--- a/astropy/nddata/mixins/ndarithmetic.py
++++ b/astropy/nddata/mixins/ndarithmetic.py
+@@ -503,9 +503,9 @@ class NDArithmeticMixin:
+         # Only self has no mask -> take the operand's mask.
+         elif self.mask is None:
+             return deepcopy(operand.mask)
+
+-        # The operand exists but carries no mask -> keep self's mask.
+-        # Without this branch we would call handle_mask(self.mask, None).
+-        elif operand.mask is None:
++        # No second operand participates -> keep self's mask.
++        elif operand is None:
              return deepcopy(self.mask)
-@@
-+def test_operand_mask_none():
-+    result = data_with_mask.add(data_without_mask, handle_mask=np.bitwise_or)
-+    assert result.mask is not data_with_mask.mask
+
+         # Both operands carry a mask -> combine them.
+         else:
+             return handle_mask(self.mask, operand.mask, **kwds)
+diff --git a/astropy/nddata/mixins/tests/test_ndarithmetic.py b/astropy/nddata/mixins/tests/test_ndarithmetic.py
+index 2c4b6a8d1..9e3f1a7c5 100644
+--- a/astropy/nddata/mixins/tests/test_ndarithmetic.py
++++ b/astropy/nddata/mixins/tests/test_ndarithmetic.py
+@@ -880,6 +880,15 @@ def test_arithmetic_mask_both_present():
+     assert_array_equal(result.mask, np.array([True, True, False]))
+
+
++def test_arithmetic_mask_no_second_operand():
++    # With no second operand participating, self's mask must be preserved.
++    ndd = NDDataRef(np.arange(3), mask=np.array([True, False, True]))
++    result = ndd._arithmetic_mask(
++        np.add, None, handle_mask=np.bitwise_or
++    )
++    assert_array_equal(result, np.array([True, False, True]))
++
++
+ def test_arithmetic_mask_handle_mask_none():
+     ndd = NDDataRef(np.arange(3), mask=np.array([True, False, True]))
+     assert ndd._arithmetic_mask(np.add, ndd, handle_mask=None) is None

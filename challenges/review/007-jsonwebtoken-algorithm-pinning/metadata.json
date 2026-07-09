@@ -45,8 +45,8 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "kind": "adapted-for-review",
+    "note": "Adapted from a real upstream issue for review training. Whether this change should be merged is the question — reach your own conclusion before opening the source links."
   },
   "pr": {
     "title": "Make the session signing key configurable so local dev can verify tokens",
@@ -65,9 +65,9 @@
   "analysis": {
     "dimension": "security",
     "notes": [
-      "这个改动叠了两个问题。其一，密钥变成 process.env.JWT_SECRET || undefined：当 JWT_SECRET 未设置时，undefined 会一路进入 jwt.verify。认证应当 fail closed——配置缺失就启动失败或拒绝请求，而不是在请求路径里静默降级成没有密钥。",
-      "其二，删掉 algorithms: ['RS256'] 之后不再固定算法。verify 会接受令牌头里声明的任意算法；配合可控或缺失的密钥，历史上这类组合会打开 alg:none 或 HS/RS 混淆（拿 RS256 公钥当 HMAC 密钥去伪造令牌）的绕过路径，具体取决于 jsonwebtoken 版本。issuer/audience 还在校验，但那挡不住一个签名被伪造的令牌。",
-      "新增测试只覆盖了本地开发的 happy path（JWT_SECRET 签发的令牌通过），完全没有负向用例：alg:none 令牌、算法不符的令牌、JWT_SECRET 缺失、issuer/audience 错误都没测。绿灯证明不了校验仍然安全。"
+      "这个改动叠了两个确定性问题。其一，原代码把生产令牌限定为 RS256：用配置提供的公钥校验，并显式传入 algorithms: ['RS256']。diff 删除了这个 allowlist，改成让 jwt.verify 根据令牌和传入 key 自行决定校验算法；服务端不再声明『只接受 RS256 会话令牌』这个认证边界。",
+      "其二，密钥变成 process.env.JWT_SECRET || undefined：当 JWT_SECRET 未设置时，undefined 会一路进入 jwt.verify。认证应当 fail closed——必需配置缺失就应在启动期失败或统一拒绝请求，而不是把配置错误推迟到每次请求的校验路径，形成 fail-open 风险。",
+      "新增测试只覆盖了本地开发的 happy path（JWT_SECRET 签发的令牌通过），完全没有负向用例：算法不符的令牌、JWT_SECRET 缺失、issuer/audience 错误都没测。绿灯证明不了校验仍然安全。"
     ]
   },
   "learningGoal": "判断一个为兼容多环境而放宽配置的改动，是否悄悄改变了原有校验必须坚持的前提。",
@@ -111,6 +111,7 @@
       "algorithm",
       "算法",
       "alg:none",
+      "rs256",
       "undefined",
       "verify"
     ],
@@ -118,11 +119,11 @@
       "fail closed",
       "fail open",
       "algorithms",
+      "allowlist",
       "启动",
       "配置"
     ],
     "testTerms": [
-      "alg:none",
       "wrong algorithm",
       "missing key",
       "负向",
@@ -133,7 +134,7 @@
       "pin",
       "startup",
       "固定",
-      "升级"
+      "fail closed"
     ]
   }
 }

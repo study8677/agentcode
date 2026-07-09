@@ -1,23 +1,23 @@
-# Review 017: Astropy NDData: handle missing masks during propagation
+# Review 017: Astropy NDData: tidy up the None check in mask propagation
 
 You are a reviewer on this repository. An AI agent submitted the PR below. CI is green and the decision is yours.
 
 ## PR description (from the author)
 
-> **Treat operands without masks like missing-mask arithmetic inputs**
+> **Clarify the missing-mask branch in _arithmetic_mask**
 >
-> NDData arithmetic currently handles the case where no second operand participates in mask propagation, but it does not consistently handle a real operand whose mask attribute is None.
+> _arithmetic_mask has a branch written as `elif operand.mask is None`, which reads ambiguously: the branch is meant to handle the case where no second operand participates, and checking operand.mask is both unintuitive and dereferences an extra attribute.
 >
-> This PR changes the branch to check operand.mask is None, so an operand without a mask falls back to copying the current object's mask instead of attempting to combine two masks.
+> This PR rewrites it as the more direct `elif operand is None`, which maps straight to "no second operand, keep self's mask". The number of branches is unchanged; it just makes the intent clearer.
 >
-> Added a regression test for arithmetic between data_with_mask and data_without_mask to confirm the result mask is copied rather than shared. Existing NDData tests pass.
+> Added a regression test covering that self.mask is preserved when there is no second operand. Existing NDData tests pass.
 
 ## What to review
 
 Read:
 
 - `ai-pr.diff` — the patch under review
-- `src-ndarithmetic.py` — pre-patch mask propagation excerpt (minimal sufficient context)
+- `src-ndarithmetic.py` — pre-patch excerpt of _arithmetic_mask (minimal sufficient context)
 
 Then submit your review:
 
@@ -31,14 +31,13 @@ Finding 1:
 - Suggested fix:
 
 Testing:
-- What does the new test actually prove? What is missing?
+- What does the new test prove? What is missing?
 ```
 
 ## Background
 
-- NDDataRef arithmetic propagates masks when one or both operands have masks.
-- `operand is None` and `operand.mask is None` are different states.
-- When reviewing None-related fixes, inspect both attribute access order and branch semantics.
+- NDDataRef arithmetic propagates masks: when both operands have masks, combine them with handle_mask; when only one has a mask, copy it; when neither has one, the result has no mask.
+- `_arithmetic_mask` uses several `None` checks to distinguish mask-propagation states. Read the pre-patch branches carefully before deciding whether changing the checked object preserves the same state.
 
 ## Answers and analysis
 
@@ -46,4 +45,4 @@ Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). O
 
 ## Source
 
-Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.
+Adapted from a real engineering issue. Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

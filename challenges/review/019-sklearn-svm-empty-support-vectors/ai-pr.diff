@@ -1,11 +1,57 @@
 diff --git a/sklearn/svm/base.py b/sklearn/svm/base.py
-@@
--        self.dual_coef_ = sp.csr_matrix((dual_coef_data, dual_coef_indices, dual_coef_indptr), (n_class, n_SV))
-+        if n_SV == 0:
+index 3a1f9c2d1..b7e04f8aa 100644
+--- a/sklearn/svm/base.py
++++ b/sklearn/svm/base.py
+@@ -287,11 +287,17 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):
+         n_class = getattr(self, "_n_class", 1)
+         n_SV = self.support_vectors_.shape[0]
+
+         dual_coef_indices = np.tile(np.arange(n_SV), n_class)
+-        dual_coef_indptr = np.arange(
+-            0,
+-            dual_coef_indices.size + 1,
+-            dual_coef_indices.size / n_class,
+-        )
+-        self.dual_coef_ = sp.csr_matrix(
+-            (dual_coef_data, dual_coef_indices, dual_coef_indptr),
+-            (n_class, n_SV),
+-        )
++        if not n_SV:
 +            self.dual_coef_ = sp.csr_matrix([])
 +        else:
-+            self.dual_coef_ = sp.csr_matrix((dual_coef_data, dual_coef_indices, dual_coef_indptr), (n_class, n_SV))
-@@
-+def test_sparse_svm_empty_support_vectors():
-+    model.fit(X_sparse, y)
-+    assert model.dual_coef_.size == 0
++            dual_coef_indptr = np.arange(
++                0,
++                dual_coef_indices.size + 1,
++                dual_coef_indices.size / n_class,
++            )
++            self.dual_coef_ = sp.csr_matrix(
++                (dual_coef_data, dual_coef_indices, dual_coef_indptr),
++                (n_class, n_SV),
++            )
+
+         return self
+diff --git a/sklearn/svm/tests/test_svm.py b/sklearn/svm/tests/test_svm.py
+index 8d2c5b6f0..1e9a7c334 100644
+--- a/sklearn/svm/tests/test_svm.py
++++ b/sklearn/svm/tests/test_svm.py
+@@ -1005,6 +1005,17 @@ def test_svm_regression():
+         assert_allclose(pred, y, atol=0.5)
+
+
++def test_sparse_fit_support_vectors_empty():
++    # Regression test for gh-14894: a sparse SVR whose fit produces no
++    # support vectors used to raise ZeroDivisionError while building
++    # dual_coef_indptr (step = 0). It must fit cleanly instead.
++    X_train = sparse.csr_matrix([[0, 1, 0, 0],
++                                 [0, 0, 0, 1],
++                                 [0, 0, 1, 0],
++                                 [0, 0, 0, 1]])
++    y_train = np.array([0.04, 0.04, 0.10, 0.16])
++    model = svm.SVR(kernel='linear')
++    model.fit(X_train, y_train)
++    assert not model.support_vectors_.data.size
++    assert not model.dual_coef_.data.size
++
++
+ def test_linearsvc_parameters():
+     # Test possible parameter combinations in LinearSVC

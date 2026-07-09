@@ -1,40 +1,70 @@
 {
-  "canMerge": false,
-  "mergeRationale": "The patch avoids the empty case by creating sp.csr_matrix([]), but that does not preserve the expected dual_coef_ shape invariant.",
+  "canMerge": true,
+  "mergeRationale": "The guard short-circuits exactly the arange-with-zero-step crash for n_SV == 0, leaves the normal path untouched, and ships a faithful regression test. This mirrors the fix upstream merged for gh-14894.",
   "requiredFindings": [
     {
-      "id": "empty-matrix-has-wrong-shape",
-      "severity": "high",
-      "summary": "The patch creates sp.csr_matrix([]), which does not preserve the expected (n_class, n_SV) shape.",
-      "expectedReasoning": "Avoiding ZeroDivisionError or empty-data construction failure is not enough; downstream code expects dual_coef_ to have estimator-compatible dimensions.",
-      "acceptableFix": "Construct an empty sparse matrix with explicit shape (n_class, 0) and keep type/shape invariants intact.",
+      "id": "root-cause-is-zero-step-arange",
+      "severity": "check",
+      "summary": "Confirm the empty case crashed because dual_coef_indptr uses np.arange with step size/n_class == 0, and the n_SV == 0 guard short-circuits exactly that.",
+      "expectedReasoning": "When there are no support vectors dual_coef_indices is empty, so the arange step is 0 and raises; the new branch avoids building indptr at all.",
+      "acceptableFix": "No change needed. Optionally confirm with an SVR fit that yields zero support vectors.",
       "matchTerms": [
-        ["dual_coef_", "shape"],
-        ["csr_matrix", "shape"],
-        ["n_class", "n_SV"],
-        ["形状", "不变量"],
-        ["empty", "matrix", "shape"],
-        ["(n_class", "0"]
+        ["arange", "0"],
+        ["步长", "0"],
+        ["step", "zero"],
+        ["n_sv", "空"],
+        ["indptr", "空"],
+        ["zerodivision"]
       ]
     },
     {
-      "id": "test-checks-size-not-shape",
-      "severity": "medium",
-      "summary": "The test asserts only size == 0.",
-      "expectedReasoning": "Wrong-shaped empty matrices can still have size 0.",
-      "acceptableFix": "Assert dual_coef_.shape, support_vectors_.shape, and a post-fit prediction/attribute path.",
+      "id": "normal-path-unchanged",
+      "severity": "check",
+      "summary": "Confirm the else branch preserves the original CSR construction, so non-empty fits are unaffected.",
+      "expectedReasoning": "The patch only adds a branch for n_SV == 0; the existing indptr/csr_matrix logic is moved verbatim into else.",
+      "acceptableFix": "No change needed.",
       "matchTerms": [
-        ["size", "shape"],
-        ["测试", "shape"],
-        ["测试", "size"],
-        ["predict"],
-        ["support_vectors_", "shape"]
+        ["else", "不变"],
+        ["正常", "不变"],
+        ["原有", "保留"],
+        ["else", "unchanged"],
+        ["normal", "unchanged"],
+        ["non-empty", "same"]
+      ]
+    },
+    {
+      "id": "regression-test-is-trustworthy",
+      "severity": "check",
+      "summary": "Confirm the added test genuinely reproduces n_SV == 0 (linear SVR on the given inputs) and asserts the fix, rather than being a vacuous test.",
+      "expectedReasoning": "It fits an SVR that produces zero support vectors and asserts fit completes with empty support_vectors_ and dual_coef_.",
+      "acceptableFix": "No change needed.",
+      "matchTerms": [
+        ["测试", "复现"],
+        ["测试", "svr"],
+        ["test", "reproduc"],
+        ["test", "svr"],
+        ["data.size"],
+        ["回归测试", "可信"]
       ]
     }
   ],
-  "optionalFindings": [],
+  "optionalFindings": [
+    {
+      "id": "empty-shape-followup-nit",
+      "severity": "low",
+      "summary": "A reviewer may ask whether the empty matrix should use an explicit shape, but the empty-support-vector contract here is that dual_coef_ has no coefficients; this is not grounds to reject.",
+      "matchTerms": [
+        ["shape"],
+        ["empty", "coefficients"],
+        ["形状", "follow"],
+        ["nit"],
+        ["shape", "follow"]
+      ]
+    }
+  ],
   "disallowedConclusions": [
-    "The patch can be merged because dual_coef_.size is zero.",
-    "Any empty sparse matrix is equivalent when there are no support vectors."
+    "Request changes because sp.csr_matrix([]) does not force a particular two-dimensional empty shape.",
+    "Reject because the test only checks data.size and not dual_coef_.shape.",
+    "The empty case should raise instead of returning an empty matrix."
   ]
 }

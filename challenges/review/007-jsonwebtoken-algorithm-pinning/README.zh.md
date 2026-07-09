@@ -37,7 +37,7 @@ Testing:
 ## 背景
 
 - verifySession 是服务端校验会话 Bearer 令牌的入口：拿到 JWT，交给 jsonwebtoken 的 jwt.verify 校验签名和 issuer/audience，通过后返回 payload。
-- 生产环境的签名密钥、公钥路径等都来自环境配置，在进程启动时读取。
+- 生产环境的签名密钥、公钥路径、允许算法等都来自环境配置，在进程启动时读取。认证必需配置缺失时应在请求处理前 fail closed。
 
 ## 答案与解析
 

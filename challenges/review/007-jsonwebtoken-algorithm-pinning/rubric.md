@@ -10,8 +10,8 @@ Total: 100 points.
 
 ## Core Risk: 30
 
-- 30: Clearly explains: The patch removes algorithm pinning and lets an undefined secret reach jwt.verify.
-- 18: Mentions the general risk but misses the exact failing boundary.
+- 30: Clearly explains both deterministic blockers: The patch removes the RS256 algorithms allowlist, and `JWT_SECRET || undefined` defers required key-configuration failure from startup to the request path.
+- 18: Identifies only one of the two blockers or describes both without tying them to the changed diff lines.
 - 8: Vaguely says the condition is too broad or tests are incomplete.
 - 0: Misses the core risk.
 
@@ -29,6 +29,6 @@ Total: 100 points.
 
 ## Repair Direction: 15
 
-- 15: Gives an actionable fix: Validate required keys at startup, keep algorithms pinned, and upgrade to a safe jsonwebtoken version.
+- 15: Gives an actionable fix: Validate required keys at startup/fail closed, keep algorithms pinned to RS256, and keep any local-dev algorithm/key choice explicit and separately pinned.
 - 8: Suggests adding tests but gives only a partial implementation direction.
 - 0: No actionable fix.

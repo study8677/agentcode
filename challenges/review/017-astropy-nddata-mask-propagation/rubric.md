@@ -5,30 +5,30 @@ Total: 100 points.
 ## Merge Decision: 30
 
 - 30: Says this PR must not be merged / requires changes.
-- 10: Expresses uncertainty but identifies a blocking risk.
-- 0: Says it can be merged without qualification.
+- 10: Expresses uncertainty but identifies the masked+unmasked crash.
+- 0: Says it can be merged (e.g. "equivalent, clearer form").
 
 ## Core Risk: 30
 
-- 30: Clearly explains: The patch reads operand.mask before proving operand is not None.
-- 18: Mentions the general risk but misses the exact failing boundary.
-- 8: Vaguely says the condition is too broad or tests are incomplete.
-- 0: Misses the core risk.
+- 30: Explains that `operand is None` and `operand.mask is None` are not equivalent, and that an operand present with mask=None now falls to handle_mask(self.mask, None) and raises.
+- 18: Says the rewrite changes behavior but does not pin down the masked+unmasked crash path.
+- 8: Vaguely says the condition change is risky.
+- 0: Treats it as an equivalent refactor.
 
 ## Semantic Boundary: 15
 
-- 15: Explains the intended contract and why the AI patch changes it.
-- 8: Mentions edge cases but does not describe the contract.
-- 0: Does not discuss the intended behavior.
+- 15: Notes that in binary ops operand is never None (so the new branch is dead) and that this reverses the upstream gh-14995 fix.
+- 8: Distinguishes the two None states but not the dead-branch / upstream angle.
+- 0: Does not discuss the two None meanings.
 
 ## Test Quality: 10
 
-- 10: Identifies the missing negative/boundary test: The test covers an operand with mask None but not operand being None.
+- 10: Identifies that the new test only covers the no-second-operand path and misses the masked+unmasked combination.
 - 5: Says tests are insufficient without naming the missing case.
-- 0: Treats the tests as sufficient.
+- 0: Treats the test as sufficient.
 
 ## Repair Direction: 15
 
-- 15: Gives an actionable fix: Handle operand is None before checking operand.mask, and keep separate branches for missing operand vs operand with no mask.
-- 8: Suggests adding tests but gives only a partial implementation direction.
+- 15: Says keep `elif operand.mask is None: return deepcopy(self.mask)` (the upstream-correct form) rather than rewriting to `operand is None`.
+- 8: Says "revert" without naming the correct condition.
 - 0: No actionable fix.

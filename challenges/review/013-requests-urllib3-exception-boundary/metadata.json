@@ -42,32 +42,33 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "kind": "adapted-for-review",
+    "note": "Adapted from a real upstream issue for review training. Whether this change should be merged is the question — reach your own conclusion before opening the source links."
   },
   "pr": {
     "title": "Wrap ClosedPoolError as a Requests ConnectionError",
     "author": "codegen-agent",
     "body": [
-      "Some adapter error paths can leak urllib3 ClosedPoolError directly to callers, which breaks the expectation that Requests users catch requests.exceptions types at the public API boundary.",
-      "This PR imports ClosedPoolError in adapters.py and maps it to requests.exceptions.ConnectionError next to the existing urllib3-to-Requests exception conversions.",
-      "Added a focused regression test for ClosedPoolError so callers now see ConnectionError. Existing Requests tests pass."
+      "在连接池被关闭后复用一个 adapter 发请求时，urllib3 的 ClosedPoolError 会直接穿透到调用方，破坏了 Requests 用户只需 catch requests.exceptions 类型的约定（issue #2674）。",
+      "这个 PR 在 adapters.py 里 import ClosedPoolError，并在已有的 urllib3→Requests 异常映射旁边，把它映射成 requests.exceptions.ConnectionError。",
+      "新增一个针对 ClosedPoolError 的回归测试，验证调用方现在收到的是 ConnectionError。现有 Requests 测试全部通过。"
     ]
   },
   "background": [
-    "Requests wraps lower-level urllib3 failures in its own requests.exceptions hierarchy so callers do not depend on urllib3 internals.",
-    "HTTPAdapter.send already maps several urllib3 exceptions, including proxy, timeout, SSL, and connection failures.",
-    "The review context includes the pre-patch exception mapping excerpt in src-adapters.py."
+    "Requests 对外承诺的是 requests.exceptions 体系；adapter 层负责把 urllib3 等下层异常映射成 Requests 自己的异常类型，这样调用方不依赖 urllib3 内部。",
+    "HTTPAdapter.send 已经映射了若干 urllib3 异常：ProtocolError/OSError、MaxRetryError（及其 reason 分支：ConnectTimeout/Retry/Proxy/SSL）、_ProxyError、_SSLError、ReadTimeoutError。",
+    "题目源码节选给出了最小异常层级证据：ClosedPoolError 继承自 PoolError，不继承上述任何已捕获的异常类型。",
+    "题目提供了补丁前 HTTPAdapter.send 异常映射的源码节选（src-adapters.py），建议先看清 ClosedPoolError 现在会不会被现有分支接住。"
   ],
   "analysis": {
     "dimension": "api-boundary",
     "notes": [
-      "The PR fixes one observed exception but leaves the broader API-boundary class incomplete. Callers can still see other urllib3 exceptions such as DecodeError or TimeoutError instead of Requests exception types.",
-      "A stable exception boundary is a contract, not a one-off mapping for the single failure seen in a test. The review should ask whether the patch covers the reported class of lower-level exceptions.",
-      "The new test is too narrow: it proves ClosedPoolError is wrapped but does not cover decode, timeout, or proxy timeout paths that exercise the same public API boundary."
+      "根因确认：ClosedPoolError 不是 ProtocolError/OSError/MaxRetryError/_ProxyError/_SSLError/ReadTimeoutError 的子类，所以补丁前它不会被 send 里任何一个 except 接住，会原样穿透到调用方——这正是 issue 报告的问题。补丁新增的 except 恰好接住它并转成 ConnectionError，和相邻映射风格一致，可以合并；这也正是上游 #2674 合并的修复。",
+      "常见的错误拒绝理由是『异常边界不完整，DecodeError / TimeoutError 等其它 urllib3 异常仍可能泄漏，应该一起处理』。这是把本次修复的 scope 无限放大：#2620 报告并要求修复的就是 ClosedPoolError 泄漏这一件事，上游据此合并；其它异常是否需要包装是独立议题，可作为 follow-up 提出，但不构成阻塞本 PR 的理由。",
+      "测试评价：新增测试直接构造 ClosedPoolError 并断言调用方收到 ConnectionError，精确锁定本次修复的行为改变，是可信的回归测试。approve 前值得顺带确认：新 except 的位置不会被前面更宽的 except（如 ProtocolError/OSError、MaxRetryError）抢先命中而变成死代码——ClosedPoolError 与它们无继承关系，位置安全。"
     ]
   },
-  "learningGoal": "判断库边界是否完整包装下层依赖异常，而不是只处理一个观测到的异常类型。",
+  "learningGoal": "判断一个 scope 明确的修复是否正确、可信，并区分真正的阻塞问题和把 scope 无限放大的 follow-up 诉求。",
   "terms": [
     {
       "term": "API boundary",
@@ -78,56 +79,62 @@
       "description": "把下层依赖异常转换成当前库自己的异常类型。"
     },
     {
-      "term": "DecodeError",
-      "description": "响应解码阶段可能来自 urllib3 的异常。"
+      "term": "ClosedPoolError",
+      "description": "urllib3 在连接池已关闭后被复用时抛出的异常。"
     },
     {
-      "term": "TimeoutError",
-      "description": "连接池或代理超时可能来自 urllib3 的异常。"
+      "term": "MaxRetryError",
+      "description": "urllib3 重试耗尽异常，send 已按其 reason 分支映射。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "ClosedPoolError",
-      "expected": "应转换成 Requests ConnectionError。",
-      "reviewQuestion": "PR 覆盖了哪个具体异常？"
+      "input": "ClosedPoolError 穿透",
+      "expected": "补丁前不会被任何现有 except 接住，会泄漏给调用方。",
+      "reviewQuestion": "现有异常映射里，哪一个分支本来能接住 ClosedPoolError？"
     },
     {
-      "input": "DecodeError",
-      "expected": "也不应穿透 urllib3 类型。",
-      "reviewQuestion": "同类下层异常是否仍泄漏？"
+      "input": "新增的 except 位置",
+      "expected": "不应被前面更宽的 except 抢先命中。",
+      "reviewQuestion": "ClosedPoolError 和 ProtocolError/MaxRetryError 有继承关系吗？"
     },
     {
-      "input": "TimeoutError / proxy timeout",
-      "expected": "应映射到 Requests timeout/connection 异常。",
-      "reviewQuestion": "异常映射是否覆盖完整边界？"
+      "input": "DecodeError / TimeoutError 等其它异常",
+      "expected": "不是本 issue 的 scope。",
+      "reviewQuestion": "把它们也要求进来，是阻塞理由还是 follow-up？"
     }
   ],
   "scoringHints": {
     "coreRiskTerms": [
-      "urllib3",
-      "exception",
-      "DecodeError",
-      "TimeoutError",
-      "ClosedPoolError"
+      "closedpoolerror",
+      "穿透",
+      "泄漏",
+      "connectionerror",
+      "映射",
+      "接住"
     ],
     "boundaryTerms": [
-      "API boundary",
-      "wrap",
-      "requests.exceptions",
-      "下层"
+      "子类",
+      "继承",
+      "位置",
+      "死代码",
+      "maxretryerror",
+      "scope"
     ],
     "testTerms": [
-      "DecodeError",
-      "TimeoutError",
-      "ProxyError",
-      "ConnectionError"
+      "closedpoolerror",
+      "回归",
+      "connectionerror",
+      "复现",
+      "断言"
     ],
     "fixTerms": [
-      "wrap",
-      "map",
-      "Requests exception",
-      "异常映射"
+      "可以合并",
+      "approve",
+      "无需修改",
+      "follow-up",
+      "上游",
+      "scope"
     ]
   }
 }

@@ -6,12 +6,12 @@
   "difficulty": "mid",
   "status": "ready",
   "title": {
-    "zh": "Astropy NDData：处理缺失 mask 的传播逻辑",
-    "en": "Astropy NDData: handle missing masks during propagation"
+    "zh": "Astropy NDData：整理 mask 传播里的 None 判断",
+    "en": "Astropy NDData: tidy up the None check in mask propagation"
   },
   "summary": {
-    "zh": "审查一个 Astropy NDData PR：作者调整 mask 传播中的 None 判断，让没有 mask 的 operand 复用已有复制逻辑。",
-    "en": "Review an Astropy NDData PR: the author changes a None check in mask propagation so operands without masks reuse the existing copy logic."
+    "zh": "审查一个 Astropy NDData PR：作者认为 mask 传播里的 operand.mask is None 分支写法含糊，改成更直白的 operand is None。",
+    "en": "Review an Astropy NDData PR: the author finds the operand.mask is None branch confusing and rewrites it as operand is None."
   },
   "language": "Python / Astropy",
   "tags": [
@@ -38,92 +38,99 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "kind": "adapted-for-review",
+    "note": "Adapted from a real upstream issue for review training. Whether this change should be merged is the question — reach your own conclusion before opening the source links."
   },
   "pr": {
-    "title": "Treat operands without masks like missing-mask arithmetic inputs",
+    "title": "Clarify the missing-mask branch in _arithmetic_mask",
     "author": "codegen-agent",
     "body": [
-      "NDData arithmetic currently handles the case where no second operand participates in mask propagation, but it does not consistently handle a real operand whose mask attribute is None.",
-      "This PR changes the branch to check operand.mask is None, so an operand without a mask falls back to copying the current object's mask instead of attempting to combine two masks.",
-      "Added a regression test for arithmetic between data_with_mask and data_without_mask to confirm the result mask is copied rather than shared. Existing NDData tests pass."
+      "_arithmetic_mask 里有一个分支写成 elif operand.mask is None，读起来含糊：这个分支的本意是处理『没有第二个 operand 参与』的情况，用 operand.mask 判断既不直观，还多访问了一层属性。",
+      "这个 PR 把该分支改成更直白的 elif operand is None，语义上直接对应『没有第二个 operand，保留 self 自己的 mask』。逻辑分支数量不变，只是让判断意图更清晰。",
+      "新增一个回归测试，覆盖没有第二个 operand 时 self.mask 被正确保留。现有 NDData 测试全部通过。"
     ]
   },
   "background": [
-    "NDDataRef arithmetic combines input masks when both operands have masks, or copies the available mask when only one side has one.",
-    "Call paths can pass operand as None, and they can also pass an operand object whose mask is None. These are different states.",
-    "The review context includes the pre-patch mask propagation excerpt in src-ndarithmetic.py."
+    "NDDataRef 的算术运算会传播 mask：两个 operand 都有 mask 时用 handle_mask 合并；只有一边有 mask 时复制那一个；都没有则结果无 mask。",
+    "_arithmetic_mask 通过多处 None 判断区分 mask 传播状态。审查时先读清补丁前每个分支代表哪种状态，再判断改掉被检查的对象是否仍保持同一语义。",
+    "题目提供了补丁前 _arithmetic_mask 的源码节选（src-ndarithmetic.py），建议先逐个分支想清楚每种输入落到哪里，再看 diff。"
   ],
   "analysis": {
-    "dimension": "edge-case",
+    "dimension": "hidden-regression",
     "notes": [
-      "The patch dereferences operand.mask before proving operand is not None. Existing call paths where operand itself is None now raise AttributeError instead of copying self.mask.",
-      "The two None states have different meanings: missing operand and present operand without a mask. They need separate branches in the correct order.",
-      "The new test covers only the present-operand-with-mask-None case. It does not cover operand is None, which is the path broken by the condition rewrite."
+      "把 elif operand.mask is None 改成 elif operand is None 看似只是换个写法，实际改变了语义。二元运算里 operand 恒为真实对象、永远不为 None，所以新分支形同死代码；当 operand 存在但它的 mask 为 None（一个带 mask、一个不带 mask 相加）时，原来命中这一分支返回 self.mask，现在落到 else 执行 handle_mask(self.mask, None)，np.bitwise_or 之类对 None 直接抛 TypeError。",
+      "这恰好把 astropy 在 gh-14995 里修掉的 bug 又引了回来：上游正是把 operand is None 改成 operand.mask is None 才修好『一个 operand 无 mask 时运算崩溃』。本 PR 的方向和上游修复完全相反——这也是为什么读者若去核对上游 PR，会发现它把已合并的正确写法改坏了。",
+      "新增测试只覆盖『没有第二个 operand』这条路径（operand=None 时新分支恰好返回 self.mask，仍能过），却没有覆盖真正会崩的『operand 存在但 mask 为 None』组合，所以 CI 全绿也挡不住这个回归。至少要补一条 data_with_mask + data_without_mask 的算术测试。"
     ]
   },
-  "learningGoal": "判断 None 语义和属性访问顺序是否覆盖所有调用路径。",
+  "learningGoal": "判断一个看似等价的条件改写是否偷偷改变了语义、把已修复的 bug 引回来。",
   "terms": [
     {
       "term": "mask propagation",
-      "description": "运算后把输入数据的 mask 合并到结果。"
+      "description": "运算后把输入数据的 mask 合并或复制到结果。"
     },
     {
-      "term": "operand is None",
-      "description": "表示没有第二个 NDData operand 的调用路径。"
+      "term": "handle_mask",
+      "description": "合并两个 mask 的回调（如 np.bitwise_or）；对 None 调用会报错。"
     },
     {
       "term": "operand.mask is None",
-      "description": "表示第二个 operand 存在但没有 mask。"
+      "description": "第二个 operand 存在但没有 mask。"
     },
     {
-      "term": "deepcopy",
-      "description": "返回 mask 副本，避免结果引用输入对象状态。"
+      "term": "operand is None",
+      "description": "根本没有第二个 operand（二元运算里不会出现）。"
     }
   ],
   "behaviorChecks": [
     {
-      "input": "self 有 mask，operand 是 None",
-      "expected": "应复制 self.mask。",
-      "reviewQuestion": "补丁是否在确认 operand 存在前访问 operand.mask？"
+      "input": "self 有 mask，operand 存在但 mask 是 None",
+      "expected": "应复制 self.mask，不应调用 handle_mask。",
+      "reviewQuestion": "改成 operand is None 后，这条输入落到哪个分支？"
     },
     {
-      "input": "self 有 mask，operand 存在但 mask 是 None",
+      "input": "self 有 mask，没有第二个 operand",
       "expected": "应复制 self.mask。",
-      "reviewQuestion": "这和 operand is None 是否是同一条分支？"
+      "reviewQuestion": "新增测试是否只覆盖了这一条仍然正常的路径？"
     },
     {
       "input": "两边都有 mask",
       "expected": "应调用 handle_mask 合并。",
-      "reviewQuestion": "修复是否只影响缺失 mask 的路径？"
+      "reviewQuestion": "改写是否只影响缺失 mask 的路径？"
     }
   ],
   "scoringHints": {
     "coreRiskTerms": [
       "operand",
       "mask",
-      "None",
-      "AttributeError",
+      "none",
+      "handle_mask",
+      "typeerror",
       "崩溃"
     ],
     "boundaryTerms": [
-      "operand is None",
       "operand.mask",
-      "branch",
+      "operand is none",
+      "语义",
+      "等价",
+      "死代码",
       "分支"
     ],
     "testTerms": [
-      "operand is None",
-      "mask None",
-      "AttributeError",
-      "copy"
+      "operand",
+      "mask",
+      "none",
+      "组合",
+      "未覆盖",
+      "without_mask"
     ],
     "fixTerms": [
-      "operand is None first",
-      "separate branch",
-      "deepcopy",
-      "先判断"
+      "operand.mask is none",
+      "上游",
+      "14995",
+      "不要改",
+      "revert",
+      "保留"
     ]
   }
 }

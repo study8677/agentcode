@@ -1,29 +1,31 @@
 # astropy/nddata/mixins/ndarithmetic.py -- review context snapshot (excerpt).
-# This is the code BEFORE the PR is applied.
+# This is the code BEFORE the PR is applied. Unrelated methods omitted.
+#
+# _arithmetic_mask computes mask propagation for arithmetic operations. The
+# caller passes the other value as `operand`; review the branches below to see
+# which state each None check represents.
 
 from copy import deepcopy
 
 
 class NDArithmeticMixin:
     def _arithmetic_mask(self, operation, operand, handle_mask, **kwds):
-        """
-        Calculate the mask for arithmetic output.
-        """
-        if self.mask is None and (operand is None or operand.mask is None):
+        """Calculate the resulting mask for an arithmetic operation."""
+        if handle_mask is None:
             return None
 
+        # Neither operand carries a mask -> the result has no mask.
+        if self.mask is None and operand.mask is None:
+            return None
+
+        # Only self has no mask -> take the operand's mask.
         elif self.mask is None:
-            # There is no mask on self, so copy the operand mask.
             return deepcopy(operand.mask)
 
-        elif operand is None:
-            # There is no second operand, so preserve self's mask.
-            return deepcopy(self.mask)
-
+        # The other side contributes no mask -> keep self's mask.
         elif operand.mask is None:
-            # The second operand exists but has no mask.
             return deepcopy(self.mask)
 
+        # Both operands carry a mask -> combine them.
         else:
-            # Both operands have masks; delegate to the configured combiner.
             return handle_mask(self.mask, operand.mask, **kwds)

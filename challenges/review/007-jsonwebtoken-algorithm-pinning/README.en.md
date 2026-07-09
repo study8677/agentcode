@@ -37,7 +37,7 @@ Testing:
 ## Background
 
 - verifySession is the server-side entry point for validating session Bearer tokens: it takes a JWT, hands it to jsonwebtoken's jwt.verify to check the signature and issuer/audience, and returns the payload on success.
-- The production signing key, public-key path, and related settings come from environment configuration read at process startup.
+- The production signing key, public-key path, accepted algorithms, and related settings come from environment configuration read at process startup. Missing required auth configuration should fail closed before request handling.
 
 ## Answers and analysis
 

@@ -6,7 +6,7 @@ You are a reviewer on this repository. An AI agent submitted the PR below. CI is
 
 > **Wrap ClosedPoolError as a Requests ConnectionError**
 >
-> Some adapter error paths can leak urllib3 ClosedPoolError directly to callers, which breaks the expectation that Requests users catch requests.exceptions types at the public API boundary.
+> When an adapter is reused after its connection pool has been closed, urllib3's ClosedPoolError leaks straight through to callers, breaking the expectation that Requests users only need to catch requests.exceptions types (issue #2674).
 >
 > This PR imports ClosedPoolError in adapters.py and maps it to requests.exceptions.ConnectionError next to the existing urllib3-to-Requests exception conversions.
 >
@@ -17,7 +17,7 @@ You are a reviewer on this repository. An AI agent submitted the PR below. CI is
 Read:
 
 - `ai-pr.diff` — the patch under review
-- `src-adapters.py` — pre-patch HTTPAdapter.send exception-mapping excerpt (minimal sufficient context)
+- `src-adapters.py` — pre-patch excerpt of HTTPAdapter.send's exception mapping (minimal sufficient context)
 
 Then submit your review:
 
@@ -26,19 +26,19 @@ Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
-- Problem:
+- Problem: (if you approve, list the points you verified)
 - Why it matters:
 - Suggested fix:
 
 Testing:
-- What does the new test actually prove? What is missing?
+- What does the new test prove? Is it trustworthy?
 ```
 
 ## Background
 
-- Requests exposes the `requests.exceptions` hierarchy as its public error contract.
-- The adapter layer maps lower-level urllib3 exceptions to Requests exception types.
-- When reviewing this kind of patch, judge whether it preserves the API boundary, not only whether one observed exception is covered.
+- Requests promises a `requests.exceptions` hierarchy; the adapter layer maps lower-level urllib3 exceptions into Requests' own types.
+- HTTPAdapter.send already maps ProtocolError/OSError, MaxRetryError (and its reason branches), _ProxyError, _SSLError, ReadTimeoutError. Check first whether ClosedPoolError is caught by any existing branch.
+- The source excerpt includes the relevant urllib3 hierarchy: ClosedPoolError inherits from PoolError, not from any exception type already caught by HTTPAdapter.send.
 
 ## Answers and analysis
 
@@ -46,4 +46,4 @@ Reference answers live in `expected-findings.json` and `rubric.md` (spoilers). O
 
 ## Source
 
-Adapted from a real engineering issue (the `ai-pr.diff` you review is an AgentCode training adaptation, not the upstream fix). Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.
+Adapted from a real engineering issue. Upstream links are in the `source` field of `metadata.json`; read them after attempting the challenge.

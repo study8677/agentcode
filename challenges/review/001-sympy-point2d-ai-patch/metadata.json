@@ -42,8 +42,8 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "kind": "adapted-for-review",
+    "note": "Adapted from a real upstream issue for review training. Whether this change should be merged is the question — reach your own conclusion before opening the source links."
   },
   "pr": {
     "title": "Fix Point raising 'Imaginary coordinates are not permitted' with evaluate(False)",

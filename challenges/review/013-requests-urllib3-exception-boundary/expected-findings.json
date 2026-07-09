@@ -1,40 +1,70 @@
 {
-  "canMerge": false,
-  "mergeRationale": "The patch wraps only ClosedPoolError, leaving the broader urllib3-to-Requests exception boundary incomplete.",
+  "canMerge": true,
+  "mergeRationale": "ClosedPoolError is not a subclass of any exception the adapter already catches, so it genuinely leaked; the new except wraps exactly the reported failure as ConnectionError, consistent with existing mappings. This is the fix upstream merged in #2674.",
   "requiredFindings": [
     {
-      "id": "single-exception-wrapper-incomplete",
-      "severity": "medium",
-      "summary": "The patch wraps only ClosedPoolError and leaves other urllib3 exceptions outside the Requests API boundary.",
-      "expectedReasoning": "Callers can still see urllib3 DecodeError or TimeoutError even though they expect requests.exceptions types from Requests APIs.",
-      "acceptableFix": "Map the relevant urllib3 exceptions consistently to Requests exceptions, not just the one observed in a narrow test.",
+      "id": "closedpoolerror-was-genuinely-leaking",
+      "severity": "check",
+      "summary": "Confirm ClosedPoolError is not caught by any existing except in send (not a subclass of ProtocolError/OSError/MaxRetryError/_ProxyError/_SSLError/ReadTimeoutError), so it really did leak.",
+      "expectedReasoning": "Because it slips past every existing handler, the new except is needed and correctly targets the reported leak.",
+      "acceptableFix": "No change needed. Optionally confirm by checking the urllib3 exception hierarchy.",
       "matchTerms": [
-        ["ClosedPoolError", "only"],
-        ["DecodeError"],
-        ["TimeoutError"],
-        ["urllib3", "leak"],
-        ["API", "boundary"],
-        ["异常", "边界"]
+        ["closedpoolerror", "穿透"],
+        ["closedpoolerror", "泄漏"],
+        ["子类"],
+        ["not", "subclass"],
+        ["not", "caught"],
+        ["继承"]
       ]
     },
     {
-      "id": "missing-decode-timeout-tests",
-      "severity": "medium",
-      "summary": "The test only covers ClosedPoolError.",
-      "expectedReasoning": "It does not protect against the reported class of urllib3 exceptions passing through the public API.",
-      "acceptableFix": "Add tests for DecodeError, TimeoutError, and proxy timeout paths.",
+      "id": "new-except-placement-is-safe",
+      "severity": "check",
+      "summary": "Confirm the new except is not shadowed by an earlier, broader except (ClosedPoolError has no inheritance relation to ProtocolError/OSError/MaxRetryError), so it is not dead code.",
+      "expectedReasoning": "Ordering of except clauses matters; since ClosedPoolError is unrelated to the earlier handlers, the mapping actually fires.",
+      "acceptableFix": "No change needed.",
       "matchTerms": [
-        ["测试", "DecodeError"],
-        ["测试", "TimeoutError"],
-        ["test", "DecodeError"],
-        ["test", "TimeoutError"],
-        ["proxy", "timeout"]
+        ["位置"],
+        ["死代码"],
+        ["顺序"],
+        ["placement"],
+        ["order", "except"],
+        ["dead code"]
+      ]
+    },
+    {
+      "id": "regression-test-is-trustworthy",
+      "severity": "check",
+      "summary": "Confirm the added test genuinely raises a ClosedPoolError and asserts callers now see ConnectionError, rather than a vacuous test.",
+      "expectedReasoning": "It reproduces the exact leak and asserts the new mapping, so it locks in the behavior change.",
+      "acceptableFix": "No change needed.",
+      "matchTerms": [
+        ["测试", "closedpoolerror"],
+        ["测试", "connectionerror"],
+        ["test", "closedpool"],
+        ["test", "connectionerror"],
+        ["回归", "可信"],
+        ["复现"]
       ]
     }
   ],
-  "optionalFindings": [],
+  "optionalFindings": [
+    {
+      "id": "other-exceptions-are-followups",
+      "severity": "low",
+      "summary": "A reviewer may note that other urllib3 exceptions (e.g. DecodeError) could also be wrapped, but that is a separate follow-up, not a blocker for this scoped fix.",
+      "matchTerms": [
+        ["decodeerror", "follow"],
+        ["其它异常", "follow"],
+        ["follow-up"],
+        ["separate", "issue"],
+        ["nit"]
+      ]
+    }
+  ],
   "disallowedConclusions": [
-    "The patch can be merged because ClosedPoolError is now wrapped.",
-    "A focused test for one urllib3 exception is enough to prove the Requests exception boundary."
+    "Request changes because the patch does not also wrap DecodeError / TimeoutError / other urllib3 exceptions.",
+    "The exception boundary is incomplete, so this PR must be expanded before merging.",
+    "Reject because the test only covers ClosedPoolError and not the other urllib3 exception types."
   ]
 }

@@ -4,31 +4,31 @@ Total: 100 points.
 
 ## Merge Decision: 30
 
-- 30: Says this PR must not be merged / requires changes.
-- 10: Expresses uncertainty but identifies a blocking risk.
-- 0: Says it can be merged without qualification.
+- 30: Says this PR can be merged / approve (optionally with a non-blocking follow-up note).
+- 10: Says "need more info" but has already confirmed ClosedPoolError genuinely leaked and the mapping is correct.
+- 0: Says request changes / must not be merged.
 
-## Core Risk: 30
+## Core Verification: 30
 
-- 30: Clearly explains: The patch wraps only ClosedPoolError and leaves other urllib3 exceptions outside the Requests API boundary.
-- 18: Mentions the general risk but misses the exact failing boundary.
-- 8: Vaguely says the condition is too broad or tests are incomplete.
-- 0: Misses the core risk.
+- 30: Confirms ClosedPoolError is not a subclass of any exception the adapter already catches, so it really leaked and the new except correctly targets it.
+- 18: Says the mapping looks right but does not verify it was actually leaking / uncaught before.
+- 8: Vaguely says "wrapping the exception is fine".
+- 0: Does not verify the fix.
 
 ## Semantic Boundary: 15
 
-- 15: Explains the intended contract and why the AI patch changes it.
-- 8: Mentions edge cases but does not describe the contract.
-- 0: Does not discuss the intended behavior.
+- 15: Explains that except-clause ordering matters and confirms the new handler is not shadowed (no inheritance relation to earlier handlers), so it is not dead code.
+- 8: Mentions the mapping but not placement/ordering safety.
+- 0: Does not discuss how the change fits the existing exception chain.
 
 ## Test Quality: 10
 
-- 10: Identifies the missing negative/boundary test: The test only covers ClosedPoolError.
-- 5: Says tests are insufficient without naming the missing case.
-- 0: Treats the tests as sufficient.
+- 10: Confirms the regression test genuinely reproduces a ClosedPoolError and asserts callers now get ConnectionError.
+- 5: Says the test looks fine without checking it reproduces the leak.
+- 0: Misjudges the test.
 
-## Repair Direction: 15
+## Decision Quality: 15
 
-- 15: Gives an actionable fix: Map the relevant urllib3 exceptions consistently to Requests exceptions, not just the one observed in a narrow test.
-- 8: Suggests adding tests but gives only a partial implementation direction.
-- 0: No actionable fix.
+- 15: Approves for correct reasons; if "other exceptions could also be wrapped" is raised, frames it as a non-blocking follow-up rather than a blocker.
+- 8: Approves with weak justification.
+- 0: Rejects for a disallowed reason (incomplete boundary / must also wrap DecodeError/TimeoutError / test too narrow).

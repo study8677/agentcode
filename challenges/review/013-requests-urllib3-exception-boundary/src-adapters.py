@@ -13,6 +13,16 @@ from .packages.urllib3.exceptions import (
 )
 from .packages.urllib3.exceptions import ProxyError as _ProxyError
 
+# urllib3 exception hierarchy excerpt needed for this review:
+#
+#     HTTPError
+#       PoolError
+#         ClosedPoolError
+#
+# ClosedPoolError is a PoolError. It is not a ProtocolError, OSError,
+# MaxRetryError, _ProxyError, _SSLError, or ReadTimeoutError, so the except
+# branches below do not currently translate it into a Requests exception.
+
 
 class HTTPAdapter:
     def send(self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None):

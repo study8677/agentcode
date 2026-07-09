@@ -42,8 +42,8 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-upstream-correct-patch",
-    "note": "The reviewed patch is adapted from the upstream maintainer fix (context and line numbers adjusted for review training). Whether it can be merged is the question the reviewer must answer."
+    "kind": "adapted-for-review",
+    "note": "Adapted from a real upstream issue for review training. Whether this change should be merged is the question — reach your own conclusion before opening the source links."
   },
   "pr": {
     "title": "Serialize readonly JSONField values as JSON in the admin",

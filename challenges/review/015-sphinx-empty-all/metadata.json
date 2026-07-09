@@ -42,8 +42,8 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-upstream-correct-patch",
-    "note": "The reviewed patch is an AgentCode adaptation of the upstream maintainer fix, reformatted for review training."
+    "kind": "adapted-for-review",
+    "note": "Adapted from a real upstream issue for review training. Whether this change should be merged is the question — reach your own conclusion before opening the source links."
   },
   "pr": {
     "title": "Fix autodoc ignoring an empty __all__ attribute",

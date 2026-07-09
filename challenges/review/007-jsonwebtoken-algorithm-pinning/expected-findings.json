@@ -1,13 +1,13 @@
 {
   "canMerge": false,
-  "mergeRationale": "The change lets an undefined key reach jwt.verify and drops the algorithm allowlist, so verification can fail open and accept forged tokens depending on the jsonwebtoken version.",
+  "mergeRationale": "The change removes the server-side RS256 allowlist and lets an undefined key reach jwt.verify, moving a required startup configuration failure into the request path and weakening authentication's fail-closed boundary.",
   "requiredFindings": [
     {
       "id": "algorithm-and-key-downgrade",
       "severity": "critical",
-      "summary": "The patch removes the algorithms allowlist and lets an undefined secret reach jwt.verify.",
-      "expectedReasoning": "Authentication must fail closed. With the algorithm no longer pinned, verify trusts the token's own alg header; combined with a controllable or undefined key this enables alg:none or HS/RS confusion (using the RS256 public key as an HMAC secret) to forge tokens, depending on the library version.",
-      "acceptableFix": "Validate required keys at startup (fail closed), keep algorithms pinned to RS256, and upgrade to a patched jsonwebtoken version.",
+      "summary": "The patch removes the RS256 algorithms allowlist and lets the token choose the verification algorithm.",
+      "expectedReasoning": "Authentication must fail closed and the server must decide which algorithms are acceptable. Removing algorithms: ['RS256'] changes the verifier from a pinned asymmetric-token contract to whatever jwt.verify derives from the token/header and supplied key, so issuer/audience checks no longer prove the signature was verified under the intended algorithm.",
+      "acceptableFix": "Keep algorithms pinned to RS256 and use the configured public key for production tokens; if local development needs a different key, make that an explicit, separately pinned configuration.",
       "matchTerms": [
         ["algorithm"],
         ["算法"],
@@ -22,13 +22,29 @@
       ]
     },
     {
+      "id": "missing-secret-defers-startup-failure",
+      "severity": "critical",
+      "summary": "process.env.JWT_SECRET || undefined turns a missing required key into a request-time verifier input instead of a startup failure.",
+      "expectedReasoning": "Required authentication configuration should be validated when the process starts. Passing undefined into jwt.verify delays a must-fail configuration error until token verification and creates a fail-open risk at the auth boundary.",
+      "acceptableFix": "Validate required keys at startup and refuse to start or reject all auth requests when the key configuration is missing.",
+      "matchTerms": [
+        ["undefined", "key"],
+        ["undefined", "secret"],
+        ["jwt_secret", "missing"],
+        ["fail", "closed"],
+        ["fail", "open"],
+        ["startup"],
+        ["启动"],
+        ["配置"]
+      ]
+    },
+    {
       "id": "missing-negative-auth-tests",
       "severity": "high",
       "summary": "The added test only covers a dev happy path, not malicious or misconfigured tokens.",
-      "expectedReasoning": "Auth changes need negative tests: alg:none, wrong algorithm, missing key, wrong issuer and wrong audience, plus a startup-configuration test.",
+      "expectedReasoning": "Auth changes need negative tests: wrong algorithm, missing key, wrong issuer and wrong audience, plus a startup-configuration test.",
       "acceptableFix": "Add negative token tests and a startup configuration (fail-closed) test.",
       "matchTerms": [
-        ["test", "alg:none"],
         ["测试", "负向"],
         ["negative", "test"],
         ["test", "wrong"],
@@ -37,20 +53,7 @@
       ]
     }
   ],
-  "optionalFindings": [
-    {
-      "id": "fail-open-config",
-      "severity": "low",
-      "summary": "process.env.JWT_SECRET || undefined silently degrades a missing configuration into an undefined key instead of failing at startup.",
-      "matchTerms": [
-        ["undefined"],
-        ["fail", "closed"],
-        ["startup"],
-        ["启动"],
-        ["缺失", "配置"]
-      ]
-    }
-  ],
+  "optionalFindings": [],
   "disallowedConclusions": [
     "The patch can be merged because the local dev test passes and issuer/audience are still checked.",
     "Reading the key from JWT_SECRET is fine because production still sets a strong secret."

@@ -6,19 +6,18 @@
   "difficulty": "senior",
   "status": "ready",
   "title": {
-    "zh": "Axios：加固内部 API client，拦截 protocol-relative URL 绕过 baseURL",
-    "en": "Axios: harden the internal API client against protocol-relative URL bypass"
+    "zh": "Axios：给内部 API client 增加请求 URL 校验",
+    "en": "Axios: add request URL validation to the internal API client"
   },
   "summary": {
-    "zh": "审查一个安全加固补丁：作者给带 Authorization 的 internal API client 增加校验，拒绝以 // 开头的 protocol-relative URL，防止它们绕过 baseURL。",
-    "en": "Review a security hardening patch that rejects protocol-relative (//) URLs on an Authorization-bearing internal API client so they cannot bypass baseURL."
+    "zh": "审查一个给带 Authorization 的 internal API client 增加 URL 校验的补丁：作者拒绝以 // 开头的 protocol-relative URL。",
+    "en": "Review a patch that adds URL validation to an internal API client carrying an Authorization header: it rejects protocol-relative URLs starting with //."
   },
   "language": "TypeScript / Axios",
   "tags": [
     "axios",
     "security",
-    "ssrf",
-    "credential-leak",
+    "http-client",
     "url-parsing"
   ],
   "source": {
@@ -45,8 +44,8 @@
   },
   "reviewTarget": {
     "file": "ai-pr.diff",
-    "kind": "adapted-ai-plausible-patch",
-    "note": "The reviewed patch is an AgentCode adapted plausible-but-incorrect patch for review training. It is not the upstream maintainer patch unless explicitly stated."
+    "kind": "adapted-for-review",
+    "note": "Adapted from a real upstream issue for review training. Whether this change should be merged is the question — reach your own conclusion before opening the source links."
   },
   "pr": {
     "title": "Reject protocol-relative URLs on internalApi to prevent baseURL bypass",

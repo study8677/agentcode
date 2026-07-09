@@ -4,20 +4,20 @@
 
 ## PR 描述（作者提供）
 
-> **Avoid sparse SVM dual_coef_ construction errors when there are no support vectors**
+> **Avoid sparse SVM dual_coef_ construction error when there are no support vectors**
 >
-> Sparse SVM fitting can hit an edge case where there are no support vectors. The current code still tries to construct dual_coef_ from CSR indptr/index arrays, which can fail or divide through empty support-vector state.
+> 在稀疏输入上拟合 SVR 时可能出现一个边界情况：所有样本都落在 epsilon 管道之外，训练完没有任何 support vector（n_SV == 0）。此时 _sparse_fit 里 dual_coef_indptr = np.arange(0, size+1, size / n_class) 的步长是 0，np.arange 直接抛错，fit 无法返回。
 >
-> This PR adds a fast path for n_SV == 0 and assigns an empty csr_matrix directly. Normal sparse SVM fits continue to use the existing CSR construction path.
+> 这个 PR 在构造 dual_coef_ 前加一个 n_SV == 0 的判断：没有支持向量时直接赋一个空的 csr_matrix，否则走原来的 CSR indptr 构造路径。正常的稀疏 SVM 拟合逻辑完全不变。
 >
-> Added a regression test that fits the sparse model in the empty-support-vector case and confirms dual_coef_ is empty. Existing SVM tests pass.
+> 新增回归测试：构造一个会产生 0 个支持向量的稀疏 SVR，验证 fit 能正常完成、support_vectors_ 和 dual_coef_ 都为空。现有 SVM 测试全部通过。
 
 ## 你需要审核
 
 请阅读：
 
 - `ai-pr.diff` — 待审核的补丁
-- `src-svm-base.py` — 补丁前 sparse dual_coef_ 构造的源码节选（最小充分上下文）
+- `src-svm-base.py` — 补丁前 _sparse_fit 的源码节选（最小充分上下文）
 
 然后提交 review 结论：
 
@@ -26,19 +26,18 @@ Can merge? Yes / No / Need more info
 
 Finding 1:
 - Severity:
-- Problem:
+- Problem:（如果你认为可以合并，写出你逐一确认过哪些点）
 - Why it matters:
 - Suggested fix:
 
 Testing:
-- 现有测试证明了什么？还缺什么？
+- 新增测试证明了什么？可信吗？
 ```
 
 ## 背景
 
-- scikit-learn estimator 的公开属性形状是 API 合约的一部分。
-- 空矩阵也需要携带正确 shape，不能只看元素数量是否为 0。
-- 审查数值库边界修复时，要检查异常规避是否保留后续属性访问和预测路径的不变量。
+- _sparse_fit 是稀疏 SVM 的拟合入口，训练后要把 dual coefficients 组装成稀疏矩阵 dual_coef_。在空 support vectors 场景下，需要验证的契约是 dual_coef_ 不含系数，而不是某个特定二维 shape。
+- dual_coef_indptr 用 np.arange(0, size+1, step) 生成，step = dual_coef_indices.size / n_class；没有支持向量时 size 为 0，step 为 0。
 
 ## 答案与解析
 
@@ -46,4 +45,4 @@ Testing:
 
 ## 题目来源
 
-本题改编自真实工程问题（你审核的 `ai-pr.diff` 是 AgentCode 改编的训练补丁，不是上游最终修复）。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。
+本题改编自真实工程问题。上游链接在 `metadata.json` 的 `source` 字段中，建议做完题再看。
