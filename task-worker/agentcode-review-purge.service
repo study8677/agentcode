@@ -6,7 +6,9 @@ After=postgresql.service
 Type=oneshot
 User=agentcode
 Group=agentcode
-EnvironmentFile=/opt/agentcode/.env
+EnvironmentFile=/etc/agentcode-deploy.env
+Environment=NODE_ENV=production
+Environment=PATH=/opt/node-v22/bin:/usr/local/bin:/usr/bin:/bin
 WorkingDirectory=/opt/agentcode
 ExecStart=/opt/agentcode/node_modules/.bin/tsx /opt/agentcode/scripts/purge-review-data.ts
 NoNewPrivileges=true
