@@ -13,7 +13,7 @@ GitHub Actions 依次执行：
 5. Vitest、typecheck、lint、Next.js build
 6. 全部通过后才允许 SSH 到生产机
 
-服务器部署顺序是：由 root 从 `/etc/agentcode.env` 读取生产配置、只把 `DATABASE_URL` 传给 `agentcode` 部署用户、拉取 `origin/main`、按需安装依赖、`prisma generate`、`prisma migrate deploy`、build、重启 Web 服务、健康检查。迁移失败时不会重启；数据库 migration 不执行自动 down。部署脚本通过 Corepack 使用 `packageManager` 锁定的 pnpm 版本。
+服务器部署顺序是：`agentcode` 部署用户从 `/etc/agentcode-deploy.env` 读取仅包含 `DATABASE_URL` 的受限配置、拉取 `origin/main`、按需安装依赖、`prisma generate`、`prisma migrate deploy`、build、重启 Web 服务、健康检查。迁移失败时不会重启；数据库 migration 不执行自动 down。部署脚本通过 Corepack 使用 `packageManager` 锁定的 pnpm 版本。
 
 ## 生产环境变量
 
@@ -32,7 +32,7 @@ TASK_RUNNER_ENABLED=false
 
 GitHub OAuth callback 为 `/api/admin/auth/callback/github`。普通训练用户保持匿名，GitHub OAuth 只用于 reviewer 后台。
 
-`/etc/agentcode.env` 应保持 `root:root`、`0600`，由 systemd 注入 Web 服务；不要为了部署把完整 OAuth 或数据库凭据改成普通用户可读。首次开启持久化前必须完成数据库备份与恢复演练。现有部署如果曾使用 `prisma db push`，baseline migration 使用 guarded SQL 接管已有 Challenge schema；仍应先在数据库副本执行 migration。
+`/etc/agentcode.env` 应保持 `root:root`、`0600`，由 systemd 注入 Web 服务。另建 `root:agentcode`、`0640` 的 `/etc/agentcode-deploy.env`，其中只能放部署所需的 `DATABASE_URL`；不要把 OAuth 等完整生产密钥复制进去。首次开启持久化前必须完成数据库备份与恢复演练。现有部署如果曾使用 `prisma db push`，baseline migration 使用 guarded SQL 接管已有 Challenge schema；仍应先在数据库副本执行 migration。
 
 ## 数据保留
 

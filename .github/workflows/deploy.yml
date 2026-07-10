@@ -92,4 +92,4 @@ jobs:
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "sudo /usr/bin/bash -c 'set -a; source /etc/agentcode.env; set +a; exec sudo --preserve-env=DATABASE_URL -u agentcode /usr/bin/bash /opt/agentcode/scripts/deploy.sh'"
+            "sudo -n -u agentcode /usr/bin/bash /opt/agentcode/scripts/deploy.sh"

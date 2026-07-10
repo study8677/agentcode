@@ -8,12 +8,15 @@ HEALTH_URL="http://127.0.0.1:3000/"
 
 cd "${APP_DIR}"
 
-if [[ -f "${APP_DIR}/.env" ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source "${APP_DIR}/.env"
-  set +a
-fi
+for env_file in "${APP_DIR}/.env" "/etc/agentcode-deploy.env"; do
+  if [[ -r "${env_file}" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "${env_file}"
+    set +a
+    break
+  fi
+done
 
 run_pnpm() {
   corepack pnpm "$@"
