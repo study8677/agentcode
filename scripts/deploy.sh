@@ -2,6 +2,7 @@
 set -euo pipefail
 
 export PATH="/opt/node-v22/bin:${PATH}"
+export CI=true
 
 APP_DIR="/opt/agentcode"
 HEALTH_URL="http://127.0.0.1:3000/"
@@ -30,16 +31,13 @@ fi
 git fetch origin
 git reset --hard origin/main
 
-should_install=1
-if git rev-parse --verify "HEAD@{1}" >/dev/null 2>&1; then
-  if git diff --quiet "HEAD@{1}" HEAD -- package.json pnpm-lock.yaml; then
-    should_install=0
-  fi
+deployed_commit="$(git rev-parse HEAD)"
+if [[ "${AGENTCODE_DEPLOY_COMMIT:-}" != "${deployed_commit}" ]]; then
+  export AGENTCODE_DEPLOY_COMMIT="${deployed_commit}"
+  exec /usr/bin/bash "${APP_DIR}/scripts/deploy.sh"
 fi
 
-if [[ "${should_install}" -eq 1 ]]; then
-  run_pnpm install --frozen-lockfile
-fi
+run_pnpm install --frozen-lockfile
 
 run_pnpm exec prisma generate
 run_pnpm exec prisma migrate deploy

@@ -13,7 +13,7 @@ GitHub Actions 依次执行：
 5. Vitest、typecheck、lint、Next.js build
 6. 全部通过后才允许 SSH 到生产机
 
-服务器部署顺序是：`agentcode` 部署用户从 `/etc/agentcode-deploy.env` 读取仅包含 `DATABASE_URL` 的受限配置、拉取 `origin/main`、按需安装依赖、`prisma generate`、`prisma migrate deploy`、build、重启 Web 服务、健康检查。迁移失败时不会重启；数据库 migration 不执行自动 down。部署脚本通过 Corepack 使用 `packageManager` 锁定的 pnpm 版本。
+服务器部署顺序是：`agentcode` 部署用户从 `/etc/agentcode-deploy.env` 读取仅包含 `DATABASE_URL` 的受限配置、拉取 `origin/main`、重新执行已更新的部署脚本、冻结安装依赖、`prisma generate`、`prisma migrate deploy`、build、重启 Web 服务、健康检查。迁移失败时不会重启；数据库 migration 不执行自动 down。部署脚本通过 Corepack 使用 `packageManager` 锁定的 pnpm 版本。
 
 ## 生产环境变量
 
