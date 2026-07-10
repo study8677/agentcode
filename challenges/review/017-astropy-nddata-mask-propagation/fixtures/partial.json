@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 14,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "The rewrite makes a masked+unmasked operation crash: operand present with mask=None now reaches handle_mask(self.mask, None). operand.mask none handle_mask none unmasked 一个 mask typeerror 14995 死代码 reintroduc",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

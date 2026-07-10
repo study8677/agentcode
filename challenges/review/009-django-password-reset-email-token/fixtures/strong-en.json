@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Review decision: request changes for the blocking finding below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 4,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch never includes the current email value in the token hash. email hash 邮箱 hash 邮箱 失效 old token valid change email _make_hash_value email",
+        "evidence": "Changing a user's email after issuing a reset token will not invalidate the old token because _make_hash_value still returns only pk, password, last_login, and timestamp. _make_hash_value invalidate",
+        "impact": "Changing a user's email after issuing a reset token will not invalidate the old token because _make_hash_value still returns only pk, password, last_login, and timestamp. _make_hash_value invalidate",
+        "fix": "Include the configured email field value in _make_hash_value while preserving compatibility for custom user models. _make_hash_value compatibility"
+      }
+    ],
+    "tests": "The added test covers empty email but not the email-change invalidation sequence. The real regression is: create token, change email, then check that the old token is rejected. The new test only proves a token can be created and checked when email is empty. 测试 邮箱 变更 测试 旧 token empty email change email test check_token False"
+  }
+}

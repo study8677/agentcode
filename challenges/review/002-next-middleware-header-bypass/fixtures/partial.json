@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 11,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch trusts x-middleware-subrequest read straight from the incoming request. x-middleware-subrequest 伪造 外部 头 client header spoof header 绕过 鉴权 bypass auth",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

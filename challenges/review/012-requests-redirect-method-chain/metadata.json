@@ -135,5 +135,11 @@
       "restore",
       "revert"
     ]
-  }
+  },
+  "skills": [
+    "state-semantics",
+    "behavior-contract",
+    "test-quality",
+    "impact-reasoning"
+  ]
 }

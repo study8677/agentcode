@@ -1,56 +1,289 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "Rewriting `elif operand.mask is None` as `elif operand is None` reintroduces the gh-14995 bug: an operand that exists but has mask=None now falls through to handle_mask(self.mask, None) and raises.",
   "requiredFindings": [
     {
       "id": "reintroduces-none-mask-crash",
+      "kind": "defect",
+      "required": true,
       "severity": "high",
+      "blocksMerge": true,
       "summary": "The rewrite makes a masked+unmasked operation crash: operand present with mask=None now reaches handle_mask(self.mask, None).",
       "expectedReasoning": "In binary ops operand is never None, so the new branch is dead; the operand-with-None-mask case falls to else and calls handle_mask (e.g. np.bitwise_or) with None, raising TypeError. This is exactly what astropy fixed in gh-14995 (operand is None -> operand.mask is None); the PR reverses it.",
       "acceptableFix": "Keep the branch as `elif operand.mask is None: return deepcopy(self.mask)` (the upstream-correct form); do not rewrite it to `operand is None`.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 14,
+          "endLine": 14,
+          "lineIncludes": "+        elif operand is None:"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "operand.mask",
+            "none"
+          ],
+          [
+            "handle_mask",
+            "none"
+          ],
+          [
+            "unmasked"
+          ],
+          [
+            "一个",
+            "mask"
+          ],
+          [
+            "typeerror"
+          ],
+          [
+            "14995"
+          ],
+          [
+            "死代码"
+          ],
+          [
+            "reintroduc"
+          ]
+        ],
+        "evidence": [
+          [
+            "operand-with-none-mask",
+            "np.bitwise_or"
+          ]
+        ],
+        "impact": [
+          [
+            "operand-with-none-mask",
+            "np.bitwise_or"
+          ]
+        ],
+        "fix": [
+          [
+            "deepcopy(self.mask",
+            "upstream-correct"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["operand.mask", "none"],
-        ["handle_mask", "none"],
-        ["unmasked"],
-        ["一个", "mask"],
-        ["typeerror"],
-        ["14995"],
-        ["死代码"],
-        ["reintroduc"]
+        [
+          "operand.mask",
+          "none"
+        ],
+        [
+          "handle_mask",
+          "none"
+        ],
+        [
+          "unmasked"
+        ],
+        [
+          "一个",
+          "mask"
+        ],
+        [
+          "typeerror"
+        ],
+        [
+          "14995"
+        ],
+        [
+          "死代码"
+        ],
+        [
+          "reintroduc"
+        ]
       ]
     },
     {
       "id": "test-misses-masked-unmasked-combo",
+      "kind": "test",
+      "required": true,
       "severity": "medium",
+      "blocksMerge": false,
       "summary": "The new test only exercises the no-second-operand path (which still works) and never the masked+unmasked combination that breaks.",
       "expectedReasoning": "operand=None returns self.mask under the new branch, so the added test passes; the actually-broken case (operand present, mask None) is untested, so CI stays green.",
       "acceptableFix": "Add an arithmetic test between a masked and an unmasked NDData and assert the result mask equals self's mask (no crash).",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 28,
+          "endLine": 28,
+          "lineIncludes": "+def test_arithmetic_mask_no_second_operand():"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "组合"
+          ],
+          [
+            "测试",
+            "operand",
+            "mask"
+          ],
+          [
+            "test",
+            "unmasked"
+          ],
+          [
+            "test",
+            "without_mask"
+          ],
+          [
+            "未覆盖"
+          ],
+          [
+            "only",
+            "operand",
+            "none"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "组合"],
-        ["测试", "operand", "mask"],
-        ["test", "unmasked"],
-        ["test", "without_mask"],
-        ["未覆盖"],
-        ["only", "operand", "none"]
+        [
+          "测试",
+          "组合"
+        ],
+        [
+          "测试",
+          "operand",
+          "mask"
+        ],
+        [
+          "test",
+          "unmasked"
+        ],
+        [
+          "test",
+          "without_mask"
+        ],
+        [
+          "未覆盖"
+        ],
+        [
+          "only",
+          "operand",
+          "none"
+        ]
       ]
     }
   ],
   "optionalFindings": [
     {
       "id": "conditions-not-equivalent",
+      "kind": "defect",
+      "required": false,
       "severity": "medium",
+      "blocksMerge": true,
       "summary": "`operand is None` and `operand.mask is None` are not equivalent; the PR's 'just clearer' framing hides a semantic change.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 12,
+          "endLine": 12,
+          "lineIncludes": "-        elif operand.mask is None:"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "不等价"
+          ],
+          [
+            "语义",
+            "改变"
+          ],
+          [
+            "not equivalent"
+          ],
+          [
+            "different",
+            "state"
+          ]
+        ],
+        "evidence": [
+          [
+            "不等价"
+          ]
+        ],
+        "impact": [
+          [
+            "different",
+            "state"
+          ]
+        ],
+        "fix": [
+          [
+            "不等价"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["不等价"],
-        ["语义", "改变"],
-        ["not equivalent"],
-        ["different", "state"]
+        [
+          "不等价"
+        ],
+        [
+          "语义",
+          "改变"
+        ],
+        [
+          "not equivalent"
+        ],
+        [
+          "different",
+          "state"
+        ]
       ]
     }
   ],
   "disallowedConclusions": [
-    "The rewrite is an equivalent, clearer form and can be merged.",
-    "It can be merged because the added no-second-operand test passes.",
-    "This matches the upstream fix for gh-14995 (it is the exact reverse)."
+    {
+      "id": "disallowed-01",
+      "description": "The rewrite is an equivalent, clearer form and can be merged.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "equivalent",
+          "rewrite"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "It can be merged because the added no-second-operand test passes.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "no-second-operand",
+          "merged"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-03",
+      "description": "This matches the upstream fix for gh-14995 (it is the exact reverse).",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "upstream",
+          "gh-14995"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

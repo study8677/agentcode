@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { TopNav } from "@/components/layout/TopNav";
 import { ActivityPanel } from "@/components/problems/ActivityPanel";
@@ -10,6 +10,7 @@ import { DailyChallengeCard } from "@/components/problems/DailyChallengeCard";
 import { ProblemList } from "@/components/problems/ProblemList";
 import { ProblemStatsStrip } from "@/components/problems/ProblemStatsStrip";
 import { ProblemToolbar } from "@/components/problems/ProblemToolbar";
+import { ReviewProfileCard, type ReviewProfileData } from "@/components/problems/ReviewProfileCard";
 import { TopicSidebar } from "@/components/problems/TopicSidebar";
 import type { Challenge, PracticeStats } from "@/lib/types/problem";
 
@@ -20,8 +21,42 @@ type PracticeHomeProps = {
 
 export function PracticeHome({ challenges, practiceStats }: PracticeHomeProps) {
   const [language, setLanguage] = useState<Language>("zh");
+  const [profile, setProfile] = useState<ReviewProfileData | null>(null);
+  const [acceptanceRates, setAcceptanceRates] = useState<Record<string, number>>({});
   const labels = copy[language];
-  const firstChallengeHref = challenges[0]?.href ?? "#";
+  const liveStats = profile
+    ? { ...practiceStats, reviewProgress: profile.progress.finalized }
+    : practiceStats;
+  const firstChallengeHref = profile?.nextChallenge?.href ?? challenges[0]?.href ?? "#";
+  const liveChallenges = challenges.map((challenge) => {
+    const slug = challenge.href?.split("/").pop() ?? "";
+    return { ...challenge, acceptanceRate: acceptanceRates[slug] ?? null };
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/review/profile", { credentials: "same-origin" })
+      .then((response) => response.ok ? response.json() as Promise<ReviewProfileData> : null)
+      .then((value) => {
+        if (!cancelled && value) {
+          setProfile(value);
+        }
+      })
+      .catch(() => undefined);
+    fetch("/api/review/stats")
+      .then((response) => response.ok ? response.json() as Promise<{ publishable: boolean; acceptanceRates: Record<string, number> }> : null)
+      .then((value) => {
+        if (!cancelled && value?.publishable) {
+          setAcceptanceRates(value.acceptanceRates);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>
@@ -55,18 +90,18 @@ export function PracticeHome({ challenges, practiceStats }: PracticeHomeProps) {
               </div>
             </div>
 
-            <ProblemStatsStrip stats={practiceStats} labels={labels} />
+            <ProblemStatsStrip stats={liveStats} labels={labels} />
           </div>
 
           <ProblemToolbar labels={labels} />
         </section>
 
         <div className="layout">
-          <ProblemList challenges={challenges} labels={labels} language={language} />
+          <ProblemList challenges={liveChallenges} labels={labels} language={language} />
 
           <aside className="side">
-            <DailyChallengeCard stats={practiceStats} labels={labels} />
-            <ActivityPanel labels={labels} />
+            <DailyChallengeCard stats={liveStats} labels={labels} />
+            {profile ? <ReviewProfileCard language={language} profile={profile} /> : <ActivityPanel labels={labels} />}
             <TopicSidebar labels={labels} />
           </aside>
         </div>

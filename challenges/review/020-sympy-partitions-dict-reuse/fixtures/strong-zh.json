@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "评审结论：存在阻塞问题，请求修改。",
+    "findings": [
+      {
+        "id": "zh-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 4,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "The patch copies dictionaries only for size=False yields. size=True copy size=True dict mutable dict same object 可变 字典 两个 分支",
+        "evidence": "Users of size=True still receive tuples containing the same mutable dictionary object, so saved results are corrupted by later iterations. containing dictionary",
+        "impact": "Users of size=True still receive tuples containing the same mutable dictionary object, so saved results are corrupted by later iterations. containing dictionary",
+        "fix": "Return ms.copy() in every yield branch that exposes the partition dictionary, including size=True. dictionary partition"
+      }
+    ],
+    "tests": "The added test checks only sizes, not dictionary object identity or contents over time. The regression can survive while sizes remain correct. size dict id dict object identity 测试 字典 内容 稳定 unique ids"
+  }
+}

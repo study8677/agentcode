@@ -1,68 +1,354 @@
 {
+  "schemaVersion": 2,
   "canMerge": true,
   "mergeRationale": "The patch swaps the newline-tolerant $ anchor for \\Z in both username validators, so trailing-newline usernames are rejected while all previously valid input is untouched, and it adds negative regression tests that fail on the old regex.",
   "requiredFindings": [
     {
       "id": "z-anchor-matches-absolute-end",
+      "kind": "verification",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "In Python regex, $ can match before a trailing newline while \\Z only matches at the absolute end of the string, so 'joe\\n' now fails validation.",
       "expectedReasoning": "re.search(r'^[\\w.@+-]+$', 'joe\\n') matches because $ tolerates one final newline; with \\Z there is no match, so RegexValidator raises ValidationError. This is exactly the reported bug and the minimal fix.",
       "acceptableFix": "No change needed (verify by running 'joe\\n' through both validators before and after the patch).",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 10,
+          "endLine": 10,
+          "lineIncludes": "+    regex = r'^[\\w.@+-]+\\Z'"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "\\Z"
+          ],
+          [
+            "换行",
+            "锚"
+          ],
+          [
+            "末尾",
+            "换行"
+          ],
+          [
+            "$",
+            "newline"
+          ],
+          [
+            "trailing",
+            "newline"
+          ],
+          [
+            "newline",
+            "anchor"
+          ]
+        ],
+        "evidence": [
+          [
+            "validationerror",
+            "regexvalidator"
+          ]
+        ],
+        "impact": [
+          [
+            "validationerror",
+            "regexvalidator"
+          ]
+        ],
+        "fix": [
+          [
+            "validators",
+            "running"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["\\Z"],
-        ["换行", "锚"],
-        ["末尾", "换行"],
-        ["$", "newline"],
-        ["trailing", "newline"],
-        ["newline", "anchor"]
+        [
+          "\\Z"
+        ],
+        [
+          "换行",
+          "锚"
+        ],
+        [
+          "末尾",
+          "换行"
+        ],
+        [
+          "$",
+          "newline"
+        ],
+        [
+          "trailing",
+          "newline"
+        ],
+        [
+          "newline",
+          "anchor"
+        ]
       ]
     },
     {
       "id": "valid-usernames-unaffected",
+      "kind": "verification",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "The character class and the ^ start anchor are unchanged; the only behavioral change is rejecting values that matched solely because of $'s newline tolerance.",
       "expectedReasoning": "Without re.MULTILINE, ^ already anchors at the true string start and [\\w.@+-]+ is untouched, so every previously valid username still passes; there is no regression for existing users.",
       "acceptableFix": "No change needed (spot-check normal usernames such as 'joe', 'jean-marc', 'René' against both validators).",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 10,
+          "endLine": 10,
+          "lineIncludes": "+    regex = r'^[\\w.@+-]+\\Z'"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "字符集",
+            "不变"
+          ],
+          [
+            "合法",
+            "通过"
+          ],
+          [
+            "正常",
+            "用户名"
+          ],
+          [
+            "character class",
+            "unchanged"
+          ],
+          [
+            "valid",
+            "pass"
+          ],
+          [
+            "valid",
+            "unaffected"
+          ]
+        ],
+        "evidence": [
+          [
+            "re.multiline",
+            "previously"
+          ]
+        ],
+        "impact": [
+          [
+            "re.multiline",
+            "previously"
+          ]
+        ],
+        "fix": [
+          [
+            "spot-check",
+            "validators"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["字符集", "不变"],
-        ["合法", "通过"],
-        ["正常", "用户名"],
-        ["character class", "unchanged"],
-        ["valid", "pass"],
-        ["valid", "unaffected"]
+        [
+          "字符集",
+          "不变"
+        ],
+        [
+          "合法",
+          "通过"
+        ],
+        [
+          "正常",
+          "用户名"
+        ],
+        [
+          "character class",
+          "unchanged"
+        ],
+        [
+          "valid",
+          "pass"
+        ],
+        [
+          "valid",
+          "unaffected"
+        ]
       ]
     },
     {
       "id": "both-validators-negative-tests",
+      "kind": "test",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "Both ASCIIUsernameValidator and UnicodeUsernameValidator get the same anchor change, and each gains a trailing-newline entry in the invalid_usernames regression tests.",
       "expectedReasoning": "The two classes share the same pattern and Unicode is the default validator; fixing only one would leave the bug half-open. The new entries assert ValidationError and fail on the old regex, so they are trustworthy regression tests.",
       "acceptableFix": "No change needed (confirm both regex changes and both test additions are present).",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 34,
+          "endLine": 34,
+          "lineIncludes": "v = validators.UnicodeUsernameValidator()"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "两个",
+            "validator"
+          ],
+          [
+            "两个",
+            "校验"
+          ],
+          [
+            "ASCII",
+            "Unicode"
+          ],
+          [
+            "both",
+            "validator"
+          ],
+          [
+            "invalid_usernames"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["两个", "validator"],
-        ["两个", "校验"],
-        ["ASCII", "Unicode"],
-        ["both", "validator"],
-        ["invalid_usernames"]
+        [
+          "两个",
+          "validator"
+        ],
+        [
+          "两个",
+          "校验"
+        ],
+        [
+          "ASCII",
+          "Unicode"
+        ],
+        [
+          "both",
+          "validator"
+        ],
+        [
+          "invalid_usernames"
+        ]
       ]
     }
   ],
   "optionalFindings": [
     {
       "id": "start-anchor-style-nit",
+      "kind": "verification",
+      "required": false,
       "severity": "low",
+      "blocksMerge": false,
       "summary": "Style nit: \\A would mirror \\Z at the start of the pattern, but ^ is equivalent here because re.MULTILINE is not set; not a blocker.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 9,
+          "endLine": 9,
+          "lineIncludes": "-    regex = r'^[\\w.@+-]+$'"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "\\A"
+          ],
+          [
+            "MULTILINE"
+          ],
+          [
+            "对称"
+          ],
+          [
+            "symmetry"
+          ]
+        ],
+        "evidence": [
+          [
+            "\\A"
+          ]
+        ],
+        "impact": [
+          [
+            "symmetry"
+          ]
+        ],
+        "fix": [
+          [
+            "\\A"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["\\A"],
-        ["MULTILINE"],
-        ["对称"],
-        ["symmetry"]
+        [
+          "\\A"
+        ],
+        [
+          "MULTILINE"
+        ],
+        [
+          "对称"
+        ],
+        [
+          "symmetry"
+        ]
       ]
     }
   ],
   "disallowedConclusions": [
-    "Reject because \\Z still permits a trailing newline — that is Perl/PCRE \\Z semantics; Python's \\Z matches only at the absolute end of the string (like \\z elsewhere).",
-    "Reject because the input should be stripped/normalized instead of rejected — a validator must judge the submitted value, not silently rewrite it.",
-    "Reject because ^ must also be changed to \\A to make the fix complete — without re.MULTILINE the two are equivalent, so this is a style preference, not a blocker."
+    {
+      "id": "disallowed-01",
+      "description": "Reject because \\Z still permits a trailing newline — that is Perl/PCRE \\Z semantics; Python's \\Z matches only at the absolute end of the string (like \\z elsewhere).",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "semantics",
+          "elsewhere"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "Reject because the input should be stripped/normalized instead of rejected — a validator must judge the submitted value, not silently rewrite it.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "normalized",
+          "validator"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-03",
+      "description": "Reject because ^ must also be changed to \\A to make the fix complete — without re.MULTILINE the two are equivalent, so this is a style preference, not a blocker.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "re.multiline",
+          "equivalent"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

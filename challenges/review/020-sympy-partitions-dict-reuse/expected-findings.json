@@ -1,41 +1,198 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "The patch copies dictionaries only in the plain-yield mode; size=True still exposes the reused mutable dictionary inside each tuple.",
   "requiredFindings": [
     {
       "id": "size-true-still-reuses-dicts",
+      "kind": "defect",
+      "required": true,
       "severity": "high",
+      "blocksMerge": true,
       "summary": "The patch copies dictionaries only for size=False yields.",
       "expectedReasoning": "Users of size=True still receive tuples containing the same mutable dictionary object, so saved results are corrupted by later iterations.",
       "acceptableFix": "Return ms.copy() in every yield branch that exposes the partition dictionary, including size=True.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 4,
+          "endLine": 4,
+          "lineIncludes": "yield sum(ms.values()), ms"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "size=True",
+            "copy"
+          ],
+          [
+            "size=True",
+            "dict"
+          ],
+          [
+            "mutable",
+            "dict"
+          ],
+          [
+            "same object"
+          ],
+          [
+            "可变",
+            "字典"
+          ],
+          [
+            "两个",
+            "分支"
+          ]
+        ],
+        "evidence": [
+          [
+            "containing",
+            "dictionary"
+          ]
+        ],
+        "impact": [
+          [
+            "containing",
+            "dictionary"
+          ]
+        ],
+        "fix": [
+          [
+            "dictionary",
+            "partition"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["size=True", "copy"],
-        ["size=True", "dict"],
-        ["mutable", "dict"],
-        ["same object"],
-        ["可变", "字典"],
-        ["两个", "分支"]
+        [
+          "size=True",
+          "copy"
+        ],
+        [
+          "size=True",
+          "dict"
+        ],
+        [
+          "mutable",
+          "dict"
+        ],
+        [
+          "same object"
+        ],
+        [
+          "可变",
+          "字典"
+        ],
+        [
+          "两个",
+          "分支"
+        ]
       ]
     },
     {
       "id": "test-misses-object-independence-for-size-mode",
+      "kind": "test",
+      "required": true,
       "severity": "medium",
+      "blocksMerge": false,
       "summary": "The added test checks only sizes, not dictionary object identity or contents over time.",
       "expectedReasoning": "The regression can survive while sizes remain correct.",
       "acceptableFix": "Assert unique dict ids and stable copied dict contents for both size modes.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 17,
+          "endLine": 17,
+          "lineIncludes": "+    assert [size for size, _ in result] == [3, 4, 5, 6]"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "size",
+            "dict"
+          ],
+          [
+            "id",
+            "dict"
+          ],
+          [
+            "object",
+            "identity"
+          ],
+          [
+            "测试",
+            "字典"
+          ],
+          [
+            "内容",
+            "稳定"
+          ],
+          [
+            "unique",
+            "ids"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["size", "dict"],
-        ["id", "dict"],
-        ["object", "identity"],
-        ["测试", "字典"],
-        ["内容", "稳定"],
-        ["unique", "ids"]
+        [
+          "size",
+          "dict"
+        ],
+        [
+          "id",
+          "dict"
+        ],
+        [
+          "object",
+          "identity"
+        ],
+        [
+          "测试",
+          "字典"
+        ],
+        [
+          "内容",
+          "稳定"
+        ],
+        [
+          "unique",
+          "ids"
+        ]
       ]
     }
   ],
   "optionalFindings": [],
   "disallowedConclusions": [
-    "The patch can be merged because the size=True test passes.",
-    "Only size=False needs copies because size=True already includes the size separately."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because the size=True test passes.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "merged",
+          "passes"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "Only size=False needs copies because size=True already includes the size separately.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "separately",
+          "includes"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

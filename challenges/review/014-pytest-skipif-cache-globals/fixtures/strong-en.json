@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Review decision: request changes for the blocking finding below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 32,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "The cache key is only the expression string and ignores the globals used to evaluate it. cache globals 缓存 全局 缓存 模块 module globals skip module key context",
+        "evidence": "Two modules can both use skipif(\"skip\") with different skip variables, causing pytest to skip or run the wrong test depending on collection order. collection different",
+        "impact": "Two modules can both use skipif(\"skip\") with different skip variables, causing pytest to skip or run the wrong test depending on collection order. collection different",
+        "fix": "Do not cache evaluated boolean results globally; cache compiled expressions only or include the evaluation context safely. expressions evaluation"
+      }
+    ],
+    "tests": "The test covers only one module and one value. It cannot catch cross-module cache pollution because repeated evaluation inside one module has the same globals each time. two modules 两个模块 cross-module 不同 模块 相反 值 collection order"
+  }
+}

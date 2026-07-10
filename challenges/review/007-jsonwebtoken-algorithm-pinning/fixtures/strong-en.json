@@ -1,0 +1,35 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Review decision: request changes for the blocking finding below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 13,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch removes the RS256 algorithms allowlist and lets the token choose the verification algorithm. algorithm 算法 alg:none undefined key undefined secret fail closed fail open pin confusion 混淆",
+        "evidence": "Authentication must fail closed and the server must decide which algorithms are acceptable. Removing algorithms: ['RS256'] changes the verifier from a pinned asymmetric-token contract to whatever jwt.verify derives from the token/header and supplied key, so issuer/audience checks no longer prove the signature was verified under the intended algorithm. asymmetric-token authentication",
+        "impact": "Authentication must fail closed and the server must decide which algorithms are acceptable. Removing algorithms: ['RS256'] changes the verifier from a pinned asymmetric-token contract to whatever jwt.verify derives from the token/header and supplied key, so issuer/audience checks no longer prove the signature was verified under the intended algorithm. asymmetric-token authentication",
+        "fix": "Keep algorithms pinned to RS256 and use the configured public key for production tokens; if local development needs a different key, make that an explicit, separately pinned configuration. configuration development"
+      },
+      {
+        "id": "en-2",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 20,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "process.env.JWT_SECRET || undefined turns a missing required key into a request-time verifier input instead of a startup failure. undefined key undefined secret jwt_secret missing fail closed fail open startup 启动 配置",
+        "evidence": "Required authentication configuration should be validated when the process starts. Passing undefined into jwt.verify delays a must-fail configuration error until token verification and creates a fail-open risk at the auth boundary. authentication configuration",
+        "impact": "Required authentication configuration should be validated when the process starts. Passing undefined into jwt.verify delays a must-fail configuration error until token verification and creates a fail-open risk at the auth boundary. authentication configuration",
+        "fix": "Validate required keys at startup and refuse to start or reject all auth requests when the key configuration is missing. configuration validate"
+      }
+    ],
+    "tests": "The added test only covers a dev happy path, not malicious or misconfigured tokens. Auth changes need negative tests: wrong algorithm, missing key, wrong issuer and wrong audience, plus a startup-configuration test. 测试 负向 negative test test wrong missing test 缺 测试"
+  }
+}

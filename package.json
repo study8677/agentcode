@@ -2,28 +2,44 @@
   "name": "agentcode",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.11.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "challenge:validate": "node scripts/challenges/validate.mjs",
+    "challenge:generate": "node scripts/challenges/generate.mjs",
+    "challenge:fixtures": "node scripts/challenges/fixtures.mjs",
+    "review:purge": "tsx scripts/purge-review-data.ts",
+    "task:worker": "tsx task-worker/main.ts",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy"
   },
   "dependencies": {
-    "@prisma/client": "^7.2.0",
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
     "next": "^16.2.9",
+    "next-auth": "5.0.0-beta.31",
+    "pg": "8.22.0",
     "react": "^19.2.1",
-    "react-dom": "^19.2.1"
+    "react-dom": "^19.2.1",
+    "tsx": "4.23.0",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.2.9",
-    "prisma": "^7.2.0",
-    "typescript": "^5.9.3"
+    "prisma": "7.8.0",
+    "typescript": "^5.9.3",
+    "vitest": "4.1.10"
   }
 }

@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 4,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch allows users with only change permission to access Save as new. save_as_new add add permission change permission 越权 创建 创建 权限 create permission",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

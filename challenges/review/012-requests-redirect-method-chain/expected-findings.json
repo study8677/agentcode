@@ -1,52 +1,263 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "The refactor removes the per-hop request chaining, so method/body changes made by one redirect hop (e.g. a 303) are silently discarded on the next hop.",
   "requiredFindings": [
     {
       "id": "redirect-chain-uses-original-method",
+      "kind": "defect",
+      "required": true,
       "severity": "high",
+      "blocksMerge": true,
       "summary": "The patch keeps using the original request as the base for every redirect hop.",
       "expectedReasoning": "After a 303 changes POST to GET, a later 307 should preserve GET, not revive the original POST (and its body).",
       "acceptableFix": "Keep updating the current request after each hop (req = prepared_request) and use that as the base for the next redirect.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 21,
+          "endLine": 21,
+          "lineIncludes": "-            req = prepared_request"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "303",
+            "307"
+          ],
+          [
+            "原始",
+            "方法"
+          ],
+          [
+            "原始",
+            "post"
+          ],
+          [
+            "original",
+            "method"
+          ],
+          [
+            "revive",
+            "post"
+          ]
+        ],
+        "evidence": [
+          [
+            "preserve",
+            "original"
+          ]
+        ],
+        "impact": [
+          [
+            "preserve",
+            "original"
+          ]
+        ],
+        "fix": [
+          [
+            "prepared_request",
+            "updating"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["303", "307"],
-        ["原始", "方法"],
-        ["原始", "post"],
-        ["original", "method"],
-        ["revive", "post"]
+        [
+          "303",
+          "307"
+        ],
+        [
+          "原始",
+          "方法"
+        ],
+        [
+          "原始",
+          "post"
+        ],
+        [
+          "original",
+          "method"
+        ],
+        [
+          "revive",
+          "post"
+        ]
       ]
     },
     {
       "id": "missing-mixed-status-chain-test",
+      "kind": "test",
+      "required": true,
       "severity": "medium",
+      "blocksMerge": false,
       "summary": "The new test does not model POST -> 303 -> GET -> 307; it asserts something that was already true before the patch.",
       "expectedReasoning": "Rebinding a local variable never mutated the caller's request, so the new assertion passes on the old code too. Single-hop behavior can pass while the multi-hop chain is wrong.",
       "acceptableFix": "Add a redirect-chain test with 303 followed by 307 and assert the final method is GET.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 39,
+          "endLine": 39,
+          "lineIncludes": "+        assert req.method == 'POST'"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "303",
+            "307"
+          ],
+          [
+            "测试",
+            "多跳"
+          ],
+          [
+            "test",
+            "chain"
+          ],
+          [
+            "test",
+            "307"
+          ],
+          [
+            "测试",
+            "链"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "303", "307"],
-        ["测试", "多跳"],
-        ["test", "chain"],
-        ["test", "307"],
-        ["测试", "链"]
+        [
+          "测试",
+          "303",
+          "307"
+        ],
+        [
+          "测试",
+          "多跳"
+        ],
+        [
+          "test",
+          "chain"
+        ],
+        [
+          "test",
+          "307"
+        ],
+        [
+          "测试",
+          "链"
+        ]
       ]
     }
   ],
   "optionalFindings": [
     {
       "id": "claimed-side-effect-does-not-exist",
+      "kind": "defect",
+      "required": false,
       "severity": "low",
+      "blocksMerge": true,
       "summary": "The side effect the PR claims to remove does not exist: rebinding the local name req never mutated the caller's request object.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 21,
+          "endLine": 21,
+          "lineIncludes": "-            req = prepared_request"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "局部",
+            "绑定"
+          ],
+          [
+            "局部变量"
+          ],
+          [
+            "rebind"
+          ],
+          [
+            "local",
+            "variable"
+          ],
+          [
+            "副作用",
+            "不存在"
+          ]
+        ],
+        "evidence": [
+          [
+            "局部",
+            "绑定"
+          ]
+        ],
+        "impact": [
+          [
+            "副作用",
+            "不存在"
+          ]
+        ],
+        "fix": [
+          [
+            "局部",
+            "绑定"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["局部", "绑定"],
-        ["局部变量"],
-        ["rebind"],
-        ["local", "variable"],
-        ["副作用", "不存在"]
+        [
+          "局部",
+          "绑定"
+        ],
+        [
+          "局部变量"
+        ],
+        [
+          "rebind"
+        ],
+        [
+          "local",
+          "variable"
+        ],
+        [
+          "副作用",
+          "不存在"
+        ]
       ]
     }
   ],
   "disallowedConclusions": [
-    "The patch can be merged because the added regression test passes.",
-    "Copying from the original request on every hop is safe because PreparedRequest.copy() is a deep copy."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because the added regression test passes.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "regression",
+          "merged"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "Copying from the original request on every hop is safe because PreparedRequest.copy() is a deep copy.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "preparedrequest.copy(",
+          "original"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

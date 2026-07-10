@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "host ssrf host 内网 host 伪造 forged host host fetch host 可信 attacker-controlled x-forwarded-proto attacker-controlled x-forwarded-proto server-side canonical 测试 host 测试 x-forwarded-host test host test forged 测试 伪造",
+        "evidence": "host ssrf host 内网 host 伪造 forged host host fetch host 可信 attacker-controlled x-forwarded-proto attacker-controlled x-forwarded-proto server-side canonical 测试 host 测试 x-forwarded-host test host test forged 测试 伪造",
+        "impact": "host ssrf host 内网 host 伪造 forged host host fetch host 可信 attacker-controlled x-forwarded-proto attacker-controlled x-forwarded-proto server-side canonical 测试 host 测试 x-forwarded-host test host test forged 测试 伪造",
+        "fix": "host ssrf host 内网 host 伪造 forged host host fetch host 可信 attacker-controlled x-forwarded-proto attacker-controlled x-forwarded-proto server-side canonical 测试 host 测试 x-forwarded-host test host test forged 测试 伪造"
+      }
+    ],
+    "tests": "host ssrf host 内网 host 伪造 forged host host fetch host 可信 attacker-controlled x-forwarded-proto attacker-controlled x-forwarded-proto server-side canonical 测试 host 测试 x-forwarded-host test host test forged 测试 伪造"
+  }
+}

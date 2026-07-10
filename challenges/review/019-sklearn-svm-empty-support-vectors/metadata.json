@@ -133,5 +133,11 @@
       "nit",
       "上游"
     ]
-  }
+  },
+  "skills": [
+    "error-boundary",
+    "false-positive-control",
+    "test-quality",
+    "maintainability"
+  ]
 }

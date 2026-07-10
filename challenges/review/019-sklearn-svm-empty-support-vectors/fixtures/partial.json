@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 19,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "Confirm the empty case crashed because dual_coef_indptr uses np.arange with step size/n_class == 0, and the n_SV == 0 guard short-circuits exactly that. arange 0 步长 0 step zero n_sv 空 indptr 空 zerodivision",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

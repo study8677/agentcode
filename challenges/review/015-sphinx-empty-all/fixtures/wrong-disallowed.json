@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "The patch cannot be merged because hiding members for an empty __all__ is a breaking change that needs a new option or a deprecation cycle.",
+    "findings": [],
+    "tests": ""
+  }
+}

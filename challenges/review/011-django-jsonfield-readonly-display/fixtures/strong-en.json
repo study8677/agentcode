@@ -1,0 +1,46 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "Review decision: approve after completing the checks below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 11,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "field.get_prep_value() serializes the value with json.dumps and the field's encoder, so readonly display shows valid JSON (double quotes) instead of Python repr. get_prep_value json.dumps 双引号 合法 JSON valid json 序列化 JSON",
+        "evidence": "JSONField.get_prep_value returns json.dumps(value, cls=self.encoder); {'a': {'b': 'c'}} renders as {\"a\": {\"b\": \"c\"}}, matching the editable widget's output and respecting a custom encoder, which a direct json.dumps call would not. jsonfield.get_prep_value json.dumps(value",
+        "impact": "JSONField.get_prep_value returns json.dumps(value, cls=self.encoder); {'a': {'b': 'c'}} renders as {\"a\": {\"b\": \"c\"}}, matching the editable widget's output and respecting a custom encoder, which a direct json.dumps call would not. jsonfield.get_prep_value json.dumps(value",
+        "fix": "No change needed (verify with a nested dict and confirm double-quoted JSON output). double-quoted confirm"
+      },
+      {
+        "id": "en-2",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 15,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "Values that json.dumps cannot serialize fall back to display_for_value via the TypeError handler instead of breaking the admin change page. TypeError 回退 fallback 无法序列化 不可序列化 serialize fail unserializable",
+        "evidence": "A dict with tuple keys raises TypeError inside json.dumps; the patch catches it and renders the generic string form, and the invalid-JSON test case pins this behavior deliberately. invalid-json deliberately",
+        "impact": "A dict with tuple keys raises TypeError inside json.dumps; the patch catches it and renders the generic string form, and the invalid-JSON test case pins this behavior deliberately. invalid-json deliberately",
+        "fix": "No change needed (verify with {('a', 'b'): 'c'} and confirm the page renders instead of raising). confirm renders"
+      },
+      {
+        "id": "en-3",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 9,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "The new branch only affects truthy JSONField values: None still hits the earlier empty-value branch, and every other field type keeps its existing display path. None empty None 空值 其他 字段 other field isinstance JSONField 影响 范围 scope",
+        "evidence": "The elif sits after the None check and the FileField branch and is guarded by isinstance(field, models.JSONField) and value, so no other field's rendering changes; the null-display test addition covers the None case. isinstance(field models.jsonfield",
+        "impact": "The elif sits after the None check and the FileField branch and is guarded by isinstance(field, models.JSONField) and value, so no other field's rendering changes; the null-display test addition covers the None case. isinstance(field models.jsonfield",
+        "fix": "No change needed (confirm None renders empty_value_display and non-JSONField paths are untouched). empty_value_display non-jsonfield"
+      }
+    ],
+    "tests": "Test analysis: 嵌套 nested invalid tuple subTest null"
+  }
+}

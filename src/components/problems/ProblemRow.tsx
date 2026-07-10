@@ -67,7 +67,9 @@ export function ProblemRow({ challenge, labels, language }: ProblemRowProps) {
       </td>
       <td>
         <span className="mobile-label">{labels.tableAcceptance}</span>
-        <span className="mono">{challenge.acceptanceRate.toFixed(1)}%</span>
+        <span className="mono">
+          {challenge.acceptanceRate === null ? (language === "zh" ? "样本不足" : "Not enough data") : `${challenge.acceptanceRate.toFixed(1)}%`}
+        </span>
       </td>
       <td>
         <span className="mobile-label">{labels.tableStatus}</span>

@@ -135,5 +135,11 @@
       "数据结构",
       "索引"
     ]
-  }
+  },
+  "skills": [
+    "security-boundary",
+    "state-semantics",
+    "test-quality",
+    "remediation"
+  ]
 }

@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 13,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch adds a string blacklist for one domain value while the domain/path/key index stays an ordinary object. object.create map 普通对象 数据结构 嵌套 constructor",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

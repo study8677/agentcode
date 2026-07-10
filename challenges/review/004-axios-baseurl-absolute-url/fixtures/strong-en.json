@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Review decision: request changes for the blocking finding below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 11,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch blocks only protocol-relative URLs and still permits http:// or https:// absolute URLs. https:// 绝对 absolute baseurl http 绕过 绝对 覆盖 absolute authorization scheme bypass",
+        "evidence": "http://evil.test and https://evil.test are also absolute URLs that make Axios ignore baseURL, so a caller-controlled absolute URL sends the internal Authorization header to an attacker host (credential leak) or an internal address (SSRF). caller-controlled authorization",
+        "impact": "http://evil.test and https://evil.test are also absolute URLs that make Axios ignore baseURL, so a caller-controlled absolute URL sends the internal Authorization header to an attacker host (credential leak) or an internal address (SSRF). caller-controlled authorization",
+        "fix": "Parse the final URL and reject any origin outside the configured baseURL, or disable absolute URLs for this client (e.g. allowAbsoluteUrls: false). allowabsoluteurls configured"
+      }
+    ],
+    "tests": "Tests cover //evil.test but not https://evil.test or http://evil.test. The vulnerable absolute-URL path is still untested, and nothing asserts the Authorization header is not sent off-host. 测试 https://evil test absolute 测试 绝对 test https 测试 authorization"
+  }
+}

@@ -135,5 +135,11 @@
       "无需修改",
       "lgtm"
     ]
-  }
+  },
+  "skills": [
+    "behavior-contract",
+    "compatibility",
+    "false-positive-control",
+    "test-quality"
+  ]
 }

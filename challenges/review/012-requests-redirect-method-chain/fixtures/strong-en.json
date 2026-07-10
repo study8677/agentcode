@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Review decision: request changes for the blocking finding below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 21,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "The patch keeps using the original request as the base for every redirect hop. 303 307 原始 方法 原始 post original method revive post",
+        "evidence": "After a 303 changes POST to GET, a later 307 should preserve GET, not revive the original POST (and its body). preserve original",
+        "impact": "After a 303 changes POST to GET, a later 307 should preserve GET, not revive the original POST (and its body). preserve original",
+        "fix": "Keep updating the current request after each hop (req = prepared_request) and use that as the base for the next redirect. prepared_request updating"
+      }
+    ],
+    "tests": "The new test does not model POST -> 303 -> GET -> 307; it asserts something that was already true before the patch. Rebinding a local variable never mutated the caller's request, so the new assertion passes on the old code too. Single-hop behavior can pass while the multi-hop chain is wrong. 测试 303 307 测试 多跳 test chain test 307 测试 链"
+  }
+}

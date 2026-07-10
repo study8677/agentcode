@@ -1,40 +1,190 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "The patch calls np.asarray() on DataArray payloads, which eagerly materializes dask-backed data and drops chunk semantics during update.",
   "requiredFindings": [
     {
       "id": "dask-data-eagerly-materialized",
+      "kind": "defect",
+      "required": true,
       "severity": "high",
+      "blocksMerge": true,
       "summary": "The patch calls np.asarray() on a DataArray, forcing dask-backed data to compute eagerly.",
       "expectedReasoning": "Dataset.update should preserve chunking and lazy evaluation; materializing can be slow, memory-heavy, and semantically wrong.",
       "acceptableFix": "Use DataArray.data when constructing the Variable, or warn/error without computing values.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 6,
+          "endLine": 6,
+          "lineIncludes": "+            obj = (obj[0], np.asarray(obj[1]), *obj[2:])"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "np.asarray",
+            "dask"
+          ],
+          [
+            "eager",
+            "dask"
+          ],
+          [
+            "lazy",
+            "chunk"
+          ],
+          [
+            "惰性",
+            "计算"
+          ],
+          [
+            "chunk",
+            "丢失"
+          ],
+          [
+            "DataArray.data"
+          ]
+        ],
+        "evidence": [
+          [
+            "dataset.update",
+            "materializing"
+          ]
+        ],
+        "impact": [
+          [
+            "dataset.update",
+            "materializing"
+          ]
+        ],
+        "fix": [
+          [
+            "dataarray.data",
+            "constructing"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["np.asarray", "dask"],
-        ["eager", "dask"],
-        ["lazy", "chunk"],
-        ["惰性", "计算"],
-        ["chunk", "丢失"],
-        ["DataArray.data"]
+        [
+          "np.asarray",
+          "dask"
+        ],
+        [
+          "eager",
+          "dask"
+        ],
+        [
+          "lazy",
+          "chunk"
+        ],
+        [
+          "惰性",
+          "计算"
+        ],
+        [
+          "chunk",
+          "丢失"
+        ],
+        [
+          "DataArray.data"
+        ]
       ]
     },
     {
       "id": "test-forces-values-and-misses-chunks",
+      "kind": "test",
+      "required": true,
       "severity": "medium",
+      "blocksMerge": false,
       "summary": "The test compares .values, which itself computes dask arrays.",
       "expectedReasoning": "It cannot catch the chunk-preservation regression.",
       "acceptableFix": "Assert the updated variable still has chunks and retains a dask-backed array.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 12,
+          "endLine": 12,
+          "lineIncludes": "+    assert_array_equal(ds.foo.values, chunked_da.values)"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "values",
+            "compute"
+          ],
+          [
+            "测试",
+            "values"
+          ],
+          [
+            "测试",
+            "chunk"
+          ],
+          [
+            "assert",
+            "chunks"
+          ],
+          [
+            "dask",
+            "test"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["values", "compute"],
-        ["测试", "values"],
-        ["测试", "chunk"],
-        ["assert", "chunks"],
-        ["dask", "test"]
+        [
+          "values",
+          "compute"
+        ],
+        [
+          "测试",
+          "values"
+        ],
+        [
+          "测试",
+          "chunk"
+        ],
+        [
+          "assert",
+          "chunks"
+        ],
+        [
+          "dask",
+          "test"
+        ]
       ]
     }
   ],
   "optionalFindings": [],
   "disallowedConclusions": [
-    "The patch can be merged because the updated values are equal.",
-    "np.asarray is safe here because DataArray can always be converted to NumPy."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because the updated values are equal.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "updated",
+          "merged"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "np.asarray is safe here because DataArray can always be converted to NumPy.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "np.asarray",
+          "dataarray"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

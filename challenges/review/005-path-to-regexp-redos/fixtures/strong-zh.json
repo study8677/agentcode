@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "评审结论：存在阻塞问题，请求修改。",
+    "findings": [
+      {
+        "id": "zh-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 17,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch special-cases one adjacent-parameter shape (dash separator) but does not remove the general overlapping-capture ReDoS. separator 分隔符 overlap 重叠 custom pattern 自定义 模式 still backtrack 仍 回溯",
+        "evidence": "Only token.suffix === '-' is tightened. Routes with other separators (e.g. /:a.:b, /:a_:b), custom-pattern captures, or repeat/optional modifiers still compile to overlapping ([^/]+?)<sep>([^/]+?) regexes that backtrack on long inputs and block the Node event loop. custom-pattern token.suffix",
+        "impact": "Only token.suffix === '-' is tightened. Routes with other separators (e.g. /:a.:b, /:a_:b), custom-pattern captures, or repeat/optional modifiers still compile to overlapping ([^/]+?)<sep>([^/]+?) regexes that backtrack on long inputs and block the Node event loop. custom-pattern token.suffix",
+        "fix": "Fix the compiler so every adjacent capture has an unambiguous boundary for any separator (or emit atomic/possessive-style patterns), or upgrade to a patched path-to-regexp version. possessive-style path-to-regexp"
+      }
+    ],
+    "tests": "The added test only exercises the one route shape that was fixed. It covers /:a-:b with a dash separator; other separators, custom captures and repeated params are untested, so the suite stays green while the ReDoS class remains. test only 测试 只 test separator 测试 分隔符 missing test 缺 测试"
+  }
+}

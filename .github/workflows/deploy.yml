@@ -22,7 +22,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11.11.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,21 +35,37 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .next/cache
-          key: ${{ runner.os }}-next-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-${{ hashFiles('src/**/*', 'next.config.*', 'tsconfig.json') }}
+          key: ${{ runner.os }}-next-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-${{ hashFiles('src/**/*', 'challenges/**/*', 'scripts/challenges/**/*', 'prisma/**/*', 'task-worker/**/*', 'tests/**/*', 'next.config.*', 'tsconfig.json', 'vitest.config.ts') }}
           restore-keys: |
             ${{ runner.os }}-next-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate Prisma schema
+        env:
+          DATABASE_URL: postgresql://agentcode:agentcode@127.0.0.1:5432/agentcode?schema=public
+        run: |
+          pnpm exec prisma validate
+          pnpm exec prisma generate
+
+      - name: Validate challenge assets
+        run: pnpm challenge:validate
+
+      - name: Run evaluator fixtures
+        run: pnpm challenge:fixtures
+
+      - name: Test
+        run: pnpm test
+
       - name: Typecheck
-        run: npm run typecheck
+        run: pnpm typecheck
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
   deploy:
     name: Deploy
@@ -76,4 +92,4 @@ jobs:
             -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "sudo -u agentcode /usr/bin/bash /opt/agentcode/scripts/deploy.sh"
+            "sudo /usr/bin/bash -c 'set -a; source /etc/agentcode.env; set +a; exec sudo --preserve-env=DATABASE_URL -u agentcode /usr/bin/bash /opt/agentcode/scripts/deploy.sh'"

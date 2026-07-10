@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 17,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch special-cases one adjacent-parameter shape (dash separator) but does not remove the general overlapping-capture ReDoS. separator 分隔符 overlap 重叠 custom pattern 自定义 模式 still backtrack 仍 回溯",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

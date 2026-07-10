@@ -50,7 +50,9 @@ export function TopNav({ language, labels, onLanguageChange }: TopNavProps) {
               EN
             </button>
           </div>
-          <Button>{labels.login}</Button>
+          <Button disabled title={language === "zh" ? "提交会保存在匿名训练会话中" : "Submissions are stored in an anonymous practice session"} variant="outline">
+            {labels.login}
+          </Button>
         </div>
       </div>
     </header>

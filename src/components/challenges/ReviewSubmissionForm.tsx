@@ -3,7 +3,18 @@
 import type { CSSProperties } from "react";
 
 import type { ReviewPrBrief, ReviewReveal } from "@/lib/challenges/review";
-import type { MatchedFinding, MergeDecision, ReviewDraft, ReviewFeedback, ReviewLineFinding } from "@/lib/challenges/review-submission";
+import type { MatchedFinding, MergeDecision, ReviewDraft, ReviewFeedbackV2, ReviewLineFinding } from "@/lib/challenges/review-submission";
+
+export type ReviewAttemptReceipt = {
+  id: string;
+  status: "pending" | "adjudicated";
+  adjudicationDeadline: string;
+  final?: {
+    score: number;
+    feedback: string;
+    adjudicatedAt: string;
+  } | null;
+} | null;
 
 function FindingCard({ item, kind }: { item: MatchedFinding; kind: "required" | "optional" }) {
   const { finding, matched } = item;
@@ -31,8 +42,9 @@ type ReviewSubmissionFormProps = {
   submitted: boolean;
   submitting: boolean;
   submitError: string;
-  feedback: ReviewFeedback | null;
+  feedback: ReviewFeedbackV2 | null;
   reveal: ReviewReveal | null;
+  attempt: ReviewAttemptReceipt;
   onDraftChange: (patch: Partial<ReviewDraft>) => void;
   onUpdateFinding: (findingId: string, patch: Partial<ReviewLineFinding>) => void;
   onDeleteFinding: (findingId: string) => void;
@@ -57,6 +69,7 @@ export function ReviewSubmissionForm({
   submitError,
   feedback,
   reveal,
+  attempt,
   onDraftChange,
   onUpdateFinding,
   onDeleteFinding,
@@ -71,13 +84,36 @@ export function ReviewSubmissionForm({
       <section className="review-panel" id="submit">
         <div className="review-panel-head" style={{ "--score": feedback.score } as CSSProperties}>
           <div>
-            <span className="mono">Review 质量</span>
+            <span className="mono">自动预评估</span>
             <strong>{feedback.score}/100</strong>
           </div>
           <button className="button button-outline" onClick={onBackToEdit} type="button">
             返回编辑
           </button>
         </div>
+
+        {attempt ? (
+          <div className="notice">
+            <span>
+              <strong>终审状态：{attempt.status === "adjudicated" ? "已完成" : "等待人工复核"}</strong>
+              {attempt.status === "pending" ? " · 预计 24 小时内发布最终结果" : ""}
+            </span>
+            <span className="mono">Attempt {attempt.id.slice(0, 8)}</span>
+          </div>
+        ) : (
+          <p className="form-note">当前环境未启用提交持久化，本次只展示自动预评估。</p>
+        )}
+
+        {attempt?.final ? (
+          <div className="feedback-check passed">
+            <span>终审 {attempt.final.score}/100</span>
+            <div>
+              <strong>人工最终裁决</strong>
+              <p>{attempt.final.feedback}</p>
+              {attempt.final.score !== feedback.score ? <p>自动预评估与终审相差 {Math.abs(attempt.final.score - feedback.score)} 分。</p> : null}
+            </div>
+          </div>
+        ) : null}
 
         <div className="feedback-checks">
           {feedback.checks.map((check) => (
@@ -259,18 +295,40 @@ export function ReviewSubmissionForm({
                     onChange={(event) => onUpdateFinding(finding.id, { severity: event.target.value })}
                     value={finding.severity}
                   >
-                    <option value="blocking">blocking</option>
+                    <option value="critical">critical</option>
                     <option value="high">high</option>
                     <option value="medium">medium</option>
                     <option value="low">low</option>
                     <option value="check">check</option>
                   </select>
+                  <label className="form-note">
+                    <input
+                      checked={finding.blocksMerge ?? (finding.severity === "critical" || finding.severity === "high")}
+                      onChange={(event) => onUpdateFinding(finding.id, { blocksMerge: event.target.checked })}
+                      type="checkbox"
+                    />
+                    阻塞合并
+                  </label>
                   <textarea
                     aria-label="问题描述"
                     onChange={(event) => onUpdateFinding(finding.id, { problem: event.target.value })}
                     placeholder="问题描述"
                     rows={3}
                     value={finding.problem}
+                  />
+                  <textarea
+                    aria-label="证据"
+                    onChange={(event) => onUpdateFinding(finding.id, { evidence: event.target.value })}
+                    placeholder="指出代码证据，解释为什么这一行能支持判断"
+                    rows={2}
+                    value={finding.evidence ?? ""}
+                  />
+                  <textarea
+                    aria-label="影响"
+                    onChange={(event) => onUpdateFinding(finding.id, { impact: event.target.value })}
+                    placeholder="说明受影响的输入、状态、权限或行为边界"
+                    rows={2}
+                    value={finding.impact ?? ""}
                   />
                   <textarea
                     aria-label="修复建议"

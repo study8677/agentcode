@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 12,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "self.__all__ is None exactly when the module defines no __all__ (initialized to None in __init__; inspect.getall returns None for a missing __all__; ignore_module_all keeps it None), so implicit member discovery is fully preserved for those modules. none 未定义 none 没有定义 none absent getall none 隐式 保留 implicit preserved 初始化 none",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

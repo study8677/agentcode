@@ -1,40 +1,192 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "The guard only blocks protocol-relative (//) URLs; absolute http:// and https:// URLs still override baseURL and carry the internal Authorization header to an arbitrary host.",
   "requiredFindings": [
     {
       "id": "absolute-url-still-bypasses-baseurl",
+      "kind": "defect",
+      "required": true,
       "severity": "critical",
+      "blocksMerge": true,
       "summary": "The patch blocks only protocol-relative URLs and still permits http:// or https:// absolute URLs.",
       "expectedReasoning": "http://evil.test and https://evil.test are also absolute URLs that make Axios ignore baseURL, so a caller-controlled absolute URL sends the internal Authorization header to an attacker host (credential leak) or an internal address (SSRF).",
       "acceptableFix": "Parse the final URL and reject any origin outside the configured baseURL, or disable absolute URLs for this client (e.g. allowAbsoluteUrls: false).",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 11,
+          "endLine": 11,
+          "lineIncludes": "+  if (path.startsWith('//')) {"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "https://",
+            "绝对"
+          ],
+          [
+            "absolute",
+            "baseurl"
+          ],
+          [
+            "http",
+            "绕过"
+          ],
+          [
+            "绝对",
+            "覆盖"
+          ],
+          [
+            "absolute",
+            "authorization"
+          ],
+          [
+            "scheme",
+            "bypass"
+          ]
+        ],
+        "evidence": [
+          [
+            "caller-controlled",
+            "authorization"
+          ]
+        ],
+        "impact": [
+          [
+            "caller-controlled",
+            "authorization"
+          ]
+        ],
+        "fix": [
+          [
+            "allowabsoluteurls",
+            "configured"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["https://", "绝对"],
-        ["absolute", "baseurl"],
-        ["http", "绕过"],
-        ["绝对", "覆盖"],
-        ["absolute", "authorization"],
-        ["scheme", "bypass"]
+        [
+          "https://",
+          "绝对"
+        ],
+        [
+          "absolute",
+          "baseurl"
+        ],
+        [
+          "http",
+          "绕过"
+        ],
+        [
+          "绝对",
+          "覆盖"
+        ],
+        [
+          "absolute",
+          "authorization"
+        ],
+        [
+          "scheme",
+          "bypass"
+        ]
       ]
     },
     {
       "id": "missing-absolute-url-tests",
+      "kind": "test",
+      "required": true,
       "severity": "high",
+      "blocksMerge": false,
       "summary": "Tests cover //evil.test but not https://evil.test or http://evil.test.",
       "expectedReasoning": "The vulnerable absolute-URL path is still untested, and nothing asserts the Authorization header is not sent off-host.",
       "acceptableFix": "Add tests for absolute scheme URLs, mixed-case schemes, encoded values, and header leakage.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 28,
+          "endLine": 28,
+          "lineIncludes": "+  await expect(fetchInternal('//evil.test/a')).rejects.toThrow()"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "https://evil"
+          ],
+          [
+            "test",
+            "absolute"
+          ],
+          [
+            "测试",
+            "绝对"
+          ],
+          [
+            "test",
+            "https"
+          ],
+          [
+            "测试",
+            "authorization"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "https://evil"],
-        ["test", "absolute"],
-        ["测试", "绝对"],
-        ["test", "https"],
-        ["测试", "authorization"]
+        [
+          "测试",
+          "https://evil"
+        ],
+        [
+          "test",
+          "absolute"
+        ],
+        [
+          "测试",
+          "绝对"
+        ],
+        [
+          "test",
+          "https"
+        ],
+        [
+          "测试",
+          "authorization"
+        ]
       ]
     }
   ],
   "optionalFindings": [],
   "disallowedConclusions": [
-    "The patch is safe because protocol-relative URLs are now rejected.",
-    "startsWith('//') is enough to keep requests on baseURL."
+    {
+      "id": "disallowed-01",
+      "description": "The patch is safe because protocol-relative URLs are now rejected.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "protocol-relative",
+          "rejected"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "startsWith('//') is enough to keep requests on baseURL.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "startswith(",
+          "requests"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

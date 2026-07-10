@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Review decision: request changes for the blocking finding below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 12,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "The patch disables the imaginary-coordinate safety check whenever evaluate is false. point(i 虚数 evaluate 虚数 跳过 虚数 绕过 虚数 不再 imaginary skip imaginary bypass imaginary disable",
+        "evidence": "Point(I, 2) inside evaluate(False) can bypass the ValueError, so the original coordinate contract is weakened. evaluate(false valueerror",
+        "impact": "Point(I, 2) inside evaluate(False) can bypass the ValueError, so the original coordinate contract is weakened. evaluate(false valueerror",
+        "fix": "Keep the guard active and reject only coordinates whose imaginary part is definitely non-zero, e.g. im(a).is_zero is False. im(a).is_zero coordinates"
+      }
+    ],
+    "tests": "The new test covers only the happy path. It proves Point(1, 2) under evaluate(False), but not that invalid imaginary coordinates are still rejected. 测试 虚数 测试 point(i test imaginary test point(i 负向 测试 negative test happy path"
+  }
+}

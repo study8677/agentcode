@@ -29,34 +29,34 @@
 - [x] Review Mode 题目详情页。
 - [x] diff 阅读界面。
 - [ ] patch / PR URL 提交入口。
-- [ ] 结果页：展示得分、日志、失败原因和建议。
+- [x] Review 结果区：展示 V2 预评分、逐项反馈、参考解析与人工终审状态。
 
 ## 阶段 2：题库资产格式
 
 - [x] 定义 `challenges/review/` 目录规范。
 - [x] 定义 `metadata.json` / `expected-findings.json` / `rubric.md` 资产格式。
-- [ ] 定义 Task Mode 题目模板。
+- [x] 定义 Task Mode Alpha 题目模板。
 - [x] 定义 Review Mode 题目模板。
-- [ ] 准备 1 道 Task Mode 样题。
+- [x] 准备 1 道 TypeScript/Node Task Mode Alpha 样题。
 - [x] 准备 20 道 Review Mode 题。
 
 ## 阶段 3：Task Mode 评估 runner
 
-- [ ] 接收 patch 或 PR URL。
-- [ ] 拉取初始仓库。
-- [ ] 应用用户改动。
-- [ ] 在 Docker 隔离环境中执行安装和测试。
-- [ ] 支持公开测试和隐藏测试。
-- [ ] 保存日志和评估结果。
-- [ ] 返回 `accepted` / `failed` / `needs_review`。
+- [x] 接收受限 unified diff patch；PR URL 延后。
+- [x] 创建干净的 starter workspace。
+- [x] 校验并应用用户 patch。
+- [x] 使用默认关闭的 rootless Docker worker 执行测试。
+- [x] 支持公开测试和只读挂载的隐藏测试。
+- [x] 保存截断脱敏日志和结构化评估结果。
+- [x] 返回 `accepted` / `rejected` / `error` verdict。
 
 ## 阶段 4：Review Mode rubric 评分
 
-- [ ] 定义 Review Rubric schema。
-- [ ] 支持 merge decision、finding、severity、affected files。
-- [ ] 实现必需问题匹配。
-- [ ] 实现误报和漏报扣分。
-- [ ] 支持参考答案对比和讲解。
+- [x] 定义 Review Rubric V2 schema。
+- [x] 支持 merge decision、finding、severity、blocksMerge 和物理文件/行号证据。
+- [x] 实现必需问题的一对一匹配。
+- [x] 实现结构化误报、矛盾结论扣分和漏报封顶。
+- [x] 支持参考答案对比、版本快照和讲解。
 - [ ] 后续再加入 LLM 辅助归一化，不作为唯一裁判。
 
 ## 阶段 5：首批 20 题
@@ -79,8 +79,8 @@
 
 ## 当前优先级
 
-1. 固定文档结构和产品叙事。
-2. 定义题库资产格式。
-3. 接入 Review Mode 提交记录和更完整的评分结果。
-4. 做出第一道 Task Mode 样题。
-5. 再开始搭建 runner。
+1. 用真实提交校准 Evaluator V2 与 24 小时人工终审流程。
+2. 达到至少 100 次提交、50 次人工终审和 14 天稳定性门禁。
+3. 验证能力画像、下一题推荐和第二题继续率。
+4. 完成生产 PostgreSQL、OAuth、retention timer 配置。
+5. 只有门禁通过后才对私测名单开启 Task Runner Alpha。

@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "separator 分隔符 overlap 重叠 custom pattern 自定义 模式 still backtrack 仍 回溯 custom-pattern token.suffix custom-pattern token.suffix possessive-style path-to-regexp test only 测试 只 test separator 测试 分隔符 missing test 缺 测试",
+        "evidence": "separator 分隔符 overlap 重叠 custom pattern 自定义 模式 still backtrack 仍 回溯 custom-pattern token.suffix custom-pattern token.suffix possessive-style path-to-regexp test only 测试 只 test separator 测试 分隔符 missing test 缺 测试",
+        "impact": "separator 分隔符 overlap 重叠 custom pattern 自定义 模式 still backtrack 仍 回溯 custom-pattern token.suffix custom-pattern token.suffix possessive-style path-to-regexp test only 测试 只 test separator 测试 分隔符 missing test 缺 测试",
+        "fix": "separator 分隔符 overlap 重叠 custom pattern 自定义 模式 still backtrack 仍 回溯 custom-pattern token.suffix custom-pattern token.suffix possessive-style path-to-regexp test only 测试 只 test separator 测试 分隔符 missing test 缺 测试"
+      }
+    ],
+    "tests": "separator 分隔符 overlap 重叠 custom pattern 自定义 模式 still backtrack 仍 回溯 custom-pattern token.suffix custom-pattern token.suffix possessive-style path-to-regexp test only 测试 只 test separator 测试 分隔符 missing test 缺 测试"
+  }
+}

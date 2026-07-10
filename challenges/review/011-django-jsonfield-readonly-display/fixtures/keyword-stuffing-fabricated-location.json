@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "get_prep_value json.dumps 双引号 合法 JSON valid json 序列化 JSON jsonfield.get_prep_value json.dumps(value jsonfield.get_prep_value json.dumps(value double-quoted confirm TypeError 回退 fallback 无法序列化 不可序列化 serialize fail unserializable invalid-json deliberately invalid-json deliberately confirm renders None empty None 空值 其他 字段 other field isinstance JSONField 影响 范围 scope isinstance(field models.jsonfield isinstance(field models.jsonfield empty_value_display non-jsonfield",
+        "evidence": "get_prep_value json.dumps 双引号 合法 JSON valid json 序列化 JSON jsonfield.get_prep_value json.dumps(value jsonfield.get_prep_value json.dumps(value double-quoted confirm TypeError 回退 fallback 无法序列化 不可序列化 serialize fail unserializable invalid-json deliberately invalid-json deliberately confirm renders None empty None 空值 其他 字段 other field isinstance JSONField 影响 范围 scope isinstance(field models.jsonfield isinstance(field models.jsonfield empty_value_display non-jsonfield",
+        "impact": "get_prep_value json.dumps 双引号 合法 JSON valid json 序列化 JSON jsonfield.get_prep_value json.dumps(value jsonfield.get_prep_value json.dumps(value double-quoted confirm TypeError 回退 fallback 无法序列化 不可序列化 serialize fail unserializable invalid-json deliberately invalid-json deliberately confirm renders None empty None 空值 其他 字段 other field isinstance JSONField 影响 范围 scope isinstance(field models.jsonfield isinstance(field models.jsonfield empty_value_display non-jsonfield",
+        "fix": "get_prep_value json.dumps 双引号 合法 JSON valid json 序列化 JSON jsonfield.get_prep_value json.dumps(value jsonfield.get_prep_value json.dumps(value double-quoted confirm TypeError 回退 fallback 无法序列化 不可序列化 serialize fail unserializable invalid-json deliberately invalid-json deliberately confirm renders None empty None 空值 其他 字段 other field isinstance JSONField 影响 范围 scope isinstance(field models.jsonfield isinstance(field models.jsonfield empty_value_display non-jsonfield"
+      }
+    ],
+    "tests": "get_prep_value json.dumps 双引号 合法 JSON valid json 序列化 JSON jsonfield.get_prep_value json.dumps(value jsonfield.get_prep_value json.dumps(value double-quoted confirm TypeError 回退 fallback 无法序列化 不可序列化 serialize fail unserializable invalid-json deliberately invalid-json deliberately confirm renders None empty None 空值 其他 字段 other field isinstance JSONField 影响 范围 scope isinstance(field models.jsonfield isinstance(field models.jsonfield empty_value_display non-jsonfield"
+  }
+}

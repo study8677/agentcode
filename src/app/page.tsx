@@ -10,7 +10,7 @@ export default function Home() {
     taskMode: 0,
     reviewMode: challenges.length,
     taskProgress: 0,
-    reviewProgress: 1
+    reviewProgress: 0
   };
 
   return (

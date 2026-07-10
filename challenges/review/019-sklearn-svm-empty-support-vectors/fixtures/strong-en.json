@@ -1,0 +1,35 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "Review decision: approve after completing the checks below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 19,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "Confirm the empty case crashed because dual_coef_indptr uses np.arange with step size/n_class == 0, and the n_SV == 0 guard short-circuits exactly that. arange 0 步长 0 step zero n_sv 空 indptr 空 zerodivision",
+        "evidence": "When there are no support vectors dual_coef_indices is empty, so the arange step is 0 and raises; the new branch avoids building indptr at all. dual_coef_indices building",
+        "impact": "When there are no support vectors dual_coef_indices is empty, so the arange step is 0 and raises; the new branch avoids building indptr at all. dual_coef_indices building",
+        "fix": "No change needed. Optionally confirm with an SVR fit that yields zero support vectors. optionally confirm"
+      },
+      {
+        "id": "en-2",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 27,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "Confirm the else branch preserves the original CSR construction, so non-empty fits are unaffected. else 不变 正常 不变 原有 保留 else unchanged normal unchanged non-empty same",
+        "evidence": "The patch only adds a branch for n_SV == 0; the existing indptr/csr_matrix logic is moved verbatim into else. csr_matrix existing",
+        "impact": "The patch only adds a branch for n_SV == 0; the existing indptr/csr_matrix logic is moved verbatim into else. csr_matrix existing",
+        "fix": "No change needed. else 不变"
+      }
+    ],
+    "tests": "Confirm the added test genuinely reproduces n_SV == 0 (linear SVR on the given inputs) and asserts the fix, rather than being a vacuous test. It fits an SVR that produces zero support vectors and asserts fit completes with empty support_vectors_ and dual_coef_. 测试 复现 测试 svr test reproduc test svr data.size 回归测试 可信"
+  }
+}

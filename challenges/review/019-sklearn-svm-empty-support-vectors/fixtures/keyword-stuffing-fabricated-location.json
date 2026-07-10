@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "arange 0 步长 0 step zero n_sv 空 indptr 空 zerodivision dual_coef_indices building dual_coef_indices building optionally confirm else 不变 正常 不变 原有 保留 else unchanged normal unchanged non-empty same csr_matrix existing csr_matrix existing else 不变 测试 复现 测试 svr test reproduc test svr data.size 回归测试 可信",
+        "evidence": "arange 0 步长 0 step zero n_sv 空 indptr 空 zerodivision dual_coef_indices building dual_coef_indices building optionally confirm else 不变 正常 不变 原有 保留 else unchanged normal unchanged non-empty same csr_matrix existing csr_matrix existing else 不变 测试 复现 测试 svr test reproduc test svr data.size 回归测试 可信",
+        "impact": "arange 0 步长 0 step zero n_sv 空 indptr 空 zerodivision dual_coef_indices building dual_coef_indices building optionally confirm else 不变 正常 不变 原有 保留 else unchanged normal unchanged non-empty same csr_matrix existing csr_matrix existing else 不变 测试 复现 测试 svr test reproduc test svr data.size 回归测试 可信",
+        "fix": "arange 0 步长 0 step zero n_sv 空 indptr 空 zerodivision dual_coef_indices building dual_coef_indices building optionally confirm else 不变 正常 不变 原有 保留 else unchanged normal unchanged non-empty same csr_matrix existing csr_matrix existing else 不变 测试 复现 测试 svr test reproduc test svr data.size 回归测试 可信"
+      }
+    ],
+    "tests": "arange 0 步长 0 step zero n_sv 空 indptr 空 zerodivision dual_coef_indices building dual_coef_indices building optionally confirm else 不变 正常 不变 原有 保留 else unchanged normal unchanged non-empty same csr_matrix existing csr_matrix existing else 不变 测试 复现 测试 svr test reproduc test svr data.size 回归测试 可信"
+  }
+}

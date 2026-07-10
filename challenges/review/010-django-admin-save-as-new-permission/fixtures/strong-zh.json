@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "评审结论：存在阻塞问题，请求修改。",
+    "findings": [
+      {
+        "id": "zh-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 4,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch allows users with only change permission to access Save as new. save_as_new add add permission change permission 越权 创建 创建 权限 create permission",
+        "evidence": "Save as new creates a new object. It must require add permission, and usually the existing change context as well, otherwise admin users can exceed their authorization. authorization permission",
+        "impact": "Save as new creates a new object. It must require add permission, and usually the existing change context as well, otherwise admin users can exceed their authorization. authorization permission",
+        "fix": "Keep has_add_permission in the condition and ensure the POST path enforces the same authorization boundary. has_add_permission authorization"
+      }
+    ],
+    "tests": "The added test expects the unsafe button to be visible for a change-only user. The correct regression test should assert that users without add permission cannot see or perform Save as new, and that add+change users still can. 测试 change add 测试 越权 unsafe test negative test POST permission"
+  }
+}

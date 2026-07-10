@@ -130,5 +130,11 @@
       "不要用 evaluate",
       "keep the guard"
     ]
-  }
+  },
+  "skills": [
+    "behavior-contract",
+    "impact-reasoning",
+    "test-quality",
+    "remediation"
+  ]
 }

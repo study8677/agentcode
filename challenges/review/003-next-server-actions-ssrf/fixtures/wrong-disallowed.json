@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "The patch is safe because it only allows relative paths.",
+    "findings": [],
+    "tests": ""
+  }
+}

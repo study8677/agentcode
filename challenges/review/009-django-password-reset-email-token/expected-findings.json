@@ -1,40 +1,196 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "The patch does not add the email value to the password reset token hash, so tokens issued before an email change remain valid.",
   "requiredFindings": [
     {
       "id": "email-not-bound-to-reset-token",
+      "kind": "defect",
+      "required": true,
       "severity": "critical",
+      "blocksMerge": true,
       "summary": "The patch never includes the current email value in the token hash.",
       "expectedReasoning": "Changing a user's email after issuing a reset token will not invalidate the old token because _make_hash_value still returns only pk, password, last_login, and timestamp.",
       "acceptableFix": "Include the configured email field value in _make_hash_value while preserving compatibility for custom user models.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 4,
+          "endLine": 4,
+          "lineIncludes": "+        if not getattr(user, user.get_email_field_name(), ''):"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "email",
+            "hash"
+          ],
+          [
+            "邮箱",
+            "hash"
+          ],
+          [
+            "邮箱",
+            "失效"
+          ],
+          [
+            "old token",
+            "valid"
+          ],
+          [
+            "change email"
+          ],
+          [
+            "_make_hash_value",
+            "email"
+          ]
+        ],
+        "evidence": [
+          [
+            "_make_hash_value",
+            "invalidate"
+          ]
+        ],
+        "impact": [
+          [
+            "_make_hash_value",
+            "invalidate"
+          ]
+        ],
+        "fix": [
+          [
+            "_make_hash_value",
+            "compatibility"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["email", "hash"],
-        ["邮箱", "hash"],
-        ["邮箱", "失效"],
-        ["old token", "valid"],
-        ["change email"],
-        ["_make_hash_value", "email"]
+        [
+          "email",
+          "hash"
+        ],
+        [
+          "邮箱",
+          "hash"
+        ],
+        [
+          "邮箱",
+          "失效"
+        ],
+        [
+          "old token",
+          "valid"
+        ],
+        [
+          "change email"
+        ],
+        [
+          "_make_hash_value",
+          "email"
+        ]
       ]
     },
     {
       "id": "missing-email-change-test",
+      "kind": "test",
+      "required": true,
       "severity": "high",
+      "blocksMerge": false,
       "summary": "The added test covers empty email but not the email-change invalidation sequence.",
       "expectedReasoning": "The real regression is: create token, change email, then check that the old token is rejected. The new test only proves a token can be created and checked when email is empty.",
       "acceptableFix": "Add a test that changes the configured email field after token creation and expects check_token to return False.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 11,
+          "endLine": 11,
+          "lineIncludes": "+    self.assertIs(default_token_generator.check_token(user, token), True)"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "邮箱",
+            "变更"
+          ],
+          [
+            "测试",
+            "旧",
+            "token"
+          ],
+          [
+            "empty",
+            "email"
+          ],
+          [
+            "change",
+            "email",
+            "test"
+          ],
+          [
+            "check_token",
+            "False"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "邮箱", "变更"],
-        ["测试", "旧", "token"],
-        ["empty", "email"],
-        ["change", "email", "test"],
-        ["check_token", "False"]
+        [
+          "测试",
+          "邮箱",
+          "变更"
+        ],
+        [
+          "测试",
+          "旧",
+          "token"
+        ],
+        [
+          "empty",
+          "email"
+        ],
+        [
+          "change",
+          "email",
+          "test"
+        ],
+        [
+          "check_token",
+          "False"
+        ]
       ]
     }
   ],
   "optionalFindings": [],
   "disallowedConclusions": [
-    "The patch can be merged because it uses get_email_field_name.",
-    "The empty-email regression test proves old tokens are invalidated after an email change."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because it uses get_email_field_name.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "get_email_field_name",
+          "merged"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "The empty-email regression test proves old tokens are invalidated after an email change.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "empty-email",
+          "invalidated"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

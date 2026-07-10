@@ -135,5 +135,11 @@
       "can merge",
       "LGTM"
     ]
-  }
+  },
+  "skills": [
+    "false-positive-control",
+    "error-boundary",
+    "behavior-contract",
+    "test-quality"
+  ]
 }

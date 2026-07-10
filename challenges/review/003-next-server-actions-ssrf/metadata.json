@@ -133,5 +133,11 @@
       "配置",
       "白名单"
     ]
-  }
+  },
+  "skills": [
+    "security-boundary",
+    "evidence-location",
+    "impact-reasoning",
+    "test-quality"
+  ]
 }

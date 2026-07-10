@@ -31,6 +31,17 @@ enum RunStatus {
   FAILED
 }
 
+enum ReviewAttemptStatus {
+  PENDING
+  ADJUDICATED
+}
+
+enum TaskVerdict {
+  ACCEPTED
+  REJECTED
+  ERROR
+}
+
 model Challenge {
   id             String              @id @default(cuid())
   slug           String              @unique
@@ -44,4 +55,97 @@ model Challenge {
   runStatus      RunStatus           @default(IDLE)
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+}
+
+model AnonymousReviewSession {
+  id         String          @id @default(cuid())
+  tokenHash  String          @unique
+  createdAt  DateTime        @default(now())
+  lastSeenAt DateTime        @default(now())
+  attempts   ReviewAttempt[]
+
+  @@index([lastSeenAt])
+}
+
+model ReviewAttempt {
+  id                   String                 @id @default(cuid())
+  sessionId            String
+  submissionId         String
+  challengeSlug        String
+  challengeVersion     String
+  evaluatorVersion     String
+  attemptNumber        Int
+  isFirstAttempt       Boolean
+  retryOfId            String?
+  rawDraft             Json?
+  provisionalFeedback  Json
+  answerSnapshot       Json
+  startedAt            DateTime?
+  durationMs           Int?
+  adjudicationDeadline DateTime
+  status               ReviewAttemptStatus    @default(PENDING)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  session              AnonymousReviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  retryOf              ReviewAttempt?         @relation("ReviewAttemptRetry", fields: [retryOfId], references: [id], onDelete: SetNull)
+  retries              ReviewAttempt[]        @relation("ReviewAttemptRetry")
+  adjudication         ReviewAdjudication?
+
+  @@unique([sessionId, submissionId])
+  @@unique([sessionId, challengeSlug, attemptNumber])
+  @@index([sessionId, challengeSlug, createdAt])
+  @@index([status, adjudicationDeadline])
+  @@index([createdAt])
+}
+
+model ReviewAdjudication {
+  id                   String        @id @default(cuid())
+  attemptId            String        @unique
+  reviewerGithubId     String
+  itemResults          Json
+  falsePositiveResults Json
+  finalScore           Int
+  feedback             String
+  overrideReason       String
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  attempt              ReviewAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([reviewerGithubId, createdAt])
+  @@index([createdAt])
+}
+
+model TaskSubmission {
+  id               String   @id @default(cuid())
+  challengeSlug    String
+  challengeVersion String
+  patchHash        String
+  patchText        String   @db.Text
+  patchBytes       Int
+  createdAt        DateTime @default(now())
+  run              TaskRun?
+
+  @@index([challengeSlug, createdAt])
+  @@index([patchHash])
+}
+
+model TaskRun {
+  id               String         @id @default(cuid())
+  submissionId     String         @unique
+  challengeSlug    String
+  challengeVersion String
+  imageDigest      String
+  status           RunStatus      @default(QUEUED)
+  structuredChecks Json
+  logs             String         @db.Text
+  verdict          TaskVerdict?
+  resourceUsage    Json?
+  workerId         String?
+  queuedAt         DateTime       @default(now())
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  submission       TaskSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([status, queuedAt])
+  @@index([challengeSlug, queuedAt])
 }

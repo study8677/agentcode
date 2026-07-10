@@ -1,0 +1,35 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "评审结论：逐项核验完成，可以合并。",
+    "findings": [
+      {
+        "id": "zh-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 3,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "Confirm ClosedPoolError is not caught by any existing except in send (not a subclass of ProtocolError/OSError/MaxRetryError/_ProxyError/_SSLError/ReadTimeoutError), so it really did leak. closedpoolerror 穿透 closedpoolerror 泄漏 子类 not subclass not caught 继承",
+        "evidence": "Because it slips past every existing handler, the new except is needed and correctly targets the reported leak. correctly existing",
+        "impact": "Because it slips past every existing handler, the new except is needed and correctly targets the reported leak. correctly existing",
+        "fix": "No change needed. Optionally confirm by checking the urllib3 exception hierarchy. optionally exception"
+      },
+      {
+        "id": "zh-2",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 5,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "Confirm the new except is not shadowed by an earlier, broader except (ClosedPoolError has no inheritance relation to ProtocolError/OSError/MaxRetryError), so it is not dead code. 位置 死代码 顺序 placement order except dead code",
+        "evidence": "Ordering of except clauses matters; since ClosedPoolError is unrelated to the earlier handlers, the mapping actually fires. closedpoolerror unrelated",
+        "impact": "Ordering of except clauses matters; since ClosedPoolError is unrelated to the earlier handlers, the mapping actually fires. closedpoolerror unrelated",
+        "fix": "No change needed. 位置"
+      }
+    ],
+    "tests": "Confirm the added test genuinely raises a ClosedPoolError and asserts callers now see ConnectionError, rather than a vacuous test. It reproduces the exact leak and asserts the new mapping, so it locks in the behavior change. 测试 closedpoolerror 测试 connectionerror test closedpool test connectionerror 回归 可信 复现"
+  }
+}

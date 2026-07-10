@@ -1,55 +1,281 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "The patch only special-cases the one advisory example (dash-separated /:a-:b); the same overlapping-capture ReDoS survives for other separators, custom-pattern params, and repeated modifiers.",
   "requiredFindings": [
     {
       "id": "partial-redos-fix",
+      "kind": "defect",
+      "required": true,
       "severity": "critical",
+      "blocksMerge": true,
       "summary": "The patch special-cases one adjacent-parameter shape (dash separator) but does not remove the general overlapping-capture ReDoS.",
       "expectedReasoning": "Only token.suffix === '-' is tightened. Routes with other separators (e.g. /:a.:b, /:a_:b), custom-pattern captures, or repeat/optional modifiers still compile to overlapping ([^/]+?)<sep>([^/]+?) regexes that backtrack on long inputs and block the Node event loop.",
       "acceptableFix": "Fix the compiler so every adjacent capture has an unambiguous boundary for any separator (or emit atomic/possessive-style patterns), or upgrade to a patched path-to-regexp version.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 17,
+          "endLine": 17,
+          "lineIncludes": "+  if (token.suffix === '-' && next && next.type === 'param') {"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "separator"
+          ],
+          [
+            "分隔符"
+          ],
+          [
+            "overlap"
+          ],
+          [
+            "重叠"
+          ],
+          [
+            "custom",
+            "pattern"
+          ],
+          [
+            "自定义",
+            "模式"
+          ],
+          [
+            "still",
+            "backtrack"
+          ],
+          [
+            "仍",
+            "回溯"
+          ]
+        ],
+        "evidence": [
+          [
+            "custom-pattern",
+            "token.suffix"
+          ]
+        ],
+        "impact": [
+          [
+            "custom-pattern",
+            "token.suffix"
+          ]
+        ],
+        "fix": [
+          [
+            "possessive-style",
+            "path-to-regexp"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["separator"],
-        ["分隔符"],
-        ["overlap"],
-        ["重叠"],
-        ["custom", "pattern"],
-        ["自定义", "模式"],
-        ["still", "backtrack"],
-        ["仍", "回溯"]
+        [
+          "separator"
+        ],
+        [
+          "分隔符"
+        ],
+        [
+          "overlap"
+        ],
+        [
+          "重叠"
+        ],
+        [
+          "custom",
+          "pattern"
+        ],
+        [
+          "自定义",
+          "模式"
+        ],
+        [
+          "still",
+          "backtrack"
+        ],
+        [
+          "仍",
+          "回溯"
+        ]
       ]
     },
     {
       "id": "missing-family-performance-tests",
+      "kind": "test",
+      "required": true,
       "severity": "high",
+      "blocksMerge": false,
       "summary": "The added test only exercises the one route shape that was fixed.",
       "expectedReasoning": "It covers /:a-:b with a dash separator; other separators, custom captures and repeated params are untested, so the suite stays green while the ReDoS class remains.",
       "acceptableFix": "Add timed regression tests for other separators, custom-pattern params, repeated/optional modifiers, and long non-matching inputs.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 38,
+          "endLine": 38,
+          "lineIncludes": "+    expect(re.test(input)).toBe(false)"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "test",
+            "only"
+          ],
+          [
+            "测试",
+            "只"
+          ],
+          [
+            "test",
+            "separator"
+          ],
+          [
+            "测试",
+            "分隔符"
+          ],
+          [
+            "missing",
+            "test"
+          ],
+          [
+            "缺",
+            "测试"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["test", "only"],
-        ["测试", "只"],
-        ["test", "separator"],
-        ["测试", "分隔符"],
-        ["missing", "test"],
-        ["缺", "测试"]
+        [
+          "test",
+          "only"
+        ],
+        [
+          "测试",
+          "只"
+        ],
+        [
+          "test",
+          "separator"
+        ],
+        [
+          "测试",
+          "分隔符"
+        ],
+        [
+          "missing",
+          "test"
+        ],
+        [
+          "缺",
+          "测试"
+        ]
       ]
     }
   ],
   "optionalFindings": [
     {
       "id": "custom-pattern-dropped",
+      "kind": "defect",
+      "required": false,
       "severity": "low",
+      "blocksMerge": true,
       "summary": "When the new branch fires it returns [^/-]+? and ignores token.pattern, so /:id(\\d+)-:x silently loses its custom constraint.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 21,
+          "endLine": 21,
+          "lineIncludes": "const capture = token.pattern || DEFAULT_PATTERN"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "custom",
+            "pattern"
+          ],
+          [
+            "自定义",
+            "模式"
+          ],
+          [
+            "ignore",
+            "pattern"
+          ],
+          [
+            "丢失",
+            "约束"
+          ]
+        ],
+        "evidence": [
+          [
+            "custom",
+            "pattern"
+          ]
+        ],
+        "impact": [
+          [
+            "丢失",
+            "约束"
+          ]
+        ],
+        "fix": [
+          [
+            "custom",
+            "pattern"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["custom", "pattern"],
-        ["自定义", "模式"],
-        ["ignore", "pattern"],
-        ["丢失", "约束"]
+        [
+          "custom",
+          "pattern"
+        ],
+        [
+          "自定义",
+          "模式"
+        ],
+        [
+          "ignore",
+          "pattern"
+        ],
+        [
+          "丢失",
+          "约束"
+        ]
       ]
     }
   ],
   "disallowedConclusions": [
-    "The patch can be merged because the added ReDoS test passes.",
-    "Bounding /:a-:b at the dash is enough because that is the pattern in the advisory."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because the added ReDoS test passes.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "merged",
+          "passes"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "Bounding /:a-:b at the dash is enough because that is the pattern in the advisory.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "bounding",
+          "advisory"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

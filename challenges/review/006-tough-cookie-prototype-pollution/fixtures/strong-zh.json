@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "评审结论：存在阻塞问题，请求修改。",
+    "findings": [
+      {
+        "id": "zh-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 13,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch adds a string blacklist for one domain value while the domain/path/key index stays an ordinary object. object.create map 普通对象 数据结构 嵌套 constructor",
+        "evidence": "__proto__ used as the path or key (this.idx[domain]['__proto__'], this.idx[domain][path]['__proto__']) still hits the prototype chain, other magic keys like constructor/prototype are not blocked, and any variant that parses back to __proto__ bypasses an exact-string check. Only a data-structure fix closes the class. data-structure exact-string",
+        "impact": "__proto__ used as the path or key (this.idx[domain]['__proto__'], this.idx[domain][path]['__proto__']) still hits the prototype chain, other magic keys like constructor/prototype are not blocked, and any variant that parses back to __proto__ bypasses an exact-string check. Only a data-structure fix closes the class. data-structure exact-string",
+        "fix": "Use Object.create(null) or Map for every index layer (and/or reject unsafe keys centrally), then re-run the PoC plus variant and nested-key tests. object.create(null nested-key"
+      }
+    ],
+    "tests": "The new test only replays __proto__ at the domain layer. Prototype-pollution defenses need variant and nested-layer tests: __proto__ as path and key, constructor/prototype keys, and a check that the index has no prototype. test path test key 测试 嵌套 test constructor missing test 缺 测试"
+  }
+}

@@ -1,70 +1,363 @@
 {
+  "schemaVersion": 2,
   "canMerge": true,
   "mergeRationale": "ClosedPoolError is not a subclass of any exception the adapter already catches, so it genuinely leaked; the new except wraps exactly the reported failure as ConnectionError, consistent with existing mappings. This is the fix upstream merged in #2674.",
   "requiredFindings": [
     {
       "id": "closedpoolerror-was-genuinely-leaking",
+      "kind": "verification",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "Confirm ClosedPoolError is not caught by any existing except in send (not a subclass of ProtocolError/OSError/MaxRetryError/_ProxyError/_SSLError/ReadTimeoutError), so it really did leak.",
       "expectedReasoning": "Because it slips past every existing handler, the new except is needed and correctly targets the reported leak.",
       "acceptableFix": "No change needed. Optionally confirm by checking the urllib3 exception hierarchy.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 3,
+          "endLine": 3,
+          "lineIncludes": "+from .packages.urllib3.exceptions import ClosedPoolError"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "closedpoolerror",
+            "穿透"
+          ],
+          [
+            "closedpoolerror",
+            "泄漏"
+          ],
+          [
+            "子类"
+          ],
+          [
+            "not",
+            "subclass"
+          ],
+          [
+            "not",
+            "caught"
+          ],
+          [
+            "继承"
+          ]
+        ],
+        "evidence": [
+          [
+            "correctly",
+            "existing"
+          ]
+        ],
+        "impact": [
+          [
+            "correctly",
+            "existing"
+          ]
+        ],
+        "fix": [
+          [
+            "optionally",
+            "exception"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["closedpoolerror", "穿透"],
-        ["closedpoolerror", "泄漏"],
-        ["子类"],
-        ["not", "subclass"],
-        ["not", "caught"],
-        ["继承"]
+        [
+          "closedpoolerror",
+          "穿透"
+        ],
+        [
+          "closedpoolerror",
+          "泄漏"
+        ],
+        [
+          "子类"
+        ],
+        [
+          "not",
+          "subclass"
+        ],
+        [
+          "not",
+          "caught"
+        ],
+        [
+          "继承"
+        ]
       ]
     },
     {
       "id": "new-except-placement-is-safe",
+      "kind": "verification",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "Confirm the new except is not shadowed by an earlier, broader except (ClosedPoolError has no inheritance relation to ProtocolError/OSError/MaxRetryError), so it is not dead code.",
       "expectedReasoning": "Ordering of except clauses matters; since ClosedPoolError is unrelated to the earlier handlers, the mapping actually fires.",
       "acceptableFix": "No change needed.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 5,
+          "endLine": 5,
+          "lineIncludes": "+        except ClosedPoolError as e:"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "位置"
+          ],
+          [
+            "死代码"
+          ],
+          [
+            "顺序"
+          ],
+          [
+            "placement"
+          ],
+          [
+            "order",
+            "except"
+          ],
+          [
+            "dead code"
+          ]
+        ],
+        "evidence": [
+          [
+            "closedpoolerror",
+            "unrelated"
+          ]
+        ],
+        "impact": [
+          [
+            "closedpoolerror",
+            "unrelated"
+          ]
+        ],
+        "fix": [
+          [
+            "位置"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["位置"],
-        ["死代码"],
-        ["顺序"],
-        ["placement"],
-        ["order", "except"],
-        ["dead code"]
+        [
+          "位置"
+        ],
+        [
+          "死代码"
+        ],
+        [
+          "顺序"
+        ],
+        [
+          "placement"
+        ],
+        [
+          "order",
+          "except"
+        ],
+        [
+          "dead code"
+        ]
       ]
     },
     {
       "id": "regression-test-is-trustworthy",
+      "kind": "test",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "Confirm the added test genuinely raises a ClosedPoolError and asserts callers now see ConnectionError, rather than a vacuous test.",
       "expectedReasoning": "It reproduces the exact leak and asserts the new mapping, so it locks in the behavior change.",
       "acceptableFix": "No change needed.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 5,
+          "endLine": 5,
+          "lineIncludes": "+        except ClosedPoolError as e:"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "closedpoolerror"
+          ],
+          [
+            "测试",
+            "connectionerror"
+          ],
+          [
+            "test",
+            "closedpool"
+          ],
+          [
+            "test",
+            "connectionerror"
+          ],
+          [
+            "回归",
+            "可信"
+          ],
+          [
+            "复现"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "closedpoolerror"],
-        ["测试", "connectionerror"],
-        ["test", "closedpool"],
-        ["test", "connectionerror"],
-        ["回归", "可信"],
-        ["复现"]
+        [
+          "测试",
+          "closedpoolerror"
+        ],
+        [
+          "测试",
+          "connectionerror"
+        ],
+        [
+          "test",
+          "closedpool"
+        ],
+        [
+          "test",
+          "connectionerror"
+        ],
+        [
+          "回归",
+          "可信"
+        ],
+        [
+          "复现"
+        ]
       ]
     }
   ],
   "optionalFindings": [
     {
       "id": "other-exceptions-are-followups",
+      "kind": "verification",
+      "required": false,
       "severity": "low",
+      "blocksMerge": false,
       "summary": "A reviewer may note that other urllib3 exceptions (e.g. DecodeError) could also be wrapped, but that is a separate follow-up, not a blocker for this scoped fix.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 3,
+          "endLine": 3,
+          "lineIncludes": "+from .packages.urllib3.exceptions import ClosedPoolError"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "decodeerror",
+            "follow"
+          ],
+          [
+            "其它异常",
+            "follow"
+          ],
+          [
+            "follow-up"
+          ],
+          [
+            "separate",
+            "issue"
+          ],
+          [
+            "nit"
+          ]
+        ],
+        "evidence": [
+          [
+            "decodeerror",
+            "follow"
+          ]
+        ],
+        "impact": [
+          [
+            "nit"
+          ]
+        ],
+        "fix": [
+          [
+            "decodeerror",
+            "follow"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["decodeerror", "follow"],
-        ["其它异常", "follow"],
-        ["follow-up"],
-        ["separate", "issue"],
-        ["nit"]
+        [
+          "decodeerror",
+          "follow"
+        ],
+        [
+          "其它异常",
+          "follow"
+        ],
+        [
+          "follow-up"
+        ],
+        [
+          "separate",
+          "issue"
+        ],
+        [
+          "nit"
+        ]
       ]
     }
   ],
   "disallowedConclusions": [
-    "Request changes because the patch does not also wrap DecodeError / TimeoutError / other urllib3 exceptions.",
-    "The exception boundary is incomplete, so this PR must be expanded before merging.",
-    "Reject because the test only covers ClosedPoolError and not the other urllib3 exception types."
+    {
+      "id": "disallowed-01",
+      "description": "Request changes because the patch does not also wrap DecodeError / TimeoutError / other urllib3 exceptions.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "timeouterror",
+          "decodeerror"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "The exception boundary is incomplete, so this PR must be expanded before merging.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "incomplete",
+          "exception"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-03",
+      "description": "Reject because the test only covers ClosedPoolError and not the other urllib3 exception types.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "closedpoolerror",
+          "exception"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Request changes because sp.csr_matrix([]) does not force a particular two-dimensional empty shape.",
+    "findings": [],
+    "tests": ""
+  }
+}

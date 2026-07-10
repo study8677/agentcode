@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "slug": "001-typescript-slug-normalization",
+  "title": {
+    "zh": "修复 TypeScript Slug 规范化边界",
+    "en": "Repair TypeScript slug normalization boundaries"
+  },
+  "summary": {
+    "zh": "提交一个补丁，让用户输入稳定转换为安全、非空的 URL slug。",
+    "en": "Submit a patch that turns user input into a safe, non-empty URL slug."
+  },
+  "language": "typescript",
+  "runtime": "node",
+  "difficulty": "mid",
+  "status": "READY",
+  "image": "node:22.17.0-bookworm-slim@sha256:b04ce4ae4e95b522112c2e5c52f781471a5cbc3b594527bcddedee9bc48c03a0",
+  "editablePaths": [
+    "src/slug.ts"
+  ],
+  "starterDirectory": "starter",
+  "hiddenDirectory": "hidden",
+  "checks": [
+    {
+      "id": "public-tests",
+      "kind": "public",
+      "argv": [
+        "node",
+        "--experimental-strip-types",
+        "--test",
+        "tests/slug.test.ts"
+      ]
+    },
+    {
+      "id": "hidden-tests",
+      "kind": "hidden",
+      "argv": [
+        "node",
+        "--experimental-strip-types",
+        "--test",
+        ".agentcode-hidden/slug.hidden.test.ts"
+      ]
+    }
+  ]
+}

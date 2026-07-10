@@ -140,5 +140,11 @@
       "can merge",
       "LGTM"
     ]
-  }
+  },
+  "skills": [
+    "behavior-contract",
+    "false-positive-control",
+    "test-quality",
+    "evidence-location"
+  ]
 }

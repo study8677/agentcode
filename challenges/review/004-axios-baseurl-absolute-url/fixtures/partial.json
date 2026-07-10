@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 11,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "The patch blocks only protocol-relative URLs and still permits http:// or https:// absolute URLs. https:// 绝对 absolute baseurl http 绕过 绝对 覆盖 absolute authorization scheme bypass",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

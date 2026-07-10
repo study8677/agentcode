@@ -1,0 +1,25 @@
+[Unit]
+Description=AgentCode rootless task runner
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agentcode-runner
+Group=agentcode-runner
+EnvironmentFile=/etc/agentcode/runner.env
+WorkingDirectory=/opt/agentcode
+ExecStart=/opt/agentcode/node_modules/.bin/tsx /opt/agentcode/task-worker/main.ts
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

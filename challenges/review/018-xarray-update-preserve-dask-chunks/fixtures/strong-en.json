@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Review decision: request changes for the blocking finding below.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 6,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "The patch calls np.asarray() on a DataArray, forcing dask-backed data to compute eagerly. np.asarray dask eager dask lazy chunk 惰性 计算 chunk 丢失 DataArray.data",
+        "evidence": "Dataset.update should preserve chunking and lazy evaluation; materializing can be slow, memory-heavy, and semantically wrong. dataset.update materializing",
+        "impact": "Dataset.update should preserve chunking and lazy evaluation; materializing can be slow, memory-heavy, and semantically wrong. dataset.update materializing",
+        "fix": "Use DataArray.data when constructing the Variable, or warn/error without computing values. dataarray.data constructing"
+      }
+    ],
+    "tests": "The test compares .values, which itself computes dask arrays. It cannot catch the chunk-preservation regression. values compute 测试 values 测试 chunk assert chunks dask test"
+  }
+}

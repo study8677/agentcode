@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "The patch is safe because protocol-relative URLs are now rejected.",
+    "findings": [],
+    "tests": ""
+  }
+}

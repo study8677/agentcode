@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "The patch can be merged because the nested test checks the matrix shape.",
+    "findings": [],
+    "tests": ""
+  }
+}

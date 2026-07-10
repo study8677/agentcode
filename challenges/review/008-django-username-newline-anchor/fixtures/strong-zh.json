@@ -1,0 +1,35 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "评审结论：逐项核验完成，可以合并。",
+    "findings": [
+      {
+        "id": "zh-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 10,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "In Python regex, $ can match before a trailing newline while \\Z only matches at the absolute end of the string, so 'joe\\n' now fails validation. \\Z 换行 锚 末尾 换行 $ newline trailing newline newline anchor",
+        "evidence": "re.search(r'^[\\w.@+-]+$', 'joe\\n') matches because $ tolerates one final newline; with \\Z there is no match, so RegexValidator raises ValidationError. This is exactly the reported bug and the minimal fix. validationerror regexvalidator",
+        "impact": "re.search(r'^[\\w.@+-]+$', 'joe\\n') matches because $ tolerates one final newline; with \\Z there is no match, so RegexValidator raises ValidationError. This is exactly the reported bug and the minimal fix. validationerror regexvalidator",
+        "fix": "No change needed (verify by running 'joe\\n' through both validators before and after the patch). validators running"
+      },
+      {
+        "id": "zh-2",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 10,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "The character class and the ^ start anchor are unchanged; the only behavioral change is rejecting values that matched solely because of $'s newline tolerance. 字符集 不变 合法 通过 正常 用户名 character class unchanged valid pass valid unaffected",
+        "evidence": "Without re.MULTILINE, ^ already anchors at the true string start and [\\w.@+-]+ is untouched, so every previously valid username still passes; there is no regression for existing users. re.multiline previously",
+        "impact": "Without re.MULTILINE, ^ already anchors at the true string start and [\\w.@+-]+ is untouched, so every previously valid username still passes; there is no regression for existing users. re.multiline previously",
+        "fix": "No change needed (spot-check normal usernames such as 'joe', 'jean-marc', 'René' against both validators). spot-check validators"
+      }
+    ],
+    "tests": "Both ASCIIUsernameValidator and UnicodeUsernameValidator get the same anchor change, and each gains a trailing-newline entry in the invalid_usernames regression tests. The two classes share the same pattern and Unicode is the default validator; fixing only one would leave the bug half-open. The new entries assert ValidationError and fail on the old regex, so they are trustworthy regression tests. 两个 validator 两个 校验 ASCII Unicode both validator invalid_usernames"
+  }
+}

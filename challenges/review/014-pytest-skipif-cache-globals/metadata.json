@@ -135,5 +135,11 @@
       "cache key",
       "item"
     ]
-  }
+  },
+  "skills": [
+    "state-semantics",
+    "compatibility",
+    "test-quality",
+    "maintainability"
+  ]
 }

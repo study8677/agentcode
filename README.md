@@ -66,6 +66,9 @@ V0 正在构建中，目前仓库已经包含：
 - Review Mode 首页、题目详情页和结构化 review 提交表单。
 - 20 道真实来源改编的 Review Mode 题，覆盖安全、框架、HTTP、数据语义和测试质量。
 - 可版本化的题库资产结构：题面、metadata、AI diff、expected findings、rubric。
+- Review Evaluator V2：物理文件/行号校验、一对一 finding 匹配、结构化扣分和 100 个回归 fixtures。
+- 匿名提交、24 小时人工终审、GitHub 白名单 reviewer 后台、能力画像与下一题推荐。
+- 默认关闭的 TypeScript/Node Task Runner Alpha，只有满足稳定性与安全门禁后才允许启用。
 - 评估设计、V0 架构、产品方向和首批题库规划文档。
 
 题库入口：
@@ -88,6 +91,9 @@ pnpm dev
 ```bash
 pnpm lint
 pnpm typecheck
+pnpm test
+pnpm challenge:validate
+pnpm challenge:fixtures
 pnpm build
 ```
 
@@ -96,10 +102,10 @@ pnpm build
 ```bash
 cp .env.example .env
 pnpm db:generate
-pnpm db:push
+pnpm db:migrate
 ```
 
-当前 V0 前端仍以题库原型和本地 review 反馈为主；Task Mode runner 尚未执行用户代码，后续会引入隔离容器、隐藏测试和结构化评估结果。
+Review 持久化需要 PostgreSQL，并由 `REVIEW_PERSISTENCE_ENABLED=true` 显式开启。人工终审后台使用 Auth.js GitHub OAuth 和 `REVIEWER_GITHUB_IDS` 数字 ID 白名单。Task Runner 代码默认关闭；启用前必须使用独立 rootless Docker worker，并通过仓库定义的产品与安全门禁。
 
 ## 题库资产
 
@@ -144,7 +150,8 @@ AgentCode V0 先聚焦 20 道高质量题，而不是堆功能数量。当前已
 - **UI 原型**：题库列表、训练模式筛选、Review 题详情、结构化提交表单
 - **Data model**：Prisma schema
 - **Challenge assets**：Markdown、JSON、diff、rubric
-- **Runner 方向**：Docker 隔离执行、公开测试、隐藏测试、日志和 verdict
+- **Review data**：PostgreSQL、匿名 HttpOnly session、Prisma migrations、结构化人工终审
+- **Runner Alpha**：patch-only、PostgreSQL 队列、独立 rootless Docker worker、公开/隐藏测试、结构化 verdict
 
 V0 最重要的工程边界是隔离：平台可信代码和用户提交的不可信代码必须分开执行。
 

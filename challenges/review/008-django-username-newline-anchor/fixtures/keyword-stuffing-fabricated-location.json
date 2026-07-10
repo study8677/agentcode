@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "\\Z 换行 锚 末尾 换行 $ newline trailing newline newline anchor validationerror regexvalidator validationerror regexvalidator validators running 字符集 不变 合法 通过 正常 用户名 character class unchanged valid pass valid unaffected re.multiline previously re.multiline previously spot-check validators 两个 validator 两个 校验 ASCII Unicode both validator invalid_usernames",
+        "evidence": "\\Z 换行 锚 末尾 换行 $ newline trailing newline newline anchor validationerror regexvalidator validationerror regexvalidator validators running 字符集 不变 合法 通过 正常 用户名 character class unchanged valid pass valid unaffected re.multiline previously re.multiline previously spot-check validators 两个 validator 两个 校验 ASCII Unicode both validator invalid_usernames",
+        "impact": "\\Z 换行 锚 末尾 换行 $ newline trailing newline newline anchor validationerror regexvalidator validationerror regexvalidator validators running 字符集 不变 合法 通过 正常 用户名 character class unchanged valid pass valid unaffected re.multiline previously re.multiline previously spot-check validators 两个 validator 两个 校验 ASCII Unicode both validator invalid_usernames",
+        "fix": "\\Z 换行 锚 末尾 换行 $ newline trailing newline newline anchor validationerror regexvalidator validationerror regexvalidator validators running 字符集 不变 合法 通过 正常 用户名 character class unchanged valid pass valid unaffected re.multiline previously re.multiline previously spot-check validators 两个 validator 两个 校验 ASCII Unicode both validator invalid_usernames"
+      }
+    ],
+    "tests": "\\Z 换行 锚 末尾 换行 $ newline trailing newline newline anchor validationerror regexvalidator validationerror regexvalidator validators running 字符集 不变 合法 通过 正常 用户名 character class unchanged valid pass valid unaffected re.multiline previously re.multiline previously spot-check validators 两个 validator 两个 校验 ASCII Unicode both validator invalid_usernames"
+  }
+}

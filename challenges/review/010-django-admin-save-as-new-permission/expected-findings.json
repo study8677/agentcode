@@ -1,40 +1,190 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "Save as new creates a new object, so exposing it to users with only change permission would allow unauthorized object creation.",
   "requiredFindings": [
     {
       "id": "save-as-new-requires-add-permission",
+      "kind": "defect",
+      "required": true,
       "severity": "critical",
+      "blocksMerge": true,
       "summary": "The patch allows users with only change permission to access Save as new.",
       "expectedReasoning": "Save as new creates a new object. It must require add permission, and usually the existing change context as well, otherwise admin users can exceed their authorization.",
       "acceptableFix": "Keep has_add_permission in the condition and ensure the POST path enforces the same authorization boundary.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 4,
+          "endLine": 4,
+          "lineIncludes": "-            and has_add_permission"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "save_as_new",
+            "add"
+          ],
+          [
+            "add permission"
+          ],
+          [
+            "change permission"
+          ],
+          [
+            "越权",
+            "创建"
+          ],
+          [
+            "创建",
+            "权限"
+          ],
+          [
+            "create",
+            "permission"
+          ]
+        ],
+        "evidence": [
+          [
+            "authorization",
+            "permission"
+          ]
+        ],
+        "impact": [
+          [
+            "authorization",
+            "permission"
+          ]
+        ],
+        "fix": [
+          [
+            "has_add_permission",
+            "authorization"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["save_as_new", "add"],
-        ["add permission"],
-        ["change permission"],
-        ["越权", "创建"],
-        ["创建", "权限"],
-        ["create", "permission"]
+        [
+          "save_as_new",
+          "add"
+        ],
+        [
+          "add permission"
+        ],
+        [
+          "change permission"
+        ],
+        [
+          "越权",
+          "创建"
+        ],
+        [
+          "创建",
+          "权限"
+        ],
+        [
+          "create",
+          "permission"
+        ]
       ]
     },
     {
       "id": "test-asserts-insecure-behavior",
+      "kind": "test",
+      "required": true,
       "severity": "high",
+      "blocksMerge": false,
       "summary": "The added test expects the unsafe button to be visible for a change-only user.",
       "expectedReasoning": "The correct regression test should assert that users without add permission cannot see or perform Save as new, and that add+change users still can.",
       "acceptableFix": "Add negative UI and POST tests for change-only users, plus a positive test for users with both permissions.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 9,
+          "endLine": 9,
+          "lineIncludes": "+def test_save_as_new_with_change_permission(self):"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "change",
+            "add"
+          ],
+          [
+            "测试",
+            "越权"
+          ],
+          [
+            "unsafe",
+            "test"
+          ],
+          [
+            "negative",
+            "test"
+          ],
+          [
+            "POST",
+            "permission"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "change", "add"],
-        ["测试", "越权"],
-        ["unsafe", "test"],
-        ["negative", "test"],
-        ["POST", "permission"]
+        [
+          "测试",
+          "change",
+          "add"
+        ],
+        [
+          "测试",
+          "越权"
+        ],
+        [
+          "unsafe",
+          "test"
+        ],
+        [
+          "negative",
+          "test"
+        ],
+        [
+          "POST",
+          "permission"
+        ]
       ]
     }
   ],
   "optionalFindings": [],
   "disallowedConclusions": [
-    "The patch can be merged because Save as new appears on the change form.",
-    "Showing the button is harmless because a later save path will handle permissions."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because Save as new appears on the change form.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "appears",
+          "merged"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "Showing the button is harmless because a later save path will handle permissions.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "permissions",
+          "harmless"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

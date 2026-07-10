@@ -1,61 +1,312 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "The change removes the server-side RS256 allowlist and lets an undefined key reach jwt.verify, moving a required startup configuration failure into the request path and weakening authentication's fail-closed boundary.",
   "requiredFindings": [
     {
       "id": "algorithm-and-key-downgrade",
+      "kind": "defect",
+      "required": true,
       "severity": "critical",
+      "blocksMerge": true,
       "summary": "The patch removes the RS256 algorithms allowlist and lets the token choose the verification algorithm.",
       "expectedReasoning": "Authentication must fail closed and the server must decide which algorithms are acceptable. Removing algorithms: ['RS256'] changes the verifier from a pinned asymmetric-token contract to whatever jwt.verify derives from the token/header and supplied key, so issuer/audience checks no longer prove the signature was verified under the intended algorithm.",
       "acceptableFix": "Keep algorithms pinned to RS256 and use the configured public key for production tokens; if local development needs a different key, make that an explicit, separately pinned configuration.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 13,
+          "endLine": 13,
+          "lineIncludes": "-    algorithms: ['RS256'],"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "algorithm"
+          ],
+          [
+            "算法"
+          ],
+          [
+            "alg:none"
+          ],
+          [
+            "undefined",
+            "key"
+          ],
+          [
+            "undefined",
+            "secret"
+          ],
+          [
+            "fail",
+            "closed"
+          ],
+          [
+            "fail",
+            "open"
+          ],
+          [
+            "pin"
+          ],
+          [
+            "confusion"
+          ],
+          [
+            "混淆"
+          ]
+        ],
+        "evidence": [
+          [
+            "asymmetric-token",
+            "authentication"
+          ]
+        ],
+        "impact": [
+          [
+            "asymmetric-token",
+            "authentication"
+          ]
+        ],
+        "fix": [
+          [
+            "configuration",
+            "development"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["algorithm"],
-        ["算法"],
-        ["alg:none"],
-        ["undefined", "key"],
-        ["undefined", "secret"],
-        ["fail", "closed"],
-        ["fail", "open"],
-        ["pin"],
-        ["confusion"],
-        ["混淆"]
+        [
+          "algorithm"
+        ],
+        [
+          "算法"
+        ],
+        [
+          "alg:none"
+        ],
+        [
+          "undefined",
+          "key"
+        ],
+        [
+          "undefined",
+          "secret"
+        ],
+        [
+          "fail",
+          "closed"
+        ],
+        [
+          "fail",
+          "open"
+        ],
+        [
+          "pin"
+        ],
+        [
+          "confusion"
+        ],
+        [
+          "混淆"
+        ]
       ]
     },
     {
       "id": "missing-secret-defers-startup-failure",
+      "kind": "defect",
+      "required": true,
       "severity": "critical",
+      "blocksMerge": true,
       "summary": "process.env.JWT_SECRET || undefined turns a missing required key into a request-time verifier input instead of a startup failure.",
       "expectedReasoning": "Required authentication configuration should be validated when the process starts. Passing undefined into jwt.verify delays a must-fail configuration error until token verification and creates a fail-open risk at the auth boundary.",
       "acceptableFix": "Validate required keys at startup and refuse to start or reject all auth requests when the key configuration is missing.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 20,
+          "endLine": 20,
+          "lineIncludes": "+  return jwt.verify(token, process.env.JWT_SECRET || undefined, {"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "undefined",
+            "key"
+          ],
+          [
+            "undefined",
+            "secret"
+          ],
+          [
+            "jwt_secret",
+            "missing"
+          ],
+          [
+            "fail",
+            "closed"
+          ],
+          [
+            "fail",
+            "open"
+          ],
+          [
+            "startup"
+          ],
+          [
+            "启动"
+          ],
+          [
+            "配置"
+          ]
+        ],
+        "evidence": [
+          [
+            "authentication",
+            "configuration"
+          ]
+        ],
+        "impact": [
+          [
+            "authentication",
+            "configuration"
+          ]
+        ],
+        "fix": [
+          [
+            "configuration",
+            "validate"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["undefined", "key"],
-        ["undefined", "secret"],
-        ["jwt_secret", "missing"],
-        ["fail", "closed"],
-        ["fail", "open"],
-        ["startup"],
-        ["启动"],
-        ["配置"]
+        [
+          "undefined",
+          "key"
+        ],
+        [
+          "undefined",
+          "secret"
+        ],
+        [
+          "jwt_secret",
+          "missing"
+        ],
+        [
+          "fail",
+          "closed"
+        ],
+        [
+          "fail",
+          "open"
+        ],
+        [
+          "startup"
+        ],
+        [
+          "启动"
+        ],
+        [
+          "配置"
+        ]
       ]
     },
     {
       "id": "missing-negative-auth-tests",
+      "kind": "test",
+      "required": true,
       "severity": "high",
+      "blocksMerge": false,
       "summary": "The added test only covers a dev happy path, not malicious or misconfigured tokens.",
       "expectedReasoning": "Auth changes need negative tests: wrong algorithm, missing key, wrong issuer and wrong audience, plus a startup-configuration test.",
       "acceptableFix": "Add negative token tests and a startup configuration (fail-closed) test.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 34,
+          "endLine": 34,
+          "lineIncludes": "+  test('accepts local dev tokens signed with JWT_SECRET', () => {"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "负向"
+          ],
+          [
+            "negative",
+            "test"
+          ],
+          [
+            "test",
+            "wrong"
+          ],
+          [
+            "missing",
+            "test"
+          ],
+          [
+            "缺",
+            "测试"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "负向"],
-        ["negative", "test"],
-        ["test", "wrong"],
-        ["missing", "test"],
-        ["缺", "测试"]
+        [
+          "测试",
+          "负向"
+        ],
+        [
+          "negative",
+          "test"
+        ],
+        [
+          "test",
+          "wrong"
+        ],
+        [
+          "missing",
+          "test"
+        ],
+        [
+          "缺",
+          "测试"
+        ]
       ]
     }
   ],
   "optionalFindings": [],
   "disallowedConclusions": [
-    "The patch can be merged because the local dev test passes and issuer/audience are still checked.",
-    "Reading the key from JWT_SECRET is fine because production still sets a strong secret."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because the local dev test passes and issuer/audience are still checked.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "audience",
+          "checked"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "Reading the key from JWT_SECRET is fine because production still sets a strong secret.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "jwt_secret",
+          "production"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

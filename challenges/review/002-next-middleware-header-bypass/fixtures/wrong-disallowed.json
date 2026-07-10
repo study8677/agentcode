@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "The patch is safe because the header is used by the framework.",
+    "findings": [],
+    "tests": ""
+  }
+}

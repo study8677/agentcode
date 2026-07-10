@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ReviewFileBrowser } from "@/components/challenges/ReviewFileBrowser";
-import { ReviewSubmissionForm } from "@/components/challenges/ReviewSubmissionForm";
+import { ReviewSubmissionForm, type ReviewAttemptReceipt } from "@/components/challenges/ReviewSubmissionForm";
 import { Badge } from "@/components/ui/Badge";
 import type { ReviewChallengeFile, ReviewPrBrief, ReviewReveal } from "@/lib/challenges/review";
-import type { ReviewDraft, ReviewFeedback, ReviewLineFinding } from "@/lib/challenges/review-submission";
+import type { ReviewDraft, ReviewFeedbackV2, ReviewLineFinding } from "@/lib/challenges/review-submission";
 import type { ChallengeDifficulty, LocalizedText } from "@/lib/types/problem";
 
 type ReviewWorkspaceProps = {
@@ -59,8 +59,13 @@ function normalizeStoredDraft(value: unknown): ReviewDraft {
           id: String(finding.id),
           fileName: String(finding.fileName),
           lineNumber: Number(finding.lineNumber),
-          severity: String(finding.severity || "high"),
+          severity: String(finding.severity === "blocking" ? "critical" : finding.severity || "high"),
+          blocksMerge: typeof finding.blocksMerge === "boolean"
+            ? finding.blocksMerge
+            : finding.severity === "blocking" || finding.severity === "critical" || finding.severity === "high",
           problem: String(finding.problem || ""),
+          evidence: String(finding.evidence || ""),
+          impact: String(finding.impact || ""),
           fix: String(finding.fix || "")
         }))
     : [];
@@ -94,15 +99,44 @@ export function ReviewWorkspace({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [feedback, setFeedback] = useState<ReviewFeedback | null>(null);
+  const [feedback, setFeedback] = useState<ReviewFeedbackV2 | null>(null);
   const [reveal, setReveal] = useState<ReviewReveal | null>(null);
+  const [attempt, setAttempt] = useState<ReviewAttemptReceipt>(null);
+  const submissionId = useRef(createFindingId());
+  const startedAt = useRef(new Date().toISOString());
   const displayId = order.toString().padStart(3, "0");
-  const storageKey = `agentcode.review.${challengeId}.draft.v2`;
+  const storageKey = `agentcode.review.${challengeId}.draft.v3`;
+  const previousStorageKey = `agentcode.review.${challengeId}.draft.v2`;
   const legacyStorageKey = `agentcode.review.${challengeId}.draft`;
   const findings = draft.findings;
 
   useEffect(() => {
-    const savedDraft = window.localStorage.getItem(storageKey);
+    if (!submitted || !attempt || attempt.status !== "pending") {
+      return;
+    }
+
+    let cancelled = false;
+    const refresh = () => {
+      fetch(`/api/review/attempts/${encodeURIComponent(attempt.id)}`, { credentials: "same-origin" })
+        .then((response) => response.ok ? response.json() : null)
+        .then((result: { attempt?: ReviewAttemptReceipt } | null) => {
+          if (!cancelled && result?.attempt?.status === "adjudicated") {
+            setAttempt(result.attempt);
+          }
+        })
+        .catch(() => undefined);
+    };
+    const interval = window.setInterval(refresh, 30_000);
+    refresh();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [attempt, submitted]);
+
+  useEffect(() => {
+    const savedDraft = window.localStorage.getItem(storageKey) ?? window.localStorage.getItem(previousStorageKey);
 
     if (!savedDraft) {
       window.localStorage.removeItem(legacyStorageKey);
@@ -110,19 +144,28 @@ export function ReviewWorkspace({
     }
 
     try {
+      const parsed = JSON.parse(savedDraft) as unknown;
       const timeout = window.setTimeout(() => {
-        setDraft(normalizeStoredDraft(JSON.parse(savedDraft)));
+        if (parsed && typeof parsed === "object" && "draft" in parsed) {
+          const stored = parsed as { draft: unknown; startedAt?: unknown };
+          setDraft(normalizeStoredDraft(stored.draft));
+          if (typeof stored.startedAt === "string") {
+            startedAt.current = stored.startedAt;
+          }
+        } else {
+          setDraft(normalizeStoredDraft(parsed));
+        }
       }, 0);
 
       return () => window.clearTimeout(timeout);
     } catch {
       window.localStorage.removeItem(storageKey);
     }
-  }, [legacyStorageKey, storageKey]);
+  }, [legacyStorageKey, previousStorageKey, storageKey]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      window.localStorage.setItem(storageKey, JSON.stringify(draft));
+      window.localStorage.setItem(storageKey, JSON.stringify({ draft, startedAt: startedAt.current }));
     }, 800);
 
     return () => window.clearTimeout(timeout);
@@ -130,9 +173,11 @@ export function ReviewWorkspace({
 
   function updateDraft(patch: Partial<ReviewDraft>) {
     setDraft((current) => ({ ...current, ...patch }));
+    submissionId.current = createFindingId();
     setSubmitted(false);
     setFeedback(null);
     setReveal(null);
+    setAttempt(null);
     setSubmitError("");
   }
 
@@ -143,6 +188,8 @@ export function ReviewWorkspace({
     setSubmitted(false);
     setFeedback(null);
     setReveal(null);
+    setAttempt(null);
+    submissionId.current = createFindingId();
   }
 
   function updateFinding(findingId: string, patch: Partial<ReviewLineFinding>) {
@@ -153,6 +200,8 @@ export function ReviewWorkspace({
     setSubmitted(false);
     setFeedback(null);
     setReveal(null);
+    setAttempt(null);
+    submissionId.current = createFindingId();
   }
 
   function deleteFinding(findingId: string) {
@@ -161,6 +210,8 @@ export function ReviewWorkspace({
       findings: current.findings.filter((finding) => finding.id !== findingId)
     }));
     setSelectedFindingId((current) => current === findingId ? null : current);
+    setAttempt(null);
+    submissionId.current = createFindingId();
   }
 
   function selectFinding(findingId: string | null) {
@@ -176,7 +227,7 @@ export function ReviewWorkspace({
   async function submitReview() {
     setSubmitting(true);
     setSubmitError("");
-    window.localStorage.setItem(storageKey, JSON.stringify(draft));
+    window.localStorage.setItem(storageKey, JSON.stringify({ draft, startedAt: startedAt.current }));
 
     try {
       const response = await fetch(`/api/review/${encodeURIComponent(challengeSlug)}/submit`, {
@@ -184,20 +235,33 @@ export function ReviewWorkspace({
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ draft })
+        body: JSON.stringify({
+          submissionId: submissionId.current,
+          draft,
+          timing: {
+            startedAt: startedAt.current,
+            durationMs: Math.max(0, Date.now() - new Date(startedAt.current).getTime())
+          }
+        })
       });
 
       if (!response.ok) {
-        throw new Error("submit failed");
+        const error = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(error?.error || "submit failed");
       }
 
-      const result = await response.json() as { feedback: ReviewFeedback; reveal: ReviewReveal };
+      const result = await response.json() as {
+        attempt: ReviewAttemptReceipt;
+        feedback: ReviewFeedbackV2;
+        reveal: ReviewReveal;
+      };
       setFeedback(result.feedback);
       setReveal(result.reveal);
+      setAttempt(result.attempt);
       setSubmitted(true);
-    } catch {
+    } catch (error) {
       setSubmitted(false);
-      setSubmitError("提交失败，请稍后重试。");
+      setSubmitError(error instanceof Error ? error.message : "提交失败，请稍后重试。");
     } finally {
       setSubmitting(false);
     }
@@ -236,6 +300,7 @@ export function ReviewWorkspace({
         </div>
         <aside className="review-right-pane">
           <ReviewSubmissionForm
+            attempt={attempt}
             background={background}
             draft={draft}
             feedback={feedback}

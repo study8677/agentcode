@@ -1,57 +1,293 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "Gating the imaginary-coordinate check on evaluate disables a documented validation: Point(I, 2) is silently accepted under evaluate(False).",
   "requiredFindings": [
     {
       "id": "imaginary-coordinate-regression",
+      "kind": "defect",
+      "required": true,
       "severity": "high",
+      "blocksMerge": true,
       "summary": "The patch disables the imaginary-coordinate safety check whenever evaluate is false.",
       "expectedReasoning": "Point(I, 2) inside evaluate(False) can bypass the ValueError, so the original coordinate contract is weakened.",
       "acceptableFix": "Keep the guard active and reject only coordinates whose imaginary part is definitely non-zero, e.g. im(a).is_zero is False.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 12,
+          "endLine": 12,
+          "lineIncludes": "+        if evaluate and any(a.is_number and im(a) for a in coords):"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "point(i"
+          ],
+          [
+            "虚数",
+            "evaluate"
+          ],
+          [
+            "虚数",
+            "跳过"
+          ],
+          [
+            "虚数",
+            "绕过"
+          ],
+          [
+            "虚数",
+            "不再"
+          ],
+          [
+            "imaginary",
+            "skip"
+          ],
+          [
+            "imaginary",
+            "bypass"
+          ],
+          [
+            "imaginary",
+            "disable"
+          ]
+        ],
+        "evidence": [
+          [
+            "evaluate(false",
+            "valueerror"
+          ]
+        ],
+        "impact": [
+          [
+            "evaluate(false",
+            "valueerror"
+          ]
+        ],
+        "fix": [
+          [
+            "im(a).is_zero",
+            "coordinates"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["point(i"],
-        ["虚数", "evaluate"],
-        ["虚数", "跳过"],
-        ["虚数", "绕过"],
-        ["虚数", "不再"],
-        ["imaginary", "skip"],
-        ["imaginary", "bypass"],
-        ["imaginary", "disable"]
+        [
+          "point(i"
+        ],
+        [
+          "虚数",
+          "evaluate"
+        ],
+        [
+          "虚数",
+          "跳过"
+        ],
+        [
+          "虚数",
+          "绕过"
+        ],
+        [
+          "虚数",
+          "不再"
+        ],
+        [
+          "imaginary",
+          "skip"
+        ],
+        [
+          "imaginary",
+          "bypass"
+        ],
+        [
+          "imaginary",
+          "disable"
+        ]
       ]
     },
     {
       "id": "missing-negative-test",
+      "kind": "test",
+      "required": true,
       "severity": "medium",
+      "blocksMerge": false,
       "summary": "The new test covers only the happy path.",
       "expectedReasoning": "It proves Point(1, 2) under evaluate(False), but not that invalid imaginary coordinates are still rejected.",
       "acceptableFix": "Add a negative test asserting Point(I, 2) still raises under evaluate(False).",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 37,
+          "endLine": 37,
+          "lineIncludes": "+    with evaluate(False):"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "虚数"
+          ],
+          [
+            "测试",
+            "point(i"
+          ],
+          [
+            "test",
+            "imaginary"
+          ],
+          [
+            "test",
+            "point(i"
+          ],
+          [
+            "负向",
+            "测试"
+          ],
+          [
+            "negative",
+            "test"
+          ],
+          [
+            "happy path"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "虚数"],
-        ["测试", "point(i"],
-        ["test", "imaginary"],
-        ["test", "point(i"],
-        ["负向", "测试"],
-        ["negative", "test"],
-        ["happy path"]
+        [
+          "测试",
+          "虚数"
+        ],
+        [
+          "测试",
+          "point(i"
+        ],
+        [
+          "test",
+          "imaginary"
+        ],
+        [
+          "test",
+          "point(i"
+        ],
+        [
+          "负向",
+          "测试"
+        ],
+        [
+          "negative",
+          "test"
+        ],
+        [
+          "happy path"
+        ]
       ]
     }
   ],
   "optionalFindings": [
     {
       "id": "narrower-predicate",
+      "kind": "defect",
+      "required": false,
       "severity": "medium",
+      "blocksMerge": true,
       "summary": "The predicate should encode certainty about the imaginary part, not the global evaluation mode.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 8,
+          "endLine": 8,
+          "lineIncludes": "-        if any(a.is_number and im(a) for a in coords):"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "is_zero"
+          ],
+          [
+            "确定",
+            "非零"
+          ],
+          [
+            "definitely"
+          ],
+          [
+            "三值"
+          ],
+          [
+            "unknown",
+            "reject"
+          ]
+        ],
+        "evidence": [
+          [
+            "is_zero"
+          ]
+        ],
+        "impact": [
+          [
+            "unknown",
+            "reject"
+          ]
+        ],
+        "fix": [
+          [
+            "is_zero"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["is_zero"],
-        ["确定", "非零"],
-        ["definitely"],
-        ["三值"],
-        ["unknown", "reject"]
+        [
+          "is_zero"
+        ],
+        [
+          "确定",
+          "非零"
+        ],
+        [
+          "definitely"
+        ],
+        [
+          "三值"
+        ],
+        [
+          "unknown",
+          "reject"
+        ]
       ]
     }
   ],
   "disallowedConclusions": [
-    "The patch can be merged because the added test passes.",
-    "The correct fix is to skip all imaginary-coordinate checks under evaluate(False)."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because the added test passes.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "merged",
+          "passes"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "The correct fix is to skip all imaginary-coordinate checks under evaluate(False).",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "imaginary-coordinate",
+          "evaluate(false"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

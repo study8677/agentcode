@@ -1,0 +1,35 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 11,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "field.get_prep_value() serializes the value with json.dumps and the field's encoder, so readonly display shows valid JSON (double quotes) instead of Python repr. get_prep_value json.dumps 双引号 合法 JSON valid json 序列化 JSON",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      },
+      {
+        "id": "en-2",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 15,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "Values that json.dumps cannot serialize fall back to display_for_value via the TypeError handler instead of breaking the admin change page. TypeError 回退 fallback 无法序列化 不可序列化 serialize fail unserializable",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

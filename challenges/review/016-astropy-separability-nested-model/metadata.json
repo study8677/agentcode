@@ -127,5 +127,11 @@
       "right block",
       "结构"
     ]
-  }
+  },
+  "skills": [
+    "behavior-contract",
+    "state-semantics",
+    "test-quality",
+    "impact-reasoning"
+  ]
 }

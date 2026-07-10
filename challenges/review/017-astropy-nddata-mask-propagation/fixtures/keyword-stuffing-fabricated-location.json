@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "operand.mask none handle_mask none unmasked 一个 mask typeerror 14995 死代码 reintroduc operand-with-none-mask np.bitwise_or operand-with-none-mask np.bitwise_or deepcopy(self.mask upstream-correct 测试 组合 测试 operand mask test unmasked test without_mask 未覆盖 only operand none",
+        "evidence": "operand.mask none handle_mask none unmasked 一个 mask typeerror 14995 死代码 reintroduc operand-with-none-mask np.bitwise_or operand-with-none-mask np.bitwise_or deepcopy(self.mask upstream-correct 测试 组合 测试 operand mask test unmasked test without_mask 未覆盖 only operand none",
+        "impact": "operand.mask none handle_mask none unmasked 一个 mask typeerror 14995 死代码 reintroduc operand-with-none-mask np.bitwise_or operand-with-none-mask np.bitwise_or deepcopy(self.mask upstream-correct 测试 组合 测试 operand mask test unmasked test without_mask 未覆盖 only operand none",
+        "fix": "operand.mask none handle_mask none unmasked 一个 mask typeerror 14995 死代码 reintroduc operand-with-none-mask np.bitwise_or operand-with-none-mask np.bitwise_or deepcopy(self.mask upstream-correct 测试 组合 测试 operand mask test unmasked test without_mask 未覆盖 only operand none"
+      }
+    ],
+    "tests": "operand.mask none handle_mask none unmasked 一个 mask typeerror 14995 死代码 reintroduc operand-with-none-mask np.bitwise_or operand-with-none-mask np.bitwise_or deepcopy(self.mask upstream-correct 测试 组合 测试 operand mask test unmasked test without_mask 未覆盖 only operand none"
+  }
+}

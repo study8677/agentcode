@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -26,6 +27,54 @@ export type ReviewScoringHints = {
   fixTerms: string[];
 };
 
+export const REVIEW_EVALUATOR_VERSION = "review-evaluator-v2";
+
+export type ReviewSeverity = "critical" | "high" | "medium" | "low" | "check";
+
+export type ReviewRubricKind = "defect" | "verification" | "test";
+
+export type ReviewSkill =
+  | "security-boundary"
+  | "authorization"
+  | "behavior-contract"
+  | "state-semantics"
+  | "error-boundary"
+  | "performance-resource"
+  | "test-quality"
+  | "evidence-location"
+  | "impact-reasoning"
+  | "remediation"
+  | "false-positive-control"
+  | "concurrency"
+  | "compatibility"
+  | "maintainability";
+
+export type ReviewRubricAnchor = {
+  fileName: string;
+  /** 1-based line in the physical challenge file shown by the file browser. */
+  startLine: number;
+  /** Inclusive 1-based line in the physical challenge file. */
+  endLine: number;
+  /** A stable snippet used by the compiler to detect stale anchors. */
+  lineIncludes: string;
+};
+
+export type ReviewMatchCriteria = {
+  problem?: string[][];
+  evidence?: string[][];
+  impact?: string[][];
+  fix?: string[][];
+  tests?: string[][];
+};
+
+export type ReviewDisallowedRule = {
+  id: string;
+  description: string;
+  fields: Array<"conclusion" | "problem" | "evidence" | "impact" | "fix" | "tests">;
+  match: string[][];
+  penalty: number;
+};
+
 export type ReviewPrBrief = {
   title: string;
   author: string;
@@ -48,6 +97,7 @@ export type ReviewChallengeMetadata = {
   summary: LocalizedText;
   language: string;
   tags: string[];
+  skills: ReviewSkill[];
   source: {
     project: string;
     benchmarkInstance?: string;
@@ -86,23 +136,32 @@ export type ReviewChallengeFile = {
   label: string;
   language: "diff" | "markdown" | "json" | "text";
   content: string;
+  reviewable: boolean;
 };
 
 export type ReviewExpectedFinding = {
   id: string;
-  severity: string;
+  /** V2 fields are optional at the type boundary so old assets remain loadable. */
+  kind?: ReviewRubricKind;
+  required?: boolean;
+  severity: ReviewSeverity;
+  blocksMerge?: boolean;
   summary: string;
   expectedReasoning?: string;
   acceptableFix?: string;
+  anchors?: ReviewRubricAnchor[];
+  criteria?: ReviewMatchCriteria;
+  /** @deprecated Migrated into criteria; retained for old challenge assets. */
   matchTerms?: string[][];
 };
 
 export type ReviewExpectedFindings = {
+  schemaVersion?: 2;
   canMerge: boolean;
   mergeRationale?: string;
   requiredFindings: ReviewExpectedFinding[];
   optionalFindings?: ReviewExpectedFinding[];
-  disallowedConclusions?: string[];
+  disallowedConclusions?: Array<string | ReviewDisallowedRule>;
 };
 
 /** Everything shown only after the user submits a review. */
@@ -111,10 +170,15 @@ export type ReviewReveal = {
   mergeRationale?: string;
   requiredFindings: ReviewExpectedFinding[];
   optionalFindings: ReviewExpectedFinding[];
+  disallowedConclusions: Array<string | ReviewDisallowedRule>;
   analysisNotes: string[];
   behaviorChecks: ReviewBehaviorCheck[];
   learningGoal: string;
   references: ReviewSourceLink[];
+  challengeVersion: string;
+  evaluatorVersion: typeof REVIEW_EVALUATOR_VERSION;
+  /** Physical file line counts used for server-side anchor validation. */
+  fileLineCounts: Record<string, number>;
 };
 
 export type ReviewChallenge = {
@@ -124,6 +188,7 @@ export type ReviewChallenge = {
 };
 
 const reviewRoot = join(process.cwd(), "challenges", "review");
+const virtualFileNames = new Set(["PR-description.md", "task.md", "background.md"]);
 
 function isSafeChallengeFileName(fileName: string) {
   return Boolean(fileName) && !fileName.includes("/") && !fileName.includes("\\") && fileName !== "." && fileName !== "..";
@@ -202,19 +267,22 @@ function getVirtualFiles(metadata: ReviewChallengeMetadata): ReviewChallengeFile
       name: "PR-description.md",
       label: "PR-description.md",
       language: "markdown",
-      content: prDescription
+      content: prDescription,
+      reviewable: false
     },
     {
       name: "task.md",
       label: "task.md",
       language: "markdown",
-      content: task
+      content: task,
+      reviewable: false
     },
     {
       name: "background.md",
       label: "background.md",
       language: "markdown",
-      content: contextDoc
+      content: contextDoc,
+      reviewable: false
     }
   ];
 }
@@ -240,27 +308,113 @@ function getReviewFiles(dir: string, metadata: ReviewChallengeMetadata): ReviewC
     name: fileName,
     label: fileName,
     language: getFileLanguage(fileName),
-    content: readFileSync(join(dir, fileName), "utf8")
+    content: readFileSync(join(dir, fileName), "utf8"),
+    reviewable: true
   }));
 
   return [...physicalFiles, ...getVirtualFiles(metadata)];
 }
 
-function getReviewReveal(dir: string, metadata: ReviewChallengeMetadata): ReviewReveal {
-  const expectedPath = join(dir, "expected-findings.json");
-  const expected = existsSync(expectedPath)
-    ? (JSON.parse(readFileSync(expectedPath, "utf8")) as ReviewExpectedFindings)
-    : null;
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableJson).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([first], [second]) => first.localeCompare(second))
+      .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
+function getChallengeVersion(
+  metadata: ReviewChallengeMetadata,
+  expected: ReviewExpectedFindings | null,
+  files: ReviewChallengeFile[]
+) {
+  const versionInput = {
+    metadata,
+    expected,
+    files: files
+      .filter((file) => !virtualFileNames.has(file.name))
+      .map((file) => ({ name: file.name, content: file.content }))
+  };
+
+  return createHash("sha256").update(stableJson(versionInput)).digest("hex");
+}
+
+function normalizeSeverity(severity: string): ReviewSeverity {
+  return severity === "blocking" ? "critical" :
+    severity === "critical" || severity === "high" || severity === "medium" || severity === "low" || severity === "check"
+      ? severity
+      : "medium";
+}
+
+function inferFindingKind(finding: ReviewExpectedFinding, canMerge: boolean): ReviewRubricKind {
+  if (finding.kind) {
+    return finding.kind;
+  }
+
+  const searchable = `${finding.id} ${finding.summary}`.toLowerCase();
+  if (/test|测试|coverage|覆盖/.test(searchable)) {
+    return "test";
+  }
+
+  return canMerge || finding.severity === "check" ? "verification" : "defect";
+}
+
+function normalizeFinding(
+  finding: ReviewExpectedFinding,
+  canMerge: boolean,
+  required: boolean
+): ReviewExpectedFinding {
+  const kind = inferFindingKind(finding, canMerge);
+  const fallbackCriteria = finding.matchTerms?.length
+    ? kind === "test" ? { tests: finding.matchTerms } : { problem: finding.matchTerms }
+    : {};
+
+  return {
+    ...finding,
+    kind,
+    required,
+    severity: normalizeSeverity(finding.severity),
+    blocksMerge: finding.blocksMerge ?? (kind === "defect" && !canMerge),
+    anchors: finding.anchors ?? [],
+    criteria: finding.criteria ?? fallbackCriteria
+  };
+}
+
+function getReviewReveal(
+  metadata: ReviewChallengeMetadata,
+  files: ReviewChallengeFile[],
+  expected: ReviewExpectedFindings | null
+): ReviewReveal {
+  const requiredFindings = (expected?.requiredFindings ?? []).map((finding) =>
+    normalizeFinding(finding, expected?.canMerge ?? false, true)
+  );
+  const optionalFindings = (expected?.optionalFindings ?? []).map((finding) =>
+    normalizeFinding(finding, expected?.canMerge ?? false, false)
+  );
+  const physicalFiles = files.filter((file) => !virtualFileNames.has(file.name));
 
   return {
     canMerge: expected?.canMerge ?? false,
     mergeRationale: expected?.mergeRationale,
-    requiredFindings: expected?.requiredFindings ?? [],
-    optionalFindings: expected?.optionalFindings ?? [],
+    requiredFindings,
+    optionalFindings,
+    disallowedConclusions: expected?.disallowedConclusions ?? [],
     analysisNotes: metadata.analysis?.notes ?? metadata.context ?? [],
     behaviorChecks: metadata.behaviorChecks,
     learningGoal: metadata.learningGoal,
-    references: metadata.source.references
+    references: metadata.source.references,
+    challengeVersion: getChallengeVersion(metadata, expected, physicalFiles),
+    evaluatorVersion: REVIEW_EVALUATOR_VERSION,
+    fileLineCounts: Object.fromEntries(
+      physicalFiles.map((file) => [file.name, file.content.split(/\r?\n/).length])
+    )
   };
 }
 
@@ -273,6 +427,10 @@ export function getReviewChallengeSlugs() {
 }
 
 export function getReviewChallenge(slug: string): ReviewChallenge | null {
+  if (!isSafeChallengeFileName(slug)) {
+    return null;
+  }
+
   const dir = join(reviewRoot, slug);
   const metadataPath = join(dir, "metadata.json");
 
@@ -282,28 +440,13 @@ export function getReviewChallenge(slug: string): ReviewChallenge | null {
 
   const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as ReviewChallengeMetadata;
   const files = getReviewFiles(dir, metadata);
-  const reveal = getReviewReveal(dir, metadata);
+  const expectedPath = join(dir, "expected-findings.json");
+  const expected = existsSync(expectedPath)
+    ? (JSON.parse(readFileSync(expectedPath, "utf8")) as ReviewExpectedFindings)
+    : null;
+  const reveal = getReviewReveal(metadata, files, expected);
 
   return { metadata, files, reveal };
-}
-
-const legacyAcceptanceRates: Record<number, number> = {
-  1: 31.4, 2: 18.6, 3: 21.2, 4: 24.8, 5: 19.5, 6: 22.1, 7: 26.4, 8: 33.2, 9: 20.7, 10: 23.9,
-  11: 35.6, 12: 29.8, 13: 31.9, 14: 25.3, 15: 34.1, 16: 27.6, 17: 32.8, 18: 24.4, 19: 30.5, 20: 28.7
-};
-
-function getAcceptanceRate(order: number, slug: string) {
-  const known = legacyAcceptanceRates[order];
-  if (known) {
-    return known;
-  }
-
-  let hash = 0;
-  for (const char of slug) {
-    hash = (hash * 31 + char.charCodeAt(0)) % 997;
-  }
-
-  return 18 + (hash % 180) / 10;
 }
 
 export function getReviewChallengeList(): Challenge[] {
@@ -322,7 +465,9 @@ export function getReviewChallengeList(): Challenge[] {
       mode: metadata.mode,
       difficulty: metadata.difficulty,
       status: metadata.status,
-      acceptanceRate: getAcceptanceRate(metadata.order, metadata.slug),
+      // Public acceptance rates are only shown once persisted, adjudicated
+      // attempts provide a real denominator. Never fabricate V0 statistics.
+      acceptanceRate: null,
       tags: metadata.tags,
       runStatus: "idle" as const
     }));

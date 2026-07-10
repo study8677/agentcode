@@ -57,7 +57,10 @@ function createEmptyFinding(fileName: string, lineNumber: number): DraftLineFind
     fileName,
     lineNumber,
     severity: "high",
+    blocksMerge: true,
     problem: "",
+    evidence: "",
+    impact: "",
     fix: ""
   };
 }
@@ -127,6 +130,10 @@ export function ReviewFileBrowser({
   }
 
   function selectLine(lineNumber: number) {
+    if (!activeFile.reviewable) {
+      return;
+    }
+
     const existing = findings.find((finding) => finding.fileName === activeFile.name && finding.lineNumber === lineNumber);
 
     if (existing) {
@@ -212,6 +219,7 @@ export function ReviewFileBrowser({
               >
                 <button
                   className="line-number"
+                  disabled={!activeFile.reviewable && !isHunkHeader}
                   onClick={() => {
                     if (isHunkHeader) {
                       toggleHunk(index);
@@ -219,7 +227,7 @@ export function ReviewFileBrowser({
                       selectLine(lineNumber);
                     }
                   }}
-                  title={isHunkHeader ? "折叠/展开 hunk" : "添加 finding"}
+                  title={isHunkHeader ? "折叠/展开 hunk" : activeFile.reviewable ? "添加 finding" : "背景文件不能添加 finding"}
                   type="button"
                 >
                   {isHunkHeader ? (collapsedHunks.has(index) ? "+" : "-") : lineNumber}
@@ -240,6 +248,18 @@ export function ReviewFileBrowser({
                             <strong>{finding.severity}</strong> {finding.problem}
                           </span>
                           <textarea
+                            aria-label="证据"
+                            onChange={(event) => onUpdateFinding(finding.id, { evidence: event.target.value })}
+                            rows={2}
+                            value={finding.evidence ?? ""}
+                          />
+                          <textarea
+                            aria-label="影响"
+                            onChange={(event) => onUpdateFinding(finding.id, { impact: event.target.value })}
+                            rows={2}
+                            value={finding.impact ?? ""}
+                          />
+                          <textarea
                             aria-label="修复建议"
                             onChange={(event) => onUpdateFinding(finding.id, { fix: event.target.value })}
                             rows={2}
@@ -255,12 +275,20 @@ export function ReviewFileBrowser({
                             onChange={(event) => setDraftFinding((current) => current ? { ...current, severity: event.target.value } : current)}
                             value={draftFinding?.severity ?? "high"}
                           >
-                            <option value="blocking">blocking</option>
+                            <option value="critical">critical</option>
                             <option value="high">high</option>
                             <option value="medium">medium</option>
                             <option value="low">low</option>
                             <option value="check">check</option>
                           </select>
+                          <label className="form-note">
+                            <input
+                              checked={draftFinding?.blocksMerge ?? true}
+                              onChange={(event) => setDraftFinding((current) => current ? { ...current, blocksMerge: event.target.checked } : current)}
+                              type="checkbox"
+                            />
+                            阻塞合并
+                          </label>
                           <span className="mono">{activeFile.name}:{lineNumber}</span>
                         </span>
                         <textarea
@@ -269,6 +297,20 @@ export function ReviewFileBrowser({
                           placeholder="问题描述"
                           rows={2}
                           value={draftFinding?.problem ?? ""}
+                        />
+                        <textarea
+                          aria-label="证据"
+                          onChange={(event) => setDraftFinding((current) => current ? { ...current, evidence: event.target.value } : current)}
+                          placeholder="具体证据：这一行如何证明问题"
+                          rows={2}
+                          value={draftFinding?.evidence ?? ""}
+                        />
+                        <textarea
+                          aria-label="影响"
+                          onChange={(event) => setDraftFinding((current) => current ? { ...current, impact: event.target.value } : current)}
+                          placeholder="影响范围和行为后果"
+                          rows={2}
+                          value={draftFinding?.impact ?? ""}
                         />
                         <textarea
                           aria-label="修复建议"

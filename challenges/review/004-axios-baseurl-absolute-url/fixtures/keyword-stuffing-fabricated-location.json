@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "https:// 绝对 absolute baseurl http 绕过 绝对 覆盖 absolute authorization scheme bypass caller-controlled authorization caller-controlled authorization allowabsoluteurls configured 测试 https://evil test absolute 测试 绝对 test https 测试 authorization",
+        "evidence": "https:// 绝对 absolute baseurl http 绕过 绝对 覆盖 absolute authorization scheme bypass caller-controlled authorization caller-controlled authorization allowabsoluteurls configured 测试 https://evil test absolute 测试 绝对 test https 测试 authorization",
+        "impact": "https:// 绝对 absolute baseurl http 绕过 绝对 覆盖 absolute authorization scheme bypass caller-controlled authorization caller-controlled authorization allowabsoluteurls configured 测试 https://evil test absolute 测试 绝对 test https 测试 authorization",
+        "fix": "https:// 绝对 absolute baseurl http 绕过 绝对 覆盖 absolute authorization scheme bypass caller-controlled authorization caller-controlled authorization allowabsoluteurls configured 测试 https://evil test absolute 测试 绝对 test https 测试 authorization"
+      }
+    ],
+    "tests": "https:// 绝对 absolute baseurl http 绕过 绝对 覆盖 absolute authorization scheme bypass caller-controlled authorization caller-controlled authorization allowabsoluteurls configured 测试 https://evil test absolute 测试 绝对 test https 测试 authorization"
+  }
+}

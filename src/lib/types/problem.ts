@@ -19,7 +19,7 @@ export type Challenge = {
   mode: ChallengeMode;
   difficulty: ChallengeDifficulty;
   status: ChallengeStatus;
-  acceptanceRate: number;
+  acceptanceRate: number | null;
   tags: string[];
   runStatus: RunStatus;
 };

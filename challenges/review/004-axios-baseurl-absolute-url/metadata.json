@@ -133,5 +133,11 @@
       "parse",
       "白名单"
     ]
-  }
+  },
+  "skills": [
+    "security-boundary",
+    "behavior-contract",
+    "remediation",
+    "test-quality"
+  ]
 }

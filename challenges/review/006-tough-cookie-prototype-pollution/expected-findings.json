@@ -1,56 +1,265 @@
 {
+  "schemaVersion": 2,
   "canMerge": false,
   "mergeRationale": "The patch only rejects the literal domain string '__proto__'; the index is still a plain object, so __proto__ at the path/key layer and other magic keys still reach Object.prototype.",
   "requiredFindings": [
     {
       "id": "blacklist-does-not-fix-index-pollution",
+      "kind": "defect",
+      "required": true,
       "severity": "critical",
+      "blocksMerge": true,
       "summary": "The patch adds a string blacklist for one domain value while the domain/path/key index stays an ordinary object.",
       "expectedReasoning": "__proto__ used as the path or key (this.idx[domain]['__proto__'], this.idx[domain][path]['__proto__']) still hits the prototype chain, other magic keys like constructor/prototype are not blocked, and any variant that parses back to __proto__ bypasses an exact-string check. Only a data-structure fix closes the class.",
       "acceptableFix": "Use Object.create(null) or Map for every index layer (and/or reject unsafe keys centrally), then re-run the PoC plus variant and nested-key tests.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 13,
+          "endLine": 13,
+          "lineIncludes": "+  if (cookie.domain === '__proto__') return cb(null)"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "object.create"
+          ],
+          [
+            "map"
+          ],
+          [
+            "普通对象"
+          ],
+          [
+            "数据结构"
+          ],
+          [
+            "嵌套"
+          ],
+          [
+            "constructor"
+          ]
+        ],
+        "evidence": [
+          [
+            "data-structure",
+            "exact-string"
+          ]
+        ],
+        "impact": [
+          [
+            "data-structure",
+            "exact-string"
+          ]
+        ],
+        "fix": [
+          [
+            "object.create(null",
+            "nested-key"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["object.create"],
-        ["map"],
-        ["普通对象"],
-        ["数据结构"],
-        ["path"],
-        ["key"],
-        ["嵌套"],
-        ["constructor"]
+        [
+          "object.create"
+        ],
+        [
+          "map"
+        ],
+        [
+          "普通对象"
+        ],
+        [
+          "数据结构"
+        ],
+        [
+          "path"
+        ],
+        [
+          "key"
+        ],
+        [
+          "嵌套"
+        ],
+        [
+          "constructor"
+        ]
       ]
     },
     {
       "id": "incomplete-poc-coverage",
+      "kind": "test",
+      "required": true,
       "severity": "high",
+      "blocksMerge": false,
       "summary": "The new test only replays __proto__ at the domain layer.",
       "expectedReasoning": "Prototype-pollution defenses need variant and nested-layer tests: __proto__ as path and key, constructor/prototype keys, and a check that the index has no prototype.",
       "acceptableFix": "Add tests for __proto__ as path and key, constructor/prototype keys, and confirm the index carries no prototype.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 19,
+          "endLine": 19,
+          "lineIncludes": "diff --git a/test/prototype_pollution_test.js b/test/prototype_pollution_test.js"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "test",
+            "path"
+          ],
+          [
+            "test",
+            "key"
+          ],
+          [
+            "测试",
+            "嵌套"
+          ],
+          [
+            "test",
+            "constructor"
+          ],
+          [
+            "missing",
+            "test"
+          ],
+          [
+            "缺",
+            "测试"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["test", "path"],
-        ["test", "key"],
-        ["测试", "嵌套"],
-        ["test", "constructor"],
-        ["missing", "test"],
-        ["缺", "测试"]
+        [
+          "test",
+          "path"
+        ],
+        [
+          "test",
+          "key"
+        ],
+        [
+          "测试",
+          "嵌套"
+        ],
+        [
+          "test",
+          "constructor"
+        ],
+        [
+          "missing",
+          "test"
+        ],
+        [
+          "缺",
+          "测试"
+        ]
       ]
     }
   ],
   "optionalFindings": [
     {
       "id": "blacklist-brittle",
+      "kind": "defect",
+      "required": false,
       "severity": "low",
+      "blocksMerge": true,
       "summary": "An exact-string equality check is bypassed by any case or encoding variant that resolves back to __proto__ elsewhere.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 13,
+          "endLine": 13,
+          "lineIncludes": "+  if (cookie.domain === '__proto__') return cb(null)"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "blacklist"
+          ],
+          [
+            "黑名单"
+          ],
+          [
+            "variant"
+          ],
+          [
+            "变体"
+          ],
+          [
+            "exact",
+            "string"
+          ]
+        ],
+        "evidence": [
+          [
+            "blacklist"
+          ]
+        ],
+        "impact": [
+          [
+            "exact",
+            "string"
+          ]
+        ],
+        "fix": [
+          [
+            "blacklist"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["blacklist"],
-        ["黑名单"],
-        ["variant"],
-        ["变体"],
-        ["exact", "string"]
+        [
+          "blacklist"
+        ],
+        [
+          "黑名单"
+        ],
+        [
+          "variant"
+        ],
+        [
+          "变体"
+        ],
+        [
+          "exact",
+          "string"
+        ]
       ]
     }
   ],
   "disallowedConclusions": [
-    "The patch can be merged because the __proto__ PoC test passes.",
-    "Rejecting the __proto__ domain is enough because that is the string in the published PoC."
+    {
+      "id": "disallowed-01",
+      "description": "The patch can be merged because the __proto__ PoC test passes.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "__proto__",
+          "merged"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "Rejecting the __proto__ domain is enough because that is the string in the published PoC.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "rejecting",
+          "__proto__"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

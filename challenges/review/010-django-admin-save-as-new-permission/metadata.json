@@ -130,5 +130,11 @@
       "server-side",
       "权限检查"
     ]
-  }
+  },
+  "skills": [
+    "authorization",
+    "behavior-contract",
+    "test-quality",
+    "impact-reasoning"
+  ]
 }

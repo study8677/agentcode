@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Reject because get_prep_value is a database-preparation API that must not be used for display — it is exactly the serialization entry point that honors the field's custom encoder, and the standard way to get the JSON text form.",
+    "findings": [],
+    "tests": ""
+  }
+}

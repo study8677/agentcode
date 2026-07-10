@@ -125,5 +125,11 @@
       "warning",
       "no np.asarray"
     ]
-  }
+  },
+  "skills": [
+    "performance-resource",
+    "behavior-contract",
+    "test-quality",
+    "impact-reasoning"
+  ]
 }

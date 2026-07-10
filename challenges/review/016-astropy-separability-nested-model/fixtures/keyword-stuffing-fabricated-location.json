@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "nested all ones right matrix 结构 丢失 依赖 误报 对角 矩阵 separability structure independence dependencies independence dependencies existing instead shape only 只 shape 精确 矩阵 exact matrix values np.eye",
+        "evidence": "nested all ones right matrix 结构 丢失 依赖 误报 对角 矩阵 separability structure independence dependencies independence dependencies existing instead shape only 只 shape 精确 矩阵 exact matrix values np.eye",
+        "impact": "nested all ones right matrix 结构 丢失 依赖 误报 对角 矩阵 separability structure independence dependencies independence dependencies existing instead shape only 只 shape 精确 矩阵 exact matrix values np.eye",
+        "fix": "nested all ones right matrix 结构 丢失 依赖 误报 对角 矩阵 separability structure independence dependencies independence dependencies existing instead shape only 只 shape 精确 矩阵 exact matrix values np.eye"
+      }
+    ],
+    "tests": "nested all ones right matrix 结构 丢失 依赖 误报 对角 矩阵 separability structure independence dependencies independence dependencies existing instead shape only 只 shape 精确 矩阵 exact matrix values np.eye"
+  }
+}

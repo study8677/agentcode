@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 40,
+    "maxScore": 79
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "I found the main concern but have not completed the evidence, impact, fix, or test analysis.",
+    "findings": [
+      {
+        "id": "en-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 3,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "Confirm ClosedPoolError is not caught by any existing except in send (not a subclass of ProtocolError/OSError/MaxRetryError/_ProxyError/_SSLError/ReadTimeoutError), so it really did leak. closedpoolerror 穿透 closedpoolerror 泄漏 子类 not subclass not caught 继承",
+        "evidence": "",
+        "impact": "",
+        "fix": ""
+      }
+    ],
+    "tests": ""
+  }
+}

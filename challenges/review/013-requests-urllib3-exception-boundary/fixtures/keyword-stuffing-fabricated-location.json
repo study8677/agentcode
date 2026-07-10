@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "yes",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "check",
+        "blocksMerge": false,
+        "problem": "closedpoolerror 穿透 closedpoolerror 泄漏 子类 not subclass not caught 继承 correctly existing correctly existing optionally exception 位置 死代码 顺序 placement order except dead code closedpoolerror unrelated closedpoolerror unrelated 位置 测试 closedpoolerror 测试 connectionerror test closedpool test connectionerror 回归 可信 复现",
+        "evidence": "closedpoolerror 穿透 closedpoolerror 泄漏 子类 not subclass not caught 继承 correctly existing correctly existing optionally exception 位置 死代码 顺序 placement order except dead code closedpoolerror unrelated closedpoolerror unrelated 位置 测试 closedpoolerror 测试 connectionerror test closedpool test connectionerror 回归 可信 复现",
+        "impact": "closedpoolerror 穿透 closedpoolerror 泄漏 子类 not subclass not caught 继承 correctly existing correctly existing optionally exception 位置 死代码 顺序 placement order except dead code closedpoolerror unrelated closedpoolerror unrelated 位置 测试 closedpoolerror 测试 connectionerror test closedpool test connectionerror 回归 可信 复现",
+        "fix": "closedpoolerror 穿透 closedpoolerror 泄漏 子类 not subclass not caught 继承 correctly existing correctly existing optionally exception 位置 死代码 顺序 placement order except dead code closedpoolerror unrelated closedpoolerror unrelated 位置 测试 closedpoolerror 测试 connectionerror test closedpool test connectionerror 回归 可信 复现"
+      }
+    ],
+    "tests": "closedpoolerror 穿透 closedpoolerror 泄漏 子类 not subclass not caught 继承 correctly existing correctly existing optionally exception 位置 死代码 顺序 placement order except dead code closedpoolerror unrelated closedpoolerror unrelated 位置 测试 closedpoolerror 测试 connectionerror test closedpool test connectionerror 回归 可信 复现"
+  }
+}

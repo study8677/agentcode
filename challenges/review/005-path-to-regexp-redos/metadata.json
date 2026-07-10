@@ -135,5 +135,11 @@
       "upgrade",
       "升级"
     ]
-  }
+  },
+  "skills": [
+    "performance-resource",
+    "security-boundary",
+    "test-quality",
+    "remediation"
+  ]
 }

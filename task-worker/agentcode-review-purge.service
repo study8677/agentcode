@@ -1,0 +1,15 @@
+[Unit]
+Description=AgentCode anonymous review data retention purge
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=agentcode
+Group=agentcode
+EnvironmentFile=/opt/agentcode/.env
+WorkingDirectory=/opt/agentcode
+ExecStart=/opt/agentcode/node_modules/.bin/tsx /opt/agentcode/scripts/purge-review-data.ts
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

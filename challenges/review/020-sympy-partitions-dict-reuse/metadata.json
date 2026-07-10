@@ -126,5 +126,11 @@
       "all yields",
       "size=True"
     ]
-  }
+  },
+  "skills": [
+    "state-semantics",
+    "behavior-contract",
+    "compatibility",
+    "concurrency"
+  ]
 }

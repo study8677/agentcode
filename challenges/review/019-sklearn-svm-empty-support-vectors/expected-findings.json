@@ -1,70 +1,375 @@
 {
+  "schemaVersion": 2,
   "canMerge": true,
   "mergeRationale": "The guard short-circuits exactly the arange-with-zero-step crash for n_SV == 0, leaves the normal path untouched, and ships a faithful regression test. This mirrors the fix upstream merged for gh-14894.",
   "requiredFindings": [
     {
       "id": "root-cause-is-zero-step-arange",
+      "kind": "verification",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "Confirm the empty case crashed because dual_coef_indptr uses np.arange with step size/n_class == 0, and the n_SV == 0 guard short-circuits exactly that.",
       "expectedReasoning": "When there are no support vectors dual_coef_indices is empty, so the arange step is 0 and raises; the new branch avoids building indptr at all.",
       "acceptableFix": "No change needed. Optionally confirm with an SVR fit that yields zero support vectors.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 19,
+          "endLine": 19,
+          "lineIncludes": "+        if not n_SV:"
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "arange",
+            "0"
+          ],
+          [
+            "步长",
+            "0"
+          ],
+          [
+            "step",
+            "zero"
+          ],
+          [
+            "n_sv",
+            "空"
+          ],
+          [
+            "indptr",
+            "空"
+          ],
+          [
+            "zerodivision"
+          ]
+        ],
+        "evidence": [
+          [
+            "dual_coef_indices",
+            "building"
+          ]
+        ],
+        "impact": [
+          [
+            "dual_coef_indices",
+            "building"
+          ]
+        ],
+        "fix": [
+          [
+            "optionally",
+            "confirm"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["arange", "0"],
-        ["步长", "0"],
-        ["step", "zero"],
-        ["n_sv", "空"],
-        ["indptr", "空"],
-        ["zerodivision"]
+        [
+          "arange",
+          "0"
+        ],
+        [
+          "步长",
+          "0"
+        ],
+        [
+          "step",
+          "zero"
+        ],
+        [
+          "n_sv",
+          "空"
+        ],
+        [
+          "indptr",
+          "空"
+        ],
+        [
+          "zerodivision"
+        ]
       ]
     },
     {
       "id": "normal-path-unchanged",
+      "kind": "verification",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "Confirm the else branch preserves the original CSR construction, so non-empty fits are unaffected.",
       "expectedReasoning": "The patch only adds a branch for n_SV == 0; the existing indptr/csr_matrix logic is moved verbatim into else.",
       "acceptableFix": "No change needed.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 27,
+          "endLine": 27,
+          "lineIncludes": "+            self.dual_coef_ = sp.csr_matrix("
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "else",
+            "不变"
+          ],
+          [
+            "正常",
+            "不变"
+          ],
+          [
+            "原有",
+            "保留"
+          ],
+          [
+            "else",
+            "unchanged"
+          ],
+          [
+            "normal",
+            "unchanged"
+          ],
+          [
+            "non-empty",
+            "same"
+          ]
+        ],
+        "evidence": [
+          [
+            "csr_matrix",
+            "existing"
+          ]
+        ],
+        "impact": [
+          [
+            "csr_matrix",
+            "existing"
+          ]
+        ],
+        "fix": [
+          [
+            "else",
+            "不变"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["else", "不变"],
-        ["正常", "不变"],
-        ["原有", "保留"],
-        ["else", "unchanged"],
-        ["normal", "unchanged"],
-        ["non-empty", "same"]
+        [
+          "else",
+          "不变"
+        ],
+        [
+          "正常",
+          "不变"
+        ],
+        [
+          "原有",
+          "保留"
+        ],
+        [
+          "else",
+          "unchanged"
+        ],
+        [
+          "normal",
+          "unchanged"
+        ],
+        [
+          "non-empty",
+          "same"
+        ]
       ]
     },
     {
       "id": "regression-test-is-trustworthy",
+      "kind": "test",
+      "required": true,
       "severity": "check",
+      "blocksMerge": false,
       "summary": "Confirm the added test genuinely reproduces n_SV == 0 (linear SVR on the given inputs) and asserts the fix, rather than being a vacuous test.",
       "expectedReasoning": "It fits an SVR that produces zero support vectors and asserts fit completes with empty support_vectors_ and dual_coef_.",
       "acceptableFix": "No change needed.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 52,
+          "endLine": 52,
+          "lineIncludes": "+    assert not model.support_vectors_.data.size"
+        }
+      ],
+      "criteria": {
+        "tests": [
+          [
+            "测试",
+            "复现"
+          ],
+          [
+            "测试",
+            "svr"
+          ],
+          [
+            "test",
+            "reproduc"
+          ],
+          [
+            "test",
+            "svr"
+          ],
+          [
+            "data.size"
+          ],
+          [
+            "回归测试",
+            "可信"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["测试", "复现"],
-        ["测试", "svr"],
-        ["test", "reproduc"],
-        ["test", "svr"],
-        ["data.size"],
-        ["回归测试", "可信"]
+        [
+          "测试",
+          "复现"
+        ],
+        [
+          "测试",
+          "svr"
+        ],
+        [
+          "test",
+          "reproduc"
+        ],
+        [
+          "test",
+          "svr"
+        ],
+        [
+          "data.size"
+        ],
+        [
+          "回归测试",
+          "可信"
+        ]
       ]
     }
   ],
   "optionalFindings": [
     {
       "id": "empty-shape-followup-nit",
+      "kind": "verification",
+      "required": false,
       "severity": "low",
+      "blocksMerge": false,
       "summary": "A reviewer may ask whether the empty matrix should use an explicit shape, but the empty-support-vector contract here is that dual_coef_ has no coefficients; this is not grounds to reject.",
+      "anchors": [
+        {
+          "fileName": "ai-pr.diff",
+          "startLine": 15,
+          "endLine": 15,
+          "lineIncludes": "-        self.dual_coef_ = sp.csr_matrix("
+        }
+      ],
+      "criteria": {
+        "problem": [
+          [
+            "shape"
+          ],
+          [
+            "empty",
+            "coefficients"
+          ],
+          [
+            "形状",
+            "follow"
+          ],
+          [
+            "nit"
+          ],
+          [
+            "shape",
+            "follow"
+          ]
+        ],
+        "evidence": [
+          [
+            "shape"
+          ]
+        ],
+        "impact": [
+          [
+            "shape",
+            "follow"
+          ]
+        ],
+        "fix": [
+          [
+            "shape"
+          ]
+        ]
+      },
       "matchTerms": [
-        ["shape"],
-        ["empty", "coefficients"],
-        ["形状", "follow"],
-        ["nit"],
-        ["shape", "follow"]
+        [
+          "shape"
+        ],
+        [
+          "empty",
+          "coefficients"
+        ],
+        [
+          "形状",
+          "follow"
+        ],
+        [
+          "nit"
+        ],
+        [
+          "shape",
+          "follow"
+        ]
       ]
     }
   ],
   "disallowedConclusions": [
-    "Request changes because sp.csr_matrix([]) does not force a particular two-dimensional empty shape.",
-    "Reject because the test only checks data.size and not dual_coef_.shape.",
-    "The empty case should raise instead of returning an empty matrix."
+    {
+      "id": "disallowed-01",
+      "description": "Request changes because sp.csr_matrix([]) does not force a particular two-dimensional empty shape.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "two-dimensional",
+          "sp.csr_matrix("
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-02",
+      "description": "Reject because the test only checks data.size and not dual_coef_.shape.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "dual_coef_.shape",
+          "data.size"
+        ]
+      ],
+      "penalty": 10
+    },
+    {
+      "id": "disallowed-03",
+      "description": "The empty case should raise instead of returning an empty matrix.",
+      "fields": [
+        "conclusion"
+      ],
+      "match": [
+        [
+          "returning",
+          "instead"
+        ]
+      ],
+      "penalty": 10
+    }
   ]
 }

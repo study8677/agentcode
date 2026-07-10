@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Request changes because the patch does not also wrap DecodeError / TimeoutError / other urllib3 exceptions.",
+    "findings": [],
+    "tests": ""
+  }
+}

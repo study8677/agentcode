@@ -132,5 +132,11 @@
       "revert",
       "保留"
     ]
-  }
+  },
+  "skills": [
+    "state-semantics",
+    "error-boundary",
+    "test-quality",
+    "remediation"
+  ]
 }

@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "x-middleware-subrequest 伪造 外部 头 client header spoof header 绕过 鉴权 bypass auth x-middleware-subrequest unauthenticated x-middleware-subrequest unauthenticated authorization middleware 测试 未登录 测试 伪造 test spoof test unauthenticated 测试 拦截",
+        "evidence": "x-middleware-subrequest 伪造 外部 头 client header spoof header 绕过 鉴权 bypass auth x-middleware-subrequest unauthenticated x-middleware-subrequest unauthenticated authorization middleware 测试 未登录 测试 伪造 test spoof test unauthenticated 测试 拦截",
+        "impact": "x-middleware-subrequest 伪造 外部 头 client header spoof header 绕过 鉴权 bypass auth x-middleware-subrequest unauthenticated x-middleware-subrequest unauthenticated authorization middleware 测试 未登录 测试 伪造 test spoof test unauthenticated 测试 拦截",
+        "fix": "x-middleware-subrequest 伪造 外部 头 client header spoof header 绕过 鉴权 bypass auth x-middleware-subrequest unauthenticated x-middleware-subrequest unauthenticated authorization middleware 测试 未登录 测试 伪造 test spoof test unauthenticated 测试 拦截"
+      }
+    ],
+    "tests": "x-middleware-subrequest 伪造 外部 头 client header spoof header 绕过 鉴权 bypass auth x-middleware-subrequest unauthenticated x-middleware-subrequest unauthenticated authorization middleware 测试 未登录 测试 伪造 test spoof test unauthenticated 测试 拦截"
+  }
+}

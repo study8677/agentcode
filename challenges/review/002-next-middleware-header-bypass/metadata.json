@@ -135,5 +135,11 @@
       "反代",
       "二次鉴权"
     ]
-  }
+  },
+  "skills": [
+    "security-boundary",
+    "authorization",
+    "evidence-location",
+    "test-quality"
+  ]
 }

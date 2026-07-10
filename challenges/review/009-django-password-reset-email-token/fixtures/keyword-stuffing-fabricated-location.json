@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "critical",
+        "blocksMerge": true,
+        "problem": "email hash 邮箱 hash 邮箱 失效 old token valid change email _make_hash_value email _make_hash_value invalidate _make_hash_value invalidate _make_hash_value compatibility 测试 邮箱 变更 测试 旧 token empty email change email test check_token False",
+        "evidence": "email hash 邮箱 hash 邮箱 失效 old token valid change email _make_hash_value email _make_hash_value invalidate _make_hash_value invalidate _make_hash_value compatibility 测试 邮箱 变更 测试 旧 token empty email change email test check_token False",
+        "impact": "email hash 邮箱 hash 邮箱 失效 old token valid change email _make_hash_value email _make_hash_value invalidate _make_hash_value invalidate _make_hash_value compatibility 测试 邮箱 变更 测试 旧 token empty email change email test check_token False",
+        "fix": "email hash 邮箱 hash 邮箱 失效 old token valid change email _make_hash_value email _make_hash_value invalidate _make_hash_value invalidate _make_hash_value compatibility 测试 邮箱 变更 测试 旧 token empty email change email test check_token False"
+      }
+    ],
+    "tests": "email hash 邮箱 hash 邮箱 失效 old token valid change email _make_hash_value email _make_hash_value invalidate _make_hash_value invalidate _make_hash_value compatibility 测试 邮箱 变更 测试 旧 token empty email change email test check_token False"
+  }
+}

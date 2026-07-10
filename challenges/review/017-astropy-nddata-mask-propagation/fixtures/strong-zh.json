@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "minScore": 100,
+    "maxScore": 100
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "评审结论：存在阻塞问题，请求修改。",
+    "findings": [
+      {
+        "id": "zh-1",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 14,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "The rewrite makes a masked+unmasked operation crash: operand present with mask=None now reaches handle_mask(self.mask, None). operand.mask none handle_mask none unmasked 一个 mask typeerror 14995 死代码 reintroduc",
+        "evidence": "In binary ops operand is never None, so the new branch is dead; the operand-with-None-mask case falls to else and calls handle_mask (e.g. np.bitwise_or) with None, raising TypeError. This is exactly what astropy fixed in gh-14995 (operand is None -> operand.mask is None); the PR reverses it. operand-with-none-mask np.bitwise_or",
+        "impact": "In binary ops operand is never None, so the new branch is dead; the operand-with-None-mask case falls to else and calls handle_mask (e.g. np.bitwise_or) with None, raising TypeError. This is exactly what astropy fixed in gh-14995 (operand is None -> operand.mask is None); the PR reverses it. operand-with-none-mask np.bitwise_or",
+        "fix": "Keep the branch as `elif operand.mask is None: return deepcopy(self.mask)` (the upstream-correct form); do not rewrite it to `operand is None`. deepcopy(self.mask upstream-correct"
+      }
+    ],
+    "tests": "The new test only exercises the no-second-operand path (which still works) and never the masked+unmasked combination that breaks. operand=None returns self.mask under the new branch, so the added test passes; the actually-broken case (operand present, mask None) is untested, so CI stays green. 测试 组合 测试 operand mask test unmasked test without_mask 未覆盖 only operand none"
+  }
+}

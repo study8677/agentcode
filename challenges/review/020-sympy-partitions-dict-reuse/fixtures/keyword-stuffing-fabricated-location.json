@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "validationError": true,
+    "maxScore": 60
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Keyword-only answer with a fabricated location.",
+    "findings": [
+      {
+        "id": "keyword-stuffing",
+        "fileName": "ai-pr.diff",
+        "lineNumber": 999999,
+        "severity": "high",
+        "blocksMerge": true,
+        "problem": "size=True copy size=True dict mutable dict same object 可变 字典 两个 分支 containing dictionary containing dictionary dictionary partition size dict id dict object identity 测试 字典 内容 稳定 unique ids",
+        "evidence": "size=True copy size=True dict mutable dict same object 可变 字典 两个 分支 containing dictionary containing dictionary dictionary partition size dict id dict object identity 测试 字典 内容 稳定 unique ids",
+        "impact": "size=True copy size=True dict mutable dict same object 可变 字典 两个 分支 containing dictionary containing dictionary dictionary partition size dict id dict object identity 测试 字典 内容 稳定 unique ids",
+        "fix": "size=True copy size=True dict mutable dict same object 可变 字典 两个 分支 containing dictionary containing dictionary dictionary partition size dict id dict object identity 测试 字典 内容 稳定 unique ids"
+      }
+    ],
+    "tests": "size=True copy size=True dict mutable dict same object 可变 字典 两个 分支 containing dictionary containing dictionary dictionary partition size dict id dict object identity 测试 字典 内容 稳定 unique ids"
+  }
+}

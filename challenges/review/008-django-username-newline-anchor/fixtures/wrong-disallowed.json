@@ -1,0 +1,12 @@
+{
+  "expected": {
+    "minScore": 0,
+    "maxScore": 30
+  },
+  "draft": {
+    "mergeDecision": "no",
+    "conclusion": "Reject because \\Z still permits a trailing newline — that is Perl/PCRE \\Z semantics; Python's \\Z matches only at the absolute end of the string (like \\z elsewhere).",
+    "findings": [],
+    "tests": ""
+  }
+}

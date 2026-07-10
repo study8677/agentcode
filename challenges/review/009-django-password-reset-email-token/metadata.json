@@ -132,5 +132,11 @@
       "绑定",
       "_make_hash_value"
     ]
-  }
+  },
+  "skills": [
+    "security-boundary",
+    "authorization",
+    "state-semantics",
+    "test-quality"
+  ]
 }
